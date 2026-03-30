@@ -1,0 +1,40 @@
+[package]
+name = "organoid-vectordb"
+version = "0.1.0"
+edition = "2021"
+description = "Lightweight vector database for organoid image federated learning platform"
+
+[dependencies]
+# HNSW index for approximate nearest neighbor search
+hnsw = "0.11"
+space = "0.17"
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bincode = "1"
+# gRPC
+tonic = "0.13"
+prost = "0.13"
+tokio = { version = "1", features = ["full"] }
+# Async
+async-trait = "0.1"
+# Error handling
+anyhow = "1"
+thiserror = "2"
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+# CLI
+clap = { version = "4", features = ["derive"] }
+# Random
+rand = "0.8"
+# HTTP server for dashboard
+axum = "0.8"
+tower-http = { version = "0.6", features = ["cors", "fs"] }
+# Blockchain audit
+sha2 = "0.10"
+hex = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+
+[build-dependencies]
+tonic-build = "0.13"

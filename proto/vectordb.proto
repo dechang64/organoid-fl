@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package vectordb;
+
+service VectorDB {
+  // Insert vectors into the database
+  rpc Insert(InsertRequest) returns (InsertResponse);
+  // Search for k nearest neighbors
+  rpc Search(SearchRequest) returns (SearchResponse);
+  // Delete vectors by IDs
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  // Get database stats
+  rpc Stats(StatsRequest) returns (StatsResponse);
+}
+
+message Vector {
+  string id = 1;
+  repeated float values = 2;
+  map<string, string> metadata = 3;
+}
+
+message InsertRequest {
+  repeated Vector vectors = 1;
+}
+
+message InsertResponse {
+  int32 inserted = 1;
+}
+
+message SearchRequest {
+  repeated float query = 1;
+  int32 k = 2;
+  map<string, string> filter = 3; // optional metadata filter
+}
+
+message SearchResult {
+  string id = 1;
+  repeated float values = 2;
+  float distance = 3;
+  map<string, string> metadata = 4;
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+}
+
+message DeleteRequest {
+  repeated string ids = 1;
+}
+
+message DeleteResponse {
+  int32 deleted = 1;
+}
+
+message StatsRequest {}
+
+message StatsResponse {
+  int64 total_vectors = 1;
+  int32 dimension = 2;
+  int64 index_size = 3;
+}
