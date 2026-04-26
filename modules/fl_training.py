@@ -20,7 +20,7 @@ from utils.constants import (
 )
 from utils.helpers import generate_synthetic_features, split_federated_data
 from analysis.fl_engine import FLEngine
-from visualization.charts import fl_convergence, accuracy_heatmap, confusion_matrix_plot
+from visualization.charts import fl_convergence, confusion_matrix_plot
 
 
 def render():
@@ -116,6 +116,7 @@ def render():
         st.session_state["fl_engine"] = engine
         st.session_state["fl_class_names"] = class_names
         st.session_state["fl_total_time"] = total_time
+        st.session_state["fl_client_data"] = client_data
 
         st.success(
             f"**Best accuracy: {best['val_acc'] * 100:.2f}%** (Round {best['round'] + 1}) | "
@@ -130,19 +131,27 @@ def render():
         st.markdown("---")
         st.markdown("### 📈 Training Results")
 
-        tab_conv, tab_heat, tab_cm = st.tabs(["Convergence", "Accuracy Heatmap", "Confusion Matrix"])
+        tab_conv, tab_cm = st.tabs(["Convergence", "Confusion Matrix"])
 
         with tab_conv:
             fig = fl_convergence(history)
             st.plotly_chart(fig, use_container_width=True)
 
-        with tab_heat:
-            fig = accuracy_heatmap(history, class_names)
-            st.plotly_chart(fig, use_container_width=True)
-
         with tab_cm:
-            fig = confusion_matrix_plot(history, class_names)
-            st.plotly_chart(fig, use_container_width=True)
+            # Build y_true / y_pred from the final FL model
+            fl_engine = st.session_state.get("fl_engine")
+            client_data = st.session_state.get("fl_client_data")
+            if fl_engine and fl_engine.global_model is not None and client_data:
+                all_features = np.concatenate([cd[0] for cd in client_data])
+                all_labels = np.concatenate([cd[1] for cd in client_data])
+                import torch
+                with torch.no_grad():
+                    logits = fl_engine.global_model(torch.tensor(all_features, dtype=torch.float32))
+                    preds = logits.argmax(dim=1).numpy()
+                fig = confusion_matrix_plot(all_labels, preds, class_names)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Run training to generate confusion matrix.")
 
         # ── Methodology ──
         with st.expander("📖 Methodology"):

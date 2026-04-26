@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.constants import ORGANOID_CLASSES, CLASS_INFO, COLORS
 from utils.helpers import generate_synthetic_features
 from analysis.vector_engine import VectorEngine
-from visualization.charts import knn_distance_chart
+from visualization.charts import knn_results
 
 
 def render():
@@ -115,7 +115,7 @@ def render():
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
             # Distance chart
-            fig = knn_distance_chart(results, query_label)
+            fig = knn_results(query_label, results, class_names=st.session_state.get("vector_class_names"))
             st.plotly_chart(fig, use_container_width=True)
 
             matches = sum(1 for vid, _ in results if engine.metadata.get(vid, {}).get("class") == query_label)

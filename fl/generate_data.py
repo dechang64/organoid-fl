@@ -117,5 +117,4 @@ def generate_dataset(output_dir, n_per_class=200, img_size=128):
 
 
 if __name__ == "__main__":
-    fl_dir = Path(__file__).parent
-    generate_dataset(str(fl_dir / "data"), n_per_class=200, img_size=128)
+    generate_dataset("Path(__file__).parent / data", n_per_class=200, img_size=128)

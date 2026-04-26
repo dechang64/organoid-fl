@@ -88,12 +88,11 @@ def extract_dataset(data_dir, model, output_path=None):
 
 if __name__ == "__main__":
     model = ResNet18Extractor()
-
+    
     # Generate data if not exists
-    fl_dir = Path(__file__).parent
-    data_dir = fl_dir / "data"
+    data_dir = Path("Path(__file__).parent / data")
     if not data_dir.exists():
         from generate_data import generate_dataset
         generate_dataset(str(data_dir), n_per_class=200, img_size=128)
-
-    extract_dataset(str(data_dir), model, str(fl_dir / "features.npz"))
+    
+    extract_dataset(str(data_dir), model, "Path(__file__).parent / features.npz")
