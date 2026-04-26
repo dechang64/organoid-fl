@@ -4,14 +4,16 @@
 
 ### Federated Learning Platform for Organoid Image Analysis
 
-**Rust Vector DB + HNSW + PyTorch FedAvg + gRPC + Blockchain Audit + Web Dashboard**
+**Rust HNSW VectorDB + YOLOv11 + DINOv2 + SAM2 + PyTorch FedAvg + Streamlit Dashboard**
 
 [![Rust](https://img.shields.io/badge/Rust-1.70+-orange?logo=rust)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c?logo=pytorch)](https://pytorch.org/)
+[![YOLOv11](https://img.shields.io/badge/YOLO-v11-9b59b6?logo=ultralytics)](https://docs.ultralytics.com/)
+[![DINOv2](https://img.shields.io/badge/DINOv2-Meta-blueviolet)](https://github.com/facebookresearch/dinov2)
+[![SAM2](https://img.shields.io/badge/SAM2-Meta-green)](https://github.com/facebookresearch/sam2)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-red?logo=streamlit)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-[Paper](docs/paper.md) · [Architecture](docs/architecture.md) · [API Reference](docs/api.md)
 
 </div>
 
@@ -19,141 +21,96 @@
 
 ## 🎯 What is Organoid-FL?
 
-Organoid-FL is an **end-to-end federated learning platform** designed for medical organoid image analysis. It enables multiple hospitals/research labs to collaboratively train AI models **without sharing patient data**.
+Organoid-FL is an **end-to-end federated learning platform** for medical organoid image analysis. It enables multiple hospitals/research labs to collaboratively train AI models **without sharing patient data**.
+
+### Multi-Task Vision Pipeline
+
+| Model | Task | Output |
+|-------|------|--------|
+| **YOLOv11** | Detection | Bounding boxes + class + confidence |
+| **DINOv2** | Feature Extraction | 768-dim self-supervised embeddings |
+| **SAM2** | Segmentation | Pixel-level masks + morphology metrics |
+| **FedAvg** | Aggregation | Privacy-preserving model updates |
 
 ### Key Results
 
 | Metric | Value |
 |--------|-------|
 | Classification Accuracy | **99.17%** |
-| Model | ResNet-18 (pretrained) |
-| Aggregation | FedAvg |
+| Feature Dim | **768** (DINOv2 base) |
+| Detection | YOLOv11 (3.2M–20.1M params) |
+| Segmentation | SAM2 (pixel-level) |
 | Vector Search | HNSW (kNN) |
 | Audit | SHA-256 Blockchain |
+
+---
+
+## 🚀 Quick Start (3 ways)
+
+### Option A: Local (no Docker)
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+# Open http://localhost:8501
+```
+
+### Option B: Docker
+```bash
+cp .env.example .env
+docker compose up -d
+# Open http://localhost:8501
+```
+
+### Option C: Streamlit Community Cloud (Free)
+1. Push to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io/)
+3. Connect repo → deploy
+4. Get `https://your-app.streamlit.app`
+
+---
+
+## 📊 Platform Modules (11 pages)
+
+| Page | Description |
+|------|-------------|
+| 🏠 Dashboard | Platform overview, key metrics, quick actions |
+| 📁 Data Explorer | Generate/upload organoid images, data distribution |
+| 🔄 FL Training | Interactive FedAvg training with real-time charts |
+| 🎯 Detection | YOLOv11 organoid detection, counting, classification |
+| ✂️ Segmentation | SAM2 pixel-level masks, morphology analysis |
+| 🌌 Feature Space | DINOv2 t-SNE/UMAP feature visualization |
+| 🧩 Multi-Task FL | Detection + classification + segmentation jointly |
+| 🔍 Vector Search | HNSW approximate nearest neighbor search |
+| ⛓️ Audit Chain | Blockchain-style immutable operation log |
+| 📈 Model Analysis | Confusion matrix, per-client gap analysis |
+| 🔬 Research | Methodology, paper references, architecture |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                        Web Dashboard                         │
-│                    (Axum + Static HTML)                       │
-├──────────────────────────────────────────────────────────────┤
-│                     gRPC Service Layer                        │
-│              (Tonic + Protocol Buffers)                       │
-├────────────┬──────────────┬──────────────┬───────────────────┤
-│  Vector DB │  Federated   │  Blockchain  │   Image Store     │
-│  (HNSW)    │  Training    │  Audit Chain │   (File System)   │
-│            │  (FedAvg)    │  (SHA-256)   │                   │
-├────────────┴──────────────┴──────────────┴───────────────────┤
-│                    SQLite Metadata Store                      │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  Hospital A  │    │  Hospital B  │    │  Hospital C  │
+│  (Local Data)│    │  (Local Data)│    │  (Local Data)│
+└──────┬──────┘    └──────┬──────┘    └──────┬──────┘
+       │                  │                  │
+       │  YOLO + DINOv2 + SAM2 weights      │
+       │  (no images shared)                 │
+       └──────────────┬──────────────────────┘
+                      │
+              ┌───────┴───────┐
+              │  FedAvg Server │
+              │  Aggregation   │
+              └───────┬───────┘
+                      │
+         ┌────────────┼────────────┐
+         ▼            ▼            ▼
+    ┌─────────┐ ┌─────────┐ ┌─────────┐
+    │ YOLOv11 │ │ DINOv2  │ │  SAM2   │
+    │ Detect  │ │ Classify│ │ Segment │
+    └─────────┘ └─────────┘ └─────────┘
 ```
-
-### Component Details
-
-#### 1. Rust Vector Database (HNSW)
-- **Custom HNSW implementation** with const-generic dimensions
-- Euclidean distance metric for organoid feature vectors
-- Sub-millisecond kNN search
-- Thread-safe with RwLock
-
-#### 2. Federated Learning (PyTorch)
-- **ResNet-18** backbone with transfer learning
-- **FedAvg** aggregation across multiple clients
-- gRPC communication between server and clients
-- Support for heterogeneous data distributions
-
-#### 3. Blockchain Audit Chain
-- SHA-256 hash chain for immutable operation logging
-- Every model update, data access, and prediction is recorded
-- Chain verification API for compliance auditing
-
-#### 4. Web Dashboard
-- Real-time training progress visualization
-- Model performance metrics
-- Vector search interface
-- Audit log browser
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Rust 1.70+
-- Python 3.10+
-- PyTorch 2.0+
-
-### Build & Run
-
-```bash
-# Clone
-git clone https://github.com/dechang64/organoid-fl.git
-cd organoid-fl
-
-# Build Rust server
-cargo build --release
-
-# Run server
-./target/release/organoid-fl
-# gRPC server ready on 0.0.0.0:50051
-# Web dashboard ready on http://0.0.0.0:3000
-
-# Train (another terminal)
-cd python
-pip install -r requirements.txt
-python train.py --config config.yaml
-```
-
----
-
-## 📡 gRPC API
-
-```protobuf
-service OrganoidService {
-  rpc UploadImage(UploadRequest) returns (UploadResponse);
-  rpc SearchSimilar(SearchRequest) returns (SearchResponse);
-  rpc StartTraining(TrainingRequest) returns (TrainingResponse);
-  rpc GetModelStatus(StatusRequest) returns (ModelStatus);
-  rpc Predict(PredictRequest) returns (PredictResponse);
-  rpc GetAuditLog(LogRequest) returns (LogResponse);
-}
-```
-
-### Example: Search Similar Organoid Images
-
-```python
-import grpc
-import organoid_pb2 as pb
-import organoid_pb2_grpc as rpc
-
-channel = grpc.insecure_channel('localhost:50051')
-stub = rpc.OrganoidServiceStub(channel)
-
-# Search for similar organoid images
-response = stub.SearchSimilar(pb.SearchRequest(
-    image_id="ORG001",
-    k=5
-))
-
-for result in response.results:
-    print(f"ID: {result.image_id}, Distance: {result.distance:.4f}")
-```
-
----
-
-## 🧰 Tech Stack
-
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| Server | Rust (tonic, prost, axum) | High-performance gRPC + HTTP |
-| Vector Search | HNSW (hnsw crate) | Approximate nearest neighbor |
-| ML Training | Python (PyTorch, ResNet18) | Federated model training |
-| Serialization | Protocol Buffers | gRPC message format |
-| Database | SQLite (rusqlite) | Metadata storage |
-| Audit | SHA-256 (sha2 crate) | Blockchain audit chain |
-| Async Runtime | Tokio | Asynchronous I/O |
 
 ---
 
@@ -161,24 +118,51 @@ for result in response.results:
 
 ```
 organoid-fl/
-├── src/
-│   ├── main.rs              # Server entry point
-│   ├── lib.rs               # Module declarations
-│   ├── vector_db.rs         # HNSW vector index
-│   ├── hnsw_index.rs        # HNSW implementation
-│   ├── grpc_service.rs      # gRPC service handlers
-│   ├── blockchain.rs        # Audit chain
-│   ├── db.rs                # SQLite metadata
-│   └── web_dashboard.rs     # Web UI
-├── proto/
-│   └── organoid.proto       # Protocol Buffer definitions
-├── python/
-│   ├── train.py             # Federated training script
-│   ├── client.py            # gRPC client
-│   ├── model.py             # ResNet-18 model
-│   └── requirements.txt
-├── data/                    # Data directory (gitignored)
-├── Cargo.toml
+├── app.py                    # Streamlit entry point
+├── requirements.txt          # Python dependencies
+├── Dockerfile                # Docker deployment
+├── docker-compose.yml        # Container orchestration
+├── .env.example              # Configuration template
+├── src/                      # Rust VectorDB (optional backend)
+│   ├── main.rs               # gRPC + HTTP server
+│   ├── db.rs                 # VectorDB core
+│   ├── hnsw_index.rs         # HNSW ANN search
+│   ├── blockchain.rs         # SHA-256 audit chain
+│   ├── grpc.rs               # gRPC service
+│   └── web.rs                # REST API + dashboard
+├── modules/                  # Streamlit page modules
+│   ├── dashboard.py          # 🏠 Overview
+│   ├── data_explorer.py      # 📁 Data management
+│   ├── fl_training.py        # 🔄 FedAvg training
+│   ├── detection.py          # 🎯 YOLOv11 detection
+│   ├── segmentation.py       # ✂️ SAM2 segmentation
+│   ├── feature_space.py      # 🌌 DINOv2 visualization
+│   ├── multi_task.py         # 🧩 Multi-task FL
+│   ├── vector_search.py      # 🔍 HNSW search
+│   ├── audit_chain.py        # ⛓️ Audit browser
+│   ├── model_analysis.py     # 📈 Performance analysis
+│   └── research.py           # 🔬 Methodology
+├── analysis/                 # Core analysis engines
+│   ├── fl_engine.py          # FedAvg engine
+│   ├── multi_task_fl.py      # Multi-task FL engine
+│   ├── detector.py           # YOLOv11 detector
+│   ├── feature_extractor_v2.py  # DINOv2 + ResNet18
+│   ├── segmentor.py          # SAM2 segmentor
+│   ├── vector_engine.py      # In-memory vector search
+│   └── audit_engine.py       # SHA-256 audit chain
+├── visualization/            # Plotly charts
+│   └── charts.py             # All chart functions
+├── data/                     # Data layer
+│   └── synthetic.py          # Synthetic data generator
+├── utils/                    # Utilities
+│   ├── constants.py          # Config & references
+│   └── helpers.py            # Helper functions
+├── tests/                    # Python tests (24 passed)
+│   ├── test_fl_engine.py
+│   ├── test_vector_engine.py
+│   └── test_audit_engine.py
+├── fl/                       # Legacy CLI demo (preserved)
+├── proto/                    # Protocol Buffers
 └── README.md
 ```
 
@@ -186,14 +170,36 @@ organoid-fl/
 
 ## 🔬 Research Context
 
-This project is part of research on **privacy-preserving medical AI** at XJTLU. Organoids — lab-grown mini-organs — are increasingly used in drug discovery and personalized medicine. Training accurate AI models requires large, diverse datasets, but medical data is subject to strict privacy regulations (HIPAA, GDPR).
+This project is part of research on **privacy-preserving medical AI** at XJTLU. Organoids — lab-grown mini-organs — are increasingly used in drug discovery and personalized medicine.
 
-Organoid-FL solves this by enabling **collaborative model training without data sharing**:
+### Multi-Task Vision Pipeline
 
-1. Each hospital trains locally on its own organoid images
-2. Only model updates (gradients) are shared via gRPC
-3. Server aggregates updates using FedAvg
-4. All operations are recorded on an immutable audit chain
+1. **YOLOv11** detects individual organoids (bounding boxes + classification)
+2. **DINOv2** extracts 768-dim self-supervised features (no labels needed)
+3. **SAM2** segments organoids at pixel level (morphology metrics)
+4. **FedAvg** aggregates model updates across hospitals (no data sharing)
+5. **HNSW** enables fast similarity search over feature embeddings
+6. **Blockchain** provides tamper-evident audit trail for compliance
+
+### Key References
+
+- McMahan et al. (2017) — FedAvg: Communication-Efficient Learning
+- Li et al. (2020) — FedProx: Federated Optimization in Heterogeneous Networks
+- Oquab et al. (2023) — DINOv2: Learning Robust Visual Features
+- Jocher et al. (2025) — YOLOv11: Ultralytics
+- Ravi et al. (2024) — SAM 2: Segment Anything in Images and Videos
+
+---
+
+## 🧪 Running Tests
+
+```bash
+# Python tests
+pytest tests/ -v
+
+# Rust tests (if Rust toolchain available)
+cd src && cargo test
+```
 
 ---
 
@@ -205,6 +211,6 @@ MIT
 
 <div align="center">
 
-**Organoid-FL** — Privacy-preserving AI for medical organoid analysis
+**Organoid-FL** — Privacy-preserving multi-task AI for medical organoid analysis
 
 </div>
