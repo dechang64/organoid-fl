@@ -38,6 +38,7 @@ class SegmentationResult:
     centroid: tuple[float, float]
 
     def to_dict(self) -> dict:
+        """Serialize segmentation result (excludes mask array)."""
         d = asdict(self)
         d.pop("mask")  # Don't serialize mask
         return d
@@ -62,6 +63,7 @@ class OrganoidSegmentor:
 
     @staticmethod
     def cuda_available() -> bool:
+        """Check if CUDA is available for SAM2 acceleration."""
         try:
             import torch
             return torch.cuda.is_available()
@@ -71,10 +73,18 @@ class OrganoidSegmentor:
     def _ensure_predictor(self):
         """Lazy-load SAM2 predictor."""
         if self.predictor is None:
-            from sam2.build_sam import build_sam2
-            from sam2.sam2_image_predictor import SAM2ImagePredictor
-            model = build_sam2(self.checkpoint, device=self.device)
-            self.predictor = SAM2ImagePredictor(model)
+            try:
+                from sam2.build_sam import build_sam2
+                from sam2.sam2_image_predictor import SAM2ImagePredictor
+                model = build_sam2(self.checkpoint, device=self.device)
+                self.predictor = SAM2ImagePredictor(model)
+            except ImportError:
+                raise RuntimeError(
+                    "sam2 package is required for segmentation. "
+                    "Install with: pip install segment-anything-2"
+                )
+            except Exception as e:
+                raise RuntimeError(f"Failed to load SAM2 model: {e}")
 
     def segment(
         self,

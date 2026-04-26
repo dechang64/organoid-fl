@@ -37,6 +37,7 @@ class OrganoidClassifier(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass through the MLP classifier."""
         return self.net(x)
 
 
@@ -50,11 +51,32 @@ def set_params(model: nn.Module, params: OrderedDict) -> None:
     model.load_state_dict(params)
 
 
-def fedavg_aggregate(client_params: list[OrderedDict]) -> OrderedDict:
-    """FedAvg: average client parameters."""
+def fedavg_aggregate(
+    client_params: list[OrderedDict],
+    client_weights: list[int] | None = None,
+) -> OrderedDict:
+    """FedAvg: weighted average of client parameters (McMahan 2017).
+
+    Args:
+        client_params: list of client parameter dicts.
+        client_weights: number of samples per client. If None, uses
+            unweighted average (assumes equal data split).
+    """
+    if client_weights is None:
+        # Unweighted fallback (equal split)
+        avg = OrderedDict()
+        for key in client_params[0].keys():
+            avg[key] = torch.stack([p[key].data for p in client_params]).mean(dim=0)
+        return avg
+
+    # Weighted FedAvg: w_k = |D_k| / |D|
+    total = sum(client_weights)
     avg = OrderedDict()
     for key in client_params[0].keys():
-        avg[key] = torch.stack([p[key].data for p in client_params]).mean(dim=0)
+        weighted_sum = torch.zeros_like(client_params[0][key].data)
+        for params, w in zip(client_params, client_weights):
+            weighted_sum += params[key].data * (w / total)
+        avg[key] = weighted_sum
     return avg
 
 
@@ -84,6 +106,7 @@ def train_client(
             out = model(X_batch)
             loss = criterion(out, y_batch)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             total_loss += loss.item() * len(y_batch)
             _, pred = torch.max(out, 1)
@@ -215,10 +238,12 @@ class FLEngine:
                     "client": cid + 1,
                     "train_loss": train_loss,
                     "train_acc": train_acc,
+                    "n_samples": len(cX),
                 })
 
-            # Aggregate
-            global_params = fedavg_aggregate(client_params_list)
+            # Aggregate with sample weighting
+            client_weights = [m["n_samples"] for m in client_metrics]
+            global_params = fedavg_aggregate(client_params_list, client_weights)
 
             # Evaluate global model
             set_params(global_model, global_params)

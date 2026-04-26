@@ -77,6 +77,7 @@ class VectorEngine:
         return len(self.vectors)
 
     def get_stats(self) -> dict:
+        """Return engine statistics."""
         return {
             "total_vectors": len(self),
             "dimension": self.dimension,

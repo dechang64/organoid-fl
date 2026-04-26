@@ -109,15 +109,15 @@ def render():
 
     with col_a:
         if st.button("🔄 Run FL Training", use_container_width=True, type="primary"):
-            st.switch_page("pages/02_📊_FL_Training.py")
+            st.session_state["current_page"] = "fl_training"
 
     with col_b:
         if st.button("🔍 Vector Search", use_container_width=True):
-            st.switch_page("pages/03_🔍_Vector_Search.py")
+            st.session_state["current_page"] = "vector_search"
 
     with col_c:
         if st.button("⛓️ View Audit Chain", use_container_width=True):
-            st.switch_page("pages/04_⛓️_Audit_Chain.py")
+            st.session_state["current_page"] = "audit_chain"
 
     # ── References ──
     with st.expander("📚 References"):

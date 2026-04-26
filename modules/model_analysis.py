@@ -25,7 +25,7 @@ def render():
     if "fl_history" not in st.session_state or not st.session_state["fl_history"]:
         st.info("Run FL training first to see model analysis.")
         if st.button("Go to Training", type="primary"):
-            st.switch_page("pages/02_📊_FL_Training.py")
+            st.session_state["current_page"] = "fl_training"
         return
 
     history = st.session_state["fl_history"]
