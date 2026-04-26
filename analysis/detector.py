@@ -37,7 +37,6 @@ class Detection:
     area: float                # bbox area in pixels²
 
     def to_dict(self) -> dict:
-        """Serialize detection result to dictionary."""
         return asdict(self)
 
 
@@ -60,18 +59,10 @@ class OrganoidDetector:
     def _ensure_model(self):
         """Lazy-load model to avoid startup cost."""
         if self.model is None:
-            try:
-                from ultralytics import YOLO
-                self.model = YOLO(self.model_name)
-                if self.device:
-                    self.model.to(self.device)
-            except ImportError:
-                raise RuntimeError(
-                    "ultralytics package is required for YOLO detection. "
-                    "Install with: pip install ultralytics"
-                )
-            except Exception as e:
-                raise RuntimeError(f"Failed to load YOLO model '{self.model_name}': {e}")
+            from ultralytics import YOLO
+            self.model = YOLO(self.model_name)
+            if self.device:
+                self.model.to(self.device)
 
     def detect(self, image, conf_threshold: float = 0.25) -> list[Detection]:
         """Detect organoids in an image.

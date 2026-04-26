@@ -128,7 +128,6 @@ class CaseRecord:
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
-        """Serialize case record (excludes morphology vector)."""
         d = asdict(self)
         d.pop("morphology_vector")  # Don't serialize vector
         return d
