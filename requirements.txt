@@ -8,3 +8,12 @@ torch>=2.0.0
 torchvision>=0.15.0
 Pillow>=9.0.0
 requests>=2.31.0
+
+# Vision models
+ultralytics>=8.3.0
+transformers>=4.40.0
+opencv-python-headless>=4.8.0
+scikit-image>=0.21.0
+
+# Optional: SAM2 (install separately if needed)
+# pip install git+https://github.com/facebookresearch/sam2.git

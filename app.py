@@ -5,7 +5,8 @@ Streamlit-based research platform with interactive modules.
 
 Architecture:
   - Rust HNSW VectorDB + gRPC (optional backend)
-  - Python FL Engine (FedAvg)
+  - Python FL Engine (FedAvg / Multi-Task)
+  - YOLOv11 Detection + DINOv2 Features + SAM2 Segmentation
   - Plotly interactive visualizations
   - SHA-256 Blockchain Audit Chain
 
@@ -79,6 +80,9 @@ for Medical Organoid Image Analysis
 **Tech Stack:**
 - 🦀 Rust HNSW VectorDB
 - 🧠 PyTorch FedAvg
+- 🎯 YOLOv11 Detection
+- 🔬 DINOv2 Features
+- ✂️ SAM2 Segmentation
 - 🔗 gRPC Interface
 - ⛓️ SHA-256 Audit Chain
 - 📊 Plotly Visualizations
@@ -100,6 +104,12 @@ Privacy-preserving AI for medical organoid analysis. Train models collaborativel
 
 **Unique Features:**
 - 🔄 Interactive FL Training
+- 🎯 YOLOv11 Detection
+- 🔬 DINOv2 Feature Space
+- ✂️ SAM2 Segmentation
+- 🧩 Multi-Task FL
+- 🔍 Vision RAG
+- 🔬 Explainability (Grad-CAM)
 - 🔍 HNSW Vector Search
 - ⛓️ Blockchain Audit Trail
 - 📈 Real-time Visualizations
@@ -113,6 +123,12 @@ page = st.sidebar.radio(
         "🏠 Dashboard",
         "📁 Data Explorer",
         "🔄 FL Training",
+        "🎯 Detection (YOLOv11)",
+        "✂️ Segmentation (SAM2)",
+        "🌌 Feature Space (DINOv2)",
+        "🧩 Multi-Task FL",
+        "🔍 Vision RAG",
+        "🔬 Explainability",
         "🔍 Vector Search",
         "⛓️ Audit Chain",
         "📈 Model Analysis",
@@ -131,6 +147,24 @@ elif page == "📁 Data Explorer":
 elif page == "🔄 FL Training":
     from modules import fl_training
     fl_training.render()
+elif page == "🎯 Detection (YOLOv11)":
+    from modules import detection
+    detection.render()
+elif page == "✂️ Segmentation (SAM2)":
+    from modules import segmentation
+    segmentation.render()
+elif page == "🌌 Feature Space (DINOv2)":
+    from modules import feature_space
+    feature_space.render()
+elif page == "🧩 Multi-Task FL":
+    from modules import multi_task
+    multi_task.render()
+elif page == "🔍 Vision RAG":
+    from modules import vision_rag
+    vision_rag.render()
+elif page == "🔬 Explainability":
+    from modules import explainability
+    explainability.render()
 elif page == "🔍 Vector Search":
     from modules import vector_search
     vector_search.render()
