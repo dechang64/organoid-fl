@@ -114,7 +114,7 @@ def start_vectordb(port=50061, dimension=512):
         ch.close()
         print("[1/7] VectorDB already running")
         return None
-    except Exception:
+    except OSError:
         pass
     print("[1/7] Starting VectorDB...")
     binary = Path(__file__).parent.parent / "target" / "release" / "organoid-vectordb"

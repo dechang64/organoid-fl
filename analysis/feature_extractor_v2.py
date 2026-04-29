@@ -134,9 +134,11 @@ class ResNet18Extractor(nn.Module):
 
     @torch.no_grad()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Extract feature vector from image tensor."""
         return self.features(x).squeeze(-1).squeeze(-1)  # [B, 512]
 
     def extract(self, image_path: str) -> np.ndarray:
+        """Extract 512-dim feature vector from a single image file."""
         from torchvision import transforms
         transform = transforms.Compose([
             transforms.Resize((224, 224)),

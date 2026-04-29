@@ -29,9 +29,15 @@ import json
 import threading
 
 # Add proto generated path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'proto'))
-import vector_db_pb2 as pb2
-import vector_db_pb2_grpc as pb2_grpc
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
+try:
+    import vectordb_pb2 as pb2
+    import vectordb_pb2_grpc as pb2_grpc
+except ImportError:
+    # Fallback: try fl/proto path (legacy)
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'proto'))
+    import vector_db_pb2 as pb2
+    import vector_db_pb2_grpc as pb2_grpc
 
 
 def generate_organoid_features(n_samples=500, dim=128):

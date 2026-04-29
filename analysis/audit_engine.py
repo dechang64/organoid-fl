@@ -94,6 +94,7 @@ class AuditEngine:
         return len(self.chain)
 
     def get_stats(self) -> dict:
+        """Return audit chain statistics."""
         return {
             "chain_length": len(self),
             "chain_valid": self.verify_chain(),

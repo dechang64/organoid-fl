@@ -313,3 +313,89 @@ def model_comparison(
         height=400,
     )
     return fig
+
+
+def accuracy_heatmap(
+    history: list[dict],
+    class_names: list[str] = None,
+    title: str = "Per-Round Accuracy Heatmap",
+) -> go.Figure:
+    """Heatmap of per-client training accuracy across FL rounds.
+
+    Args:
+        history: FL training history (list of round metrics).
+        class_names: optional class label names (unused, kept for API compat).
+        title: chart title.
+    """
+    if not history or "client_metrics" not in history[0]:
+        return go.Figure().update_layout(
+            title=dict(text="No client-level data", font=dict(size=14)),
+            template="plotly_white", height=300,
+        )
+
+    # Build matrix: rows=rounds, cols=clients
+    n_clients = len(history[0]["client_metrics"])
+    rounds = []
+    clients = [f"Client {m['client']}" for m in history[0]["client_metrics"]]
+    matrix = []
+
+    for h in history:
+        rounds.append(h["round"])
+        row = [m["train_acc"] * 100 for m in h["client_metrics"]]
+        matrix.append(row)
+
+    fig = go.Figure(data=go.Heatmap(
+        z=matrix,
+        x=clients,
+        y=[f"Round {r}" for r in rounds],
+        colorscale="Viridis",
+        text=[[f"{v:.1f}%" for v in row] for row in matrix],
+        texttemplate="%{text}",
+        textfont={"size": 11},
+        hovertemplate="%{y}: %{x}<br>Accuracy: %{z:.1f}%<extra></extra>",
+        colorbar=dict(title="Accuracy (%)"),
+    ))
+
+    fig.update_layout(
+        title=dict(text=title, font=dict(size=16)),
+        template="plotly_white",
+        height=max(300, len(rounds) * 40 + 100),
+    )
+    return fig
+
+
+def knn_distance_chart(
+    distances: list[float],
+    k: int = 10,
+    title: str = "KNN Distance Distribution",
+) -> go.Figure:
+    """Bar chart of distances to K nearest neighbors.
+
+    Args:
+        distances: list of distances to the K nearest neighbors.
+        k: number of neighbors (used for title).
+        title: chart title.
+    """
+    if not distances:
+        return go.Figure().update_layout(
+            title=dict(text="No distance data", font=dict(size=14)),
+            template="plotly_white", height=300,
+        )
+
+    fig = go.Figure(go.Bar(
+        x=[f"NN-{i+1}" for i in range(len(distances))],
+        y=distances,
+        marker_color=COLORS["primary"],
+        text=[f"{d:.4f}" for d in distances],
+        textposition="auto",
+        hovertemplate="Neighbor %{x}<br>Distance: %{y:.4f}<extra></extra>",
+    ))
+
+    fig.update_layout(
+        title=dict(text=f"{title} (k={k})", font=dict(size=16)),
+        template="plotly_white",
+        xaxis_title="Neighbor Rank",
+        yaxis_title="Distance",
+        height=400,
+    )
+    return fig

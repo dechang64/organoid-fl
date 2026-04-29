@@ -88,11 +88,13 @@ def _render_gradcam():
                     heatmap = gradcam.generate(input_tensor)
                     overlay = gradcam.overlay(img_array, heatmap, alpha=0.5)
 
-                    # Display heatmap
-                    import cv2
-                    heatmap_resized = cv2.resize(heatmap, (img_array.shape[1], img_array.shape[0]))
-                    heatmap_uint8 = (heatmap_resized * 255).astype(np.uint8)
-                    heatmap_colored = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
+                    # Display heatmap (pure numpy, no cv2 dependency)
+                    from PIL import Image as PILImage
+                    heatmap_pil = PILImage.fromarray((heatmap * 255).astype(np.uint8)).resize(
+                        (img_array.shape[1], img_array.shape[0]), PILImage.BILINEAR
+                    )
+                    heatmap_resized = np.array(heatmap_pil).astype(np.float32) / 255.0
+                    heatmap_colored = _apply_colormap((heatmap_resized * 255).astype(np.uint8))
                     st.image(heatmap_colored, use_container_width=True)
 
                 except ImportError as e:
@@ -150,13 +152,16 @@ def _render_attention_rollout():
                     input_tensor = transform(image).unsqueeze(0)
                     attention_map = rollout.generate(input_tensor)
 
-                    # Visualize
-                    import cv2
+                    # Visualize (pure numpy, no cv2 dependency)
+                    from PIL import Image as PILImage
                     img_array = np.array(image)
                     h, w = img_array.shape[:2]
-                    attn_resized = cv2.resize(attention_map, (w, h))
+                    attn_pil = PILImage.fromarray((attention_map * 255).astype(np.uint8)).resize(
+                        (w, h), PILImage.BILINEAR
+                    )
+                    attn_resized = np.array(attn_pil).astype(np.float32) / 255.0
                     attn_uint8 = (attn_resized * 255).astype(np.uint8)
-                    attn_colored = cv2.applyColorMap(attn_uint8, cv2.COLORMAP_JET)
+                    attn_colored = _apply_colormap(attn_uint8)
 
                     col_a1, col_a2 = st.columns(2)
                     with col_a1:
@@ -164,7 +169,7 @@ def _render_attention_rollout():
                         st.image(attn_colored, use_container_width=True)
                     with col_a2:
                         st.markdown("**Overlay**")
-                        overlay = cv2.addWeighted(img_array, 0.6, attn_colored, 0.4, 0)
+                        overlay = _blend_images(img_array, attn_colored, 0.4)
                         st.image(overlay, use_container_width=True)
 
                     st.success("Attention rollout computed successfully!")
@@ -248,6 +253,30 @@ def _render_morphology_explanation():
     _plot_feature_importance(morphology, pred)
 
 
+def _draw_circle(img, center, radius, color):
+    """Draw a filled circle using numpy (no cv2 dependency)."""
+    Y, X = np.ogrid[:img.shape[0], :img.shape[1]]
+    mask = (X - center[0]) ** 2 + (Y - center[1]) ** 2 <= radius ** 2
+    img[mask] = color
+
+
+def _apply_colormap(gray_uint8):
+    """Apply JET-like colormap using numpy (no cv2 dependency).
+    Maps 0-255 grayscale to RGB using a blue→cyan→green→yellow→red ramp.
+    """
+    h, w = gray_uint8.shape
+    t = gray_uint8.astype(np.float32) / 255.0
+    r = np.clip(1.5 - np.abs(t - 0.75) * 4, 0, 1)
+    g = np.clip(1.5 - np.abs(t - 0.5) * 4, 0, 1)
+    b = np.clip(1.5 - np.abs(t - 0.25) * 4, 0, 1)
+    return np.stack([r, g, b], axis=-1).astype(np.uint8) * 255
+
+
+def _blend_images(img1, img2, alpha):
+    """Blend two images: alpha * img1 + (1-alpha) * img2."""
+    return (alpha * img1.astype(np.float32) + (1 - alpha) * img2.astype(np.float32)).astype(np.uint8)
+
+
 def _show_gradcam_demo():
     """Show demo Grad-CAM visualization with synthetic data."""
     st.markdown("#### Demo Visualization (synthetic data)")
@@ -255,11 +284,10 @@ def _show_gradcam_demo():
     # Generate synthetic organoid image
     np.random.seed(42)
     img = np.zeros((200, 200, 3), dtype=np.uint8)
-    # Draw circles as organoids
-    import cv2
-    cv2.circle(img, (80, 80), 40, (180, 180, 180), -1)
-    cv2.circle(img, (140, 120), 30, (160, 160, 160), -1)
-    cv2.circle(img, (60, 150), 25, (170, 170, 170), -1)
+    # Draw circles as organoids (pure numpy, no cv2)
+    _draw_circle(img, (80, 80), 40, (180, 180, 180))
+    _draw_circle(img, (140, 120), 30, (160, 160, 160))
+    _draw_circle(img, (60, 150), 25, (170, 170, 170))
 
     # Synthetic heatmap (focus on irregular organoid)
     heatmap = np.zeros((200, 200), dtype=np.float32)
@@ -268,8 +296,8 @@ def _show_gradcam_demo():
     heatmap = (heatmap - heatmap.min()) / (heatmap.max() - heatmap.min())
 
     heatmap_uint8 = (heatmap * 255).astype(np.uint8)
-    heatmap_colored = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
-    overlay = cv2.addWeighted(img, 0.6, heatmap_colored, 0.4, 0)
+    heatmap_colored = _apply_colormap(heatmap_uint8)
+    overlay = _blend_images(img, heatmap_colored, 0.4)
 
     col_d1, col_d2, col_d3 = st.columns(3)
     with col_d1:
@@ -284,8 +312,7 @@ def _show_attention_demo():
     """Show demo attention rollout with synthetic data."""
     np.random.seed(42)
     img = np.zeros((200, 200, 3), dtype=np.uint8)
-    import cv2
-    cv2.circle(img, (100, 100), 50, (180, 180, 180), -1)
+    _draw_circle(img, (100, 100), 50, (180, 180, 180))
 
     # Synthetic attention (patch-based grid)
     grid_size = 14
@@ -297,8 +324,8 @@ def _show_attention_demo():
     # Upscale to image size
     attn_upscaled = np.kron(attention, np.ones((patch_size, patch_size)))[:200, :200]
     attn_uint8 = (attn_upscaled * 255).astype(np.uint8)
-    attn_colored = cv2.applyColorMap(attn_uint8, cv2.COLORMAP_JET)
-    overlay = cv2.addWeighted(img, 0.6, attn_colored, 0.4, 0)
+    attn_colored = _apply_colormap(attn_uint8)
+    overlay = _blend_images(img, attn_colored, 0.4)
 
     col_a1, col_a2 = st.columns(2)
     with col_a1:
