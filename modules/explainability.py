@@ -97,9 +97,9 @@ def _render_gradcam():
                     heatmap_colored = _apply_colormap((heatmap_resized * 255).astype(np.uint8))
                     st.image(heatmap_colored, use_container_width=True)
 
-                except ImportError as e:
-                    st.error(f"Missing dependency: {e}")
-                    st.info("Install opencv-python-headless for Grad-CAM visualization.")
+                except Exception as e:
+                    st.error(f"Grad-CAM computation failed: {e}")
+                    st.info("Try uploading a different image or check model availability.")
                     return
 
         with col_overlay:
@@ -257,19 +257,20 @@ def _draw_circle(img, center, radius, color):
     """Draw a filled circle using numpy (no cv2 dependency)."""
     Y, X = np.ogrid[:img.shape[0], :img.shape[1]]
     mask = (X - center[0]) ** 2 + (Y - center[1]) ** 2 <= radius ** 2
-    img[mask] = color
+    c = np.array(color, dtype=np.uint8)
+    img[mask] = c
 
 
 def _apply_colormap(gray_uint8):
     """Apply JET-like colormap using numpy (no cv2 dependency).
-    Maps 0-255 grayscale to RGB using a blue→cyan→green→yellow→red ramp.
+    Maps 0-255 grayscale to RGB using a blue->cyan->green->yellow->red ramp.
     """
-    h, w = gray_uint8.shape
     t = gray_uint8.astype(np.float32) / 255.0
     r = np.clip(1.5 - np.abs(t - 0.75) * 4, 0, 1)
     g = np.clip(1.5 - np.abs(t - 0.5) * 4, 0, 1)
     b = np.clip(1.5 - np.abs(t - 0.25) * 4, 0, 1)
-    return np.stack([r, g, b], axis=-1).astype(np.uint8) * 255
+    rgb = np.stack([r, g, b], axis=-1)
+    return (rgb * 255).astype(np.uint8)
 
 
 def _blend_images(img1, img2, alpha):
@@ -279,59 +280,70 @@ def _blend_images(img1, img2, alpha):
 
 def _show_gradcam_demo():
     """Show demo Grad-CAM visualization with synthetic data."""
-    st.markdown("#### Demo Visualization (synthetic data)")
+    try:
+        st.markdown("#### Demo Visualization (synthetic data)")
 
-    # Generate synthetic organoid image
-    np.random.seed(42)
-    img = np.zeros((200, 200, 3), dtype=np.uint8)
-    # Draw circles as organoids (pure numpy, no cv2)
-    _draw_circle(img, (80, 80), 40, (180, 180, 180))
-    _draw_circle(img, (140, 120), 30, (160, 160, 160))
-    _draw_circle(img, (60, 150), 25, (170, 170, 170))
+        # Generate synthetic organoid image
+        np.random.seed(42)
+        img = np.zeros((200, 200, 3), dtype=np.uint8)
+        _draw_circle(img, (80, 80), 40, (180, 180, 180))
+        _draw_circle(img, (140, 120), 30, (160, 160, 160))
+        _draw_circle(img, (60, 150), 25, (170, 170, 170))
 
-    # Synthetic heatmap (focus on irregular organoid)
-    heatmap = np.zeros((200, 200), dtype=np.float32)
-    Y, X = np.ogrid[:200, :200]
-    heatmap += np.exp(-((X - 140) ** 2 + (Y - 120) ** 2) / (2 * 30 ** 2))
-    heatmap = (heatmap - heatmap.min()) / (heatmap.max() - heatmap.min())
+        # Synthetic heatmap (focus on irregular organoid)
+        heatmap = np.zeros((200, 200), dtype=np.float32)
+        Y, X = np.ogrid[:200, :200]
+        heatmap += np.exp(-((X - 140) ** 2 + (Y - 120) ** 2) / (2 * 30 ** 2))
+        hmin, hmax = heatmap.min(), heatmap.max()
+        if hmax > hmin:
+            heatmap = (heatmap - hmin) / (hmax - hmin)
 
-    heatmap_uint8 = (heatmap * 255).astype(np.uint8)
-    heatmap_colored = _apply_colormap(heatmap_uint8)
-    overlay = _blend_images(img, heatmap_colored, 0.4)
+        heatmap_uint8 = (heatmap * 255).astype(np.uint8)
+        heatmap_colored = _apply_colormap(heatmap_uint8)
+        overlay = _blend_images(img, heatmap_colored, 0.4)
 
-    col_d1, col_d2, col_d3 = st.columns(3)
-    with col_d1:
-        st.image(img, caption="Original", use_container_width=True)
-    with col_d2:
-        st.image(heatmap_colored, caption="Grad-CAM", use_container_width=True)
-    with col_d3:
-        st.image(overlay, caption="Overlay", use_container_width=True)
+        col_d1, col_d2, col_d3 = st.columns(3)
+        with col_d1:
+            st.image(img, caption="Original", use_container_width=True)
+        with col_d2:
+            st.image(heatmap_colored, caption="Grad-CAM", use_container_width=True)
+        with col_d3:
+            st.image(overlay, caption="Overlay", use_container_width=True)
+    except Exception as e:
+        st.error(f"Demo visualization failed: {e}")
+        st.info("This is a synthetic demo — upload a real image above for full functionality.")
 
 
 def _show_attention_demo():
     """Show demo attention rollout with synthetic data."""
-    np.random.seed(42)
-    img = np.zeros((200, 200, 3), dtype=np.uint8)
-    _draw_circle(img, (100, 100), 50, (180, 180, 180))
+    try:
+        np.random.seed(42)
+        img = np.zeros((200, 200, 3), dtype=np.uint8)
+        _draw_circle(img, (100, 100), 50, (180, 180, 180))
 
-    # Synthetic attention (patch-based grid)
-    grid_size = 14
-    patch_size = 200 // grid_size
-    attention = np.random.rand(grid_size, grid_size).astype(np.float32)
-    attention[5:9, 5:9] *= 3  # Focus on center
-    attention = (attention - attention.min()) / (attention.max() - attention.min())
+        # Synthetic attention (patch-based grid)
+        grid_size = 14
+        patch_size = 200 // grid_size
+        attention = np.random.rand(grid_size, grid_size).astype(np.float32)
+        attention[5:9, 5:9] *= 3  # Focus on center
+        amin, amax = attention.min(), attention.max()
+        if amax > amin:
+            attention = (attention - amin) / (amax - amin)
 
-    # Upscale to image size
-    attn_upscaled = np.kron(attention, np.ones((patch_size, patch_size)))[:200, :200]
-    attn_uint8 = (attn_upscaled * 255).astype(np.uint8)
-    attn_colored = _apply_colormap(attn_uint8)
-    overlay = _blend_images(img, attn_colored, 0.4)
+        # Upscale to image size
+        attn_upscaled = np.kron(attention, np.ones((patch_size, patch_size)))[:200, :200]
+        attn_uint8 = (attn_upscaled * 255).astype(np.uint8)
+        attn_colored = _apply_colormap(attn_uint8)
+        overlay = _blend_images(img, attn_colored, 0.4)
 
-    col_a1, col_a2 = st.columns(2)
-    with col_a1:
-        st.image(attn_colored, caption="Attention Map", use_container_width=True)
-    with col_a2:
-        st.image(overlay, caption="Overlay", use_container_width=True)
+        col_a1, col_a2 = st.columns(2)
+        with col_a1:
+            st.image(attn_colored, caption="Attention Map", use_container_width=True)
+        with col_a2:
+            st.image(overlay, caption="Overlay", use_container_width=True)
+    except Exception as e:
+        st.error(f"Attention demo failed: {e}")
+        st.info("Upload a real image above for full attention rollout functionality.")
 
 
 def _generate_demo_explanation(class_names):
