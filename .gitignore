@@ -25,3 +25,15 @@ fl/proto/vectordb_pb2_grpc.py
 # OS
 .DS_Store
 Thumbs.db
+
+# New data (too large for git)
+data/intestinal_organoid/
+data/organoid_patches/
+data/OrganoidDataset.zip
+fl_classify_results/
+fl_detect_results/
+
+# FL training outputs
+fl/model_final.pt
+fl/features.npz
+fl/training_history.npz
