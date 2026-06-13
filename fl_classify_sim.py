@@ -359,7 +359,7 @@ def fedprox_interpolate(local_sd, global_sd, mu=0.01):
         if local_sd[key].dtype in (torch.int32, torch.int64):
             result[key] = local_sd[key].clone()
             continue
-        result[key] = (1 - mu) * local_sd[key].float() + mu * global_sd[key].float()
+        result[key] = (1 - mu) * local_sd[key].float() + mu * global_sd[key].float().to(local_sd[key].device)
     return result
 
 
