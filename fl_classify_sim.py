@@ -371,7 +371,8 @@ def run_fl_simulation(args):
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
+    device_str = f"cuda:{args.device}" if args.device.isdigit() else args.device
+    device = torch.device(device_str if torch.cuda.is_available() else "cpu")
     if not torch.cuda.is_available():
         print("WARNING: No GPU detected! Training will be very slow on CPU.")
         print("Recommended: Run on local machine with RTX 3060 or better.")
@@ -570,7 +571,8 @@ def run_experiment_matrix(args):
     # Centralized baseline
     if "baseline" not in completed:
         print("\nEvaluating centralized baseline...")
-        device = torch.device(args.device if torch.cuda.is_available() else "cpu")
+        device_str = f"cuda:{args.device}" if args.device.isdigit() else args.device
+        device = torch.device(device_str if torch.cuda.is_available() else "cpu")
         model = create_model(NUM_CLASSES).to(device)
 
         val_transform = transforms.Compose([
