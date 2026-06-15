@@ -57,47 +57,11 @@ def fedavg_aggregate(
 ) -> OrderedDict:
     """FedAvg: weighted average of client parameters (McMahan 2017).
 
-    FedCtx integration: when unified-fl-backend is available, delegates
-    aggregation to the Rust server (supports FedAvg/FedProx/EWA + DP).
-    Falls back to local Python FedAvg when FedCtx is unavailable.
-
     Args:
         client_params: list of client parameter dicts.
         client_weights: number of samples per client. If None, uses
             unweighted average (assumes equal data split).
     """
-    if not client_params:
-        raise ValueError("client_params is empty — cannot aggregate")
-
-    # Try FedCtx aggregation
-    try:
-        from analysis.grpc_client import get_fedctx_client
-        client = get_fedctx_client()
-        if client.available:
-            for i, params in enumerate(client_params):
-                flat_params = torch.cat([p.flatten() for p in params.values()]).numpy()
-                n_samples = client_weights[i] if client_weights else len(params)
-                client.fl_submit_update(
-                    client_id=f"organoid_client_{i}",
-                    round_num=0,
-                    parameters=flat_params.tolist(),
-                    num_samples=n_samples,
-                )
-            agg_resp = client.fl_aggregate(strategy="fedavg")
-            if agg_resp and agg_resp.get("parameters"):
-                global_params = torch.tensor(agg_resp["parameters"], dtype=torch.float32)
-                offset = 0
-                avg = OrderedDict()
-                for key in client_params[0].keys():
-                    shape = client_params[0][key].shape
-                    size = client_params[0][key].numel()
-                    avg[key] = global_params[offset:offset + size].reshape(shape)
-                    offset += size
-                return avg
-    except (ImportError, Exception):
-        pass  # Fall through to local aggregation
-
-    # Local fallback: Python FedAvg
     if client_weights is None:
         # Unweighted fallback (equal split)
         avg = OrderedDict()

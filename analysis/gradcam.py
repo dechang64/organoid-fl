@@ -148,26 +148,21 @@ class GradCAM:
         Returns:
             Blended image as numpy array (H, W, 3), uint8
         """
-        from PIL import Image as PILImage
+        try:
+            import cv2
+        except ImportError:
+            return image
 
         # Resize heatmap to image size
         h, w = image.shape[:2]
-        heatmap_pil = PILImage.fromarray((heatmap * 255).astype(np.uint8)).resize(
-            (w, h), PILImage.BILINEAR
-        )
-        heatmap_resized = np.array(heatmap_pil).astype(np.float32) / 255.0
+        heatmap_resized = cv2.resize(heatmap, (w, h))
 
-        # Apply JET-like colormap (pure numpy)
+        # Apply colormap
         heatmap_uint8 = (heatmap_resized * 255).astype(np.uint8)
-        t = heatmap_resized
-        r = np.clip(1.5 - np.abs(t - 0.75) * 4, 0, 1)
-        g = np.clip(1.5 - np.abs(t - 0.5) * 4, 0, 1)
-        b = np.clip(1.5 - np.abs(t - 0.25) * 4, 0, 1)
-        heatmap_colored = (np.stack([r, g, b], axis=-1) * 255).astype(np.uint8)
+        heatmap_colored = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
 
         # Blend
-        overlay = (alpha * heatmap_colored.astype(np.float32)
-                   + (1 - alpha) * image.astype(np.float32)).astype(np.uint8)
+        overlay = cv2.addWeighted(image, 1 - alpha, heatmap_colored, alpha, 0)
         return overlay
 
 

@@ -1,27 +1,20 @@
 # ── utils/constants.py ──
 """Shared constants for Organoid-FL platform."""
 
-# Organoid classification classes (v1: synthetic)
-ORGANOID_CLASSES_V1 = ["healthy", "early_stage", "late_stage"]
-
-# Organoid classes (v2: real Intestinal Organoid dataset)
-ORGANOID_CLASSES = ["organoid0", "organoid1", "organoid3", "spheroid"]
+# Organoid classification classes
+ORGANOID_CLASSES = ["healthy", "early_stage", "late_stage"]
 
 # Class display names and colors
 CLASS_INFO = {
     "healthy": {"label": "Healthy", "color": "#22c55e", "emoji": "🟢"},
     "early_stage": {"label": "Early Stage", "color": "#f59e0b", "emoji": "🟡"},
     "late_stage": {"label": "Late Stage", "color": "#ef4444", "emoji": "🔴"},
-    "organoid0": {"label": "Cystic (Org0)", "color": "#3b82f6", "emoji": "🔵"},
-    "organoid1": {"label": "Early (Org1)", "color": "#22c55e", "emoji": "🟢"},
-    "organoid3": {"label": "Late (Org3)", "color": "#f59e0b", "emoji": "🟡"},
-    "spheroid": {"label": "Spheroid", "color": "#ef4444", "emoji": "🔴"},
 }
 
 # Model defaults
 DEFAULT_INPUT_DIM = 512
 DEFAULT_HIDDEN_DIM = 128
-DEFAULT_NUM_CLASSES = 4
+DEFAULT_NUM_CLASSES = 3
 
 # FL defaults
 DEFAULT_ROUNDS = 10

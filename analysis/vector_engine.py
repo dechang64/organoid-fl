@@ -4,10 +4,6 @@ Vector Search Engine
 ====================
 In-memory vector search with cosine similarity (Python fallback).
 Provides the same interface as the Rust HNSW VectorDB for demo purposes.
-
-FedCtx integration: when unified-fl-backend is available, delegates
-HNSW search to the Rust server for 10-50x performance boost.
-Falls back to local Python cosine similarity when FedCtx is unavailable.
 """
 
 import numpy as np
@@ -16,7 +12,7 @@ from collections import OrderedDict
 
 
 class VectorEngine:
-    """In-memory vector search engine with FedCtx HNSW delegation.
+    """In-memory vector search engine.
 
     For production, replace with Rust HNSW VectorDB via gRPC.
     """
@@ -27,24 +23,11 @@ class VectorEngine:
         self.metadata: dict[str, dict] = {}
 
     def insert(self, id: str, vector: np.ndarray, metadata: Optional[dict] = None) -> None:
-        """Insert a vector. Also syncs to FedCtx if available."""
+        """Insert a vector."""
         if len(vector) != self.dimension:
             raise ValueError(f"Expected dimension {self.dimension}, got {len(vector)}")
         self.vectors[id] = vector.astype(np.float32)
         self.metadata[id] = metadata or {}
-
-        # Sync to FedCtx vector store
-        try:
-            from analysis.grpc_client import get_fedctx_client
-            client = get_fedctx_client()
-            if client.available:
-                client.vector_insert(
-                    f"organoid::{id}",
-                    vector.tolist(),
-                    metadata=metadata or {},
-                )
-        except (ImportError, Exception):
-            pass
 
     def bulk_insert(self, ids: list[str], vectors: np.ndarray, metadata: Optional[list[dict]] = None) -> int:
         """Insert multiple vectors."""
@@ -56,10 +39,7 @@ class VectorEngine:
         return count
 
     def search(self, query: np.ndarray, k: int = 5) -> list[tuple[str, float]]:
-        """Search for k nearest neighbors.
-
-        FedCtx integration: delegates to Rust HNSW when available.
-        Falls back to local cosine similarity.
+        """Search for k nearest neighbors using cosine similarity.
 
         Returns:
             List of (id, similarity_score) sorted by descending similarity.
@@ -67,26 +47,6 @@ class VectorEngine:
         if len(self.vectors) == 0:
             return []
 
-        # Try FedCtx HNSW search
-        try:
-            from analysis.grpc_client import get_fedctx_client
-            client = get_fedctx_client()
-            if client.available:
-                resp = client.vector_search(query.tolist(), k=k)
-                if resp and resp.get("results"):
-                    results = []
-                    for hit in resp["results"]:
-                        vid = hit.get("metadata", {}).get("id", hit.get("id", ""))
-                        # Strip organoid:: prefix if present
-                        if vid.startswith("organoid::"):
-                            vid = vid[len("organoid::"):]
-                        dist = hit.get("distance", 1.0)
-                        results.append((vid, 1.0 - dist))
-                    return results[:k]
-        except (ImportError, Exception):
-            pass  # Fall through to local search
-
-        # Local fallback: cosine similarity
         query = query.astype(np.float32)
         query_norm = np.linalg.norm(query)
         if query_norm == 0:
