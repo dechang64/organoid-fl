@@ -1,39 +1,35 @@
-# Rust
-/target/
-**/*.rs.bk
-Cargo.lock
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-.venv/
-venv/
 
 # Data & generated
+# FL training outputs
+# IDE
+# New data (too large for git)
+# OS
+# Python
+# Rust
+**/*.rs.bk
+*.pyc
+*.pyo
+*.swo
+*.swp
+.DS_Store
+.env
+.idea/
+.venv/
+.vscode/
+/target/
+Cargo.lock
+Thumbs.db
+__pycache__/
+data/OrganoidDataset.zip
+data/intestinal_organoid/
+data/organoid_patches/
 fl/data/
+fl/features.npz
+fl/model_final.pt
 fl/models/
 fl/proto/vectordb_pb2.py
 fl/proto/vectordb_pb2_grpc.py
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# New data (too large for git)
-data/intestinal_organoid/
-data/organoid_patches/
-data/OrganoidDataset.zip
+fl/training_history.npz
 fl_classify_results/
 fl_detect_results/
-
-# FL training outputs
-fl/model_final.pt
-fl/features.npz
-fl/training_history.npz
+venv/
