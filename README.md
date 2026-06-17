@@ -34,14 +34,16 @@ Organoid-FL is an **end-to-end federated learning platform** for medical organoi
 
 ### Key Results
 
-| Metric | Value |
-|--------|-------|
-| Classification Accuracy | **99.17%** |
-| Feature Dim | **768** (DINOv2 base) |
-| Detection | YOLOv11 (3.2M–20.1M params) |
-| Segmentation | SAM2 (pixel-level) |
-| Vector Search | HNSW (kNN) |
-| Audit | SHA-256 Blockchain |
+| Metric | Intestinal Organoid | MultiOrg |
+|--------|---------------------|----------|
+| Classification Accuracy | **99.17%** | — |
+| Detection mAP50 | — | **0.885** (v12s, 1280px) |
+| Detection mAP50-95 | — | **0.624** (v12s, 1280px) |
+| Feature Dim | **768** (DINOv2 base) | — |
+| Detection Model | YOLOv11 (3.2M–20.1M params) | YOLOv12s (9.2M params) |
+| Segmentation | SAM2 (pixel-level) | — |
+| Vector Search | HNSW (kNN) | — |
+| Audit | SHA-256 Blockchain | — |
 
 ---
 

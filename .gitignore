@@ -1,35 +1,63 @@
-
-# Data & generated
-# FL training outputs
-# IDE
-# New data (too large for git)
-# OS
-# Python
 # Rust
+/target/
 **/*.rs.bk
+Cargo.lock
+
+# Python
+__pycache__/
 *.pyc
 *.pyo
-*.swo
-*.swp
-.DS_Store
-.env
-.idea/
 .venv/
-.vscode/
-/target/
-Cargo.lock
-Thumbs.db
-__pycache__/
-data/OrganoidDataset.zip
-data/intestinal_organoid/
-data/organoid_patches/
+venv/
+
+# Data & generated
 fl/data/
-fl/features.npz
-fl/model_final.pt
 fl/models/
 fl/proto/vectordb_pb2.py
 fl/proto/vectordb_pb2_grpc.py
-fl/training_history.npz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# New data (too large for git)
+data/intestinal_organoid/
+data/organoid_patches/
+data/OrganoidDataset.zip
 fl_classify_results/
 fl_detect_results/
-venv/
+
+# FL training outputs
+fl/model_final.pt
+fl/features.npz
+fl/training_history.npz
+
+# MultiOrg data (too large)
+data/MultiOrg_YOLO/
+data/MultiOrg_v2/
+runs/
+*.pt
+*.weights
+*.onnx
+*.engine
+*.tflite
+
+# Baseline results (keep CSV/JSON, exclude weights)
+baseline_test/
+**/weights/
+**/train_batch*.jpg
+**/val_batch*.jpg
+**/confusion_matrix*.png
+**/labels*.png
+**/results.png
+**/PR_curve.png
+**/F1_curve.png
+**/P_curve.png
+**/R_curve.png

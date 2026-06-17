@@ -56,6 +56,31 @@ Expected outcome: EWA should outperform FedAvg in Moderate Non-IID by weighting 
 
 This tests FL under annotation uncertainty — a real-world scenario in biomedical imaging.
 
+### MultiOrg YOLO Tiling Pipeline
+
+**Script**: `multiorg_tiling.py`
+
+MultiOrg images are 6384×5720 16-bit TIFF — too large for direct YOLO training. The tiling script:
+
+1. Converts 16-bit TIFF → 8-bit PNG (min-max normalization)
+2. Tiles into 640×640 patches (stride=640, no overlap)
+3. Converts polygon annotations → YOLO bbox format (by center point assignment)
+4. Skips empty patches (no annotations)
+5. Pads edge tiles to 640×640
+
+```bash
+# Run on Windows (dataset on D: drive)
+python data\multiorg_tiling.py --src D:\datasets\mutliorg\MultiOrg_v2 --dst D:\datasets\MultiOrg_YOLO
+```
+
+**Output**: ~37,000 patches (411 images × ~90 patches/image), 2 classes (Normal=0, Macros=1)
+
+**Baseline Results** (YOLOv12s, imgsz=1280, 100 epochs, RTX 3060 12GB):
+- mAP50: 0.885
+- mAP50-95: 0.624
+- Training time: 48.5 hours
+- Per-class: organoid3 > organoid0 > spheroid > organoid1
+
 ## 3. Organoid Patches (Classification — Generated ✅)
 
 - **Source**: Cropped from Intestinal Organoid detection dataset
