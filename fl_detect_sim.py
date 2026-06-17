@@ -49,7 +49,11 @@ def split_non_iid(data_yaml_path, output_dir, n_clients=3, dominant_ratio=0.8, s
     with open(data_yaml_path) as f:
         cfg = yaml.safe_load(f)
 
-    base_path = Path(cfg['path'])
+    # base_path: use cfg['path'] if present, otherwise infer from data_yaml location
+    if 'path' in cfg and cfg['path']:
+        base_path = Path(cfg['path'])
+    else:
+        base_path = Path(data_yaml_path).resolve().parent
     names = cfg['names']
     nc = cfg['nc']
 
@@ -170,7 +174,11 @@ def split_iid(data_yaml_path, output_dir, n_clients=3, seed=42):
     with open(data_yaml_path) as f:
         cfg = yaml.safe_load(f)
 
-    base_path = Path(cfg['path'])
+    # base_path: use cfg['path'] if present, otherwise infer from data_yaml location
+    if 'path' in cfg and cfg['path']:
+        base_path = Path(cfg['path'])
+    else:
+        base_path = Path(data_yaml_path).resolve().parent
     names = cfg['names']
     nc = cfg['nc']
 
@@ -386,12 +394,46 @@ def run_fl_simulation(args):
 
     # Step 2: Prepare global model
     print("\n[2/3] Loading global model...")
+
+    # Fix data.yaml: ensure 'path' field and valid train/val directories
+    import yaml as _yaml
+    data_yaml_path = Path(args.data)
+    with open(data_yaml_path) as f:
+        data_cfg = _yaml.safe_load(f)
+
+    need_fix = False
+    # Set path if missing
+    if 'path' not in data_cfg or not data_cfg['path']:
+        data_cfg['path'] = str(data_yaml_path.resolve().parent)
+        need_fix = True
+
+    # Verify train/val directories exist under path; strip 'dataset/' prefix if needed
+    base = Path(data_cfg['path'])
+    for split_key in ['train', 'val', 'test']:
+        if split_key not in data_cfg:
+            continue
+        split_dir = base / data_cfg[split_key]
+        if not split_dir.exists():
+            # Try stripping 'dataset/' prefix (common YAML error)
+            stripped = data_cfg[split_key].replace('dataset/', '').replace('dataset\\', '')
+            if (base / stripped).exists():
+                data_cfg[split_key] = stripped
+                need_fix = True
+
+    if need_fix:
+        fixed_yaml = output_dir / "data_fixed.yaml"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        with open(fixed_yaml, 'w') as f:
+            _yaml.dump(data_cfg, f, default_flow_style=False)
+        args.data = str(fixed_yaml)
+        print(f"  Fixed data.yaml: path={data_cfg['path']}, train={data_cfg.get('train')}, val={data_cfg.get('val')}")
+
     if args.weights:
         global_init = args.weights
     else:
         # Train a centralized baseline first
         print("  Training centralized baseline (YOLOv12n)...")
-        baseline_model = YOLO("yolov12n.pt")
+        baseline_model = YOLO("yolo12n.pt")
         baseline_results = baseline_model.train(
             data=args.data, epochs=30, imgsz=640, batch=8,
             device=args.device, workers=0, amp=True,
@@ -467,9 +509,14 @@ def run_fl_simulation(args):
                 shutil.copy2(str(global_path), str(agg_path))
             else:
                 if strategy in ("EWA", "EWA-v2"):
-                    w = compute_ewa_weights(client_results, signal="mAP")
-                    print(f"    EWA(mAP50-95) weights: {[f'{wi:.4f}' for wi in w]}", flush=True)
-                    agg_sd = fedavg_aggregate(client_state_dicts, w)
+                    if r < args.warmup:
+                        # Warmup: use FedAvg for first N rounds
+                        agg_sd = fedavg_aggregate(client_state_dicts)
+                        print(f"    EWA warmup round {r+1}/{args.warmup}, using FedAvg", flush=True)
+                    else:
+                        w = compute_ewa_weights(client_results, signal="mAP")
+                        print(f"    EWA(mAP50-95) weights: {[f'{wi:.4f}' for wi in w]}", flush=True)
+                        agg_sd = fedavg_aggregate(client_state_dicts, w)
                 elif strategy == "FedProx":
                     agg_sd = fedavg_aggregate(client_state_dicts)
                 else:  # FedAvg
@@ -488,6 +535,12 @@ def run_fl_simulation(args):
             eval_result = evaluate_global(str(agg_path), args.data, args.device,
                                           imgsz=args.imgsz, batch=args.batch)
             print(f"mAP50={eval_result['mAP50']:.4f}, mAP50-95={eval_result['mAP']:.4f}", flush=True)
+
+            # Print per-class AP
+            pca = eval_result.get("per_class_ap", {})
+            pca_str = " | ".join(f"{CLASS_NAMES[i]}:{pca.get(f'class_{i}',0):.3f}"
+                                 for i in range(NUM_CLASSES))
+            print(f"    Per-class AP: {pca_str}", flush=True)
 
             elapsed = time.time() - t0
             round_data = {
@@ -580,6 +633,8 @@ if __name__ == "__main__":
     parser.add_argument("--dominant-ratio", type=float, default=0.80,
                         help="Non-IID dominant class ratio")
     parser.add_argument("--quick", action="store_true", help="Quick test: 2 rounds, 2 epochs")
+    parser.add_argument("--warmup", type=int, default=2,
+                        help="EWA warmup rounds (use FedAvg for first N rounds)")
 
     args = parser.parse_args()
     if args.quick:

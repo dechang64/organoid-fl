@@ -455,9 +455,14 @@ def run_fl_simulation(args):
 
             # Aggregate
             if strategy in ("EWA", "EWA-v2"):
-                w = compute_ewa_weights(client_metrics, signal="accuracy")
-                print(f"    EWA weights: {[f'{wi:.4f}' for wi in w]}", flush=True)
-                agg_sd = fedavg_aggregate(client_state_dicts, w)
+                if r < args.warmup:
+                    # Warmup: use FedAvg for first N rounds
+                    agg_sd = fedavg_aggregate(client_state_dicts)
+                    print(f"    EWA warmup round {r+1}/{args.warmup}, using FedAvg", flush=True)
+                else:
+                    w = compute_ewa_weights(client_metrics, signal="accuracy")
+                    print(f"    EWA weights: {[f'{wi:.4f}' for wi in w]}", flush=True)
+                    agg_sd = fedavg_aggregate(client_state_dicts, w)
             elif strategy == "FedProx":
                 agg_sd = fedavg_aggregate(client_state_dicts)
             else:  # FedAvg
@@ -494,6 +499,12 @@ def run_fl_simulation(args):
 
             print(f"    Global acc={global_metrics['accuracy']:.4f} "
                   f"({elapsed:.0f}s)", flush=True)
+
+            # Print per-class accuracy
+            pca = global_metrics["per_class_acc"]
+            pca_str = " | ".join(f"{CLASS_NAMES[c]}:{pca.get(CLASS_NAMES[c],0):.3f}"
+                                 for c in range(NUM_CLASSES))
+            print(f"    Per-class: {pca_str}", flush=True)
 
         all_results[strategy] = rounds_data
 
@@ -704,6 +715,8 @@ if __name__ == "__main__":
     parser.add_argument("--matrix", action="store_true",
                         help="Run full experiment matrix (4 Non-IID × 3 strategies)")
     parser.add_argument("--resume", action="store_true", help="Resume from checkpoint")
+    parser.add_argument("--warmup", type=int, default=2,
+                        help="EWA warmup rounds (use FedAvg for first N rounds)")
     parser.add_argument("--quick", action="store_true", help="Quick test: 2 rounds, 2 epochs")
 
     args = parser.parse_args()
