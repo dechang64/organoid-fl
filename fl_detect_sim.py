@@ -502,9 +502,25 @@ def run_fl_simulation(args):
     print(f"Started: {datetime.now().isoformat()}")
     print("=" * 70)
 
-    # Step 1: Prepare global model
-    print("\n[1/3] Loading global model...")
-    global_init = args.weights
+    # Step 1: Adapt pretrained model to num_classes (80→4)
+    # Ultralytics auto-reshapes detection head during training, but state_dict
+    # loading requires matching architecture. Train 1 epoch to get 4-class model.
+    print("\n[1/3] Adapting pretrained model to 4-class (1 epoch warmup)...")
+    global_init = output_dir / "global_init_4class.pt"
+    if global_init.exists():
+        print(f"  Found existing adapted model: {global_init}")
+    else:
+        adapt_model = YOLO(args.weights)
+        adapt_result = adapt_model.train(
+            data=args.data, epochs=1, imgsz=args.imgsz, batch=args.batch,
+            device=args.device, project=str(project_dir), name="model_adapt",
+            exist_ok=True, verbose=False)
+        adapted_weights = Path(adapt_result.save_dir) / "weights" / "last.pt"
+        shutil.copy2(str(adapted_weights), str(global_init))
+        print(f"  Adapted model saved: {global_init}")
+        del adapt_model
+        gc.collect()
+        torch.cuda.empty_cache()
 
     # Step 2: Run scenarios
     all_scenario_results = {}
