@@ -625,12 +625,15 @@ def run_fl_simulation(args):
                         agg_sd = fedavg_aggregate(client_state_dicts)
 
                     agg_path = output_dir / f"global_{scenario_name}_{strategy}_r{r+1}.pt"
-                    base_model = YOLO(str(global_path))
-                    base_sd = base_model.model.state_dict()
+                    # Use torch.load/save directly to avoid YOLO() reconstructing 80-class arch
+                    ckpt = torch.load(str(global_path), map_location='cpu', weights_only=False)
+                    model_obj = ckpt['model']
+                    base_sd = model_obj.state_dict()
                     base_sd.update(agg_sd)
-                    base_model.model.load_state_dict(base_sd)
-                    base_model.save(str(agg_path))
-                    del base_model, agg_sd
+                    model_obj.load_state_dict(base_sd)
+                    ckpt['model'] = model_obj
+                    torch.save(ckpt, str(agg_path))
+                    del ckpt, model_obj, base_sd, agg_sd
 
                 # Evaluate
                 print(f"    Evaluating global model...", end=" ", flush=True)
