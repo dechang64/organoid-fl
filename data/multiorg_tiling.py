@@ -31,7 +31,8 @@ CLASS_NAMES = ["Normal", "Macros"]
 
 def load_annotations(json_path):
     """Load polygon annotations from JSON.
-    Format: {'0': [[x1,y1],[x2,y2],[x3,y3],[x4,y4]], ...}
+    Format: {'0': [[y1,x1],[y2,x2],[y3,x3],[y4,x4]], ...}
+    NOTE: MultiOrg uses [row, col] = [y, x] order, NOT [x, y]!
     """
     with open(json_path, 'r') as f:
         data = json.load(f)
@@ -40,8 +41,9 @@ def load_annotations(json_path):
     for key, polygon in data.items():
         if not isinstance(polygon, list) or len(polygon) < 3:
             continue
-        xs = [p[0] for p in polygon]
-        ys = [p[1] for p in polygon]
+        # MultiOrg format: [y, x] — swap to [x, y]
+        xs = [p[1] for p in polygon]
+        ys = [p[0] for p in polygon]
         x_min, x_max = min(xs), max(xs)
         y_min, y_max = min(ys), max(ys)
         w = x_max - x_min
@@ -82,18 +84,27 @@ def bbox_to_yolo(ann, tile_x, tile_y, tile_size):
 
 
 def convert_tiff_to_rgb(tiff_path):
-    """Convert 16-bit TIFF → 8-bit RGB PIL Image (3-channel)."""
+    """Convert 16-bit TIFF → 8-bit RGB PIL Image (3-channel).
+    Handles PIL I;16 mode quirks by using point() lookup table.
+    """
     im = Image.open(tiff_path)
-    arr = np.array(im, dtype=np.float64)
-    vmin, vmax = arr.min(), arr.max()
-    if vmax > vmin:
-        arr = (arr - vmin) / (vmax - vmin) * 255.0
-    else:
-        arr = np.zeros_like(arr)
-    arr8 = arr.astype(np.uint8)
-    # Stack grayscale 3 times → RGB
-    rgb = np.stack([arr8, arr8, arr8], axis=-1)
-    return Image.fromarray(rgb, mode='RGB')
+
+    # If 16-bit, use point() to normalize - this is the reliable way
+    # for PIL I;16 mode
+    if im.mode == 'I;16' or im.mode == 'I':
+        arr = np.array(im, dtype=np.float64)
+        if arr.ndim == 3:
+            arr = arr[:, :, 0]
+        vmin, vmax = float(arr.min()), float(arr.max())
+        if vmax > vmin:
+            arr8 = ((arr - vmin) / (vmax - vmin) * 255.0).astype(np.uint8)
+        else:
+            arr8 = np.zeros_like(arr, dtype=np.uint8)
+        rgb = np.stack([arr8, arr8, arr8], axis=-1)
+        return Image.fromarray(rgb, mode='RGB')
+
+    # Already 8-bit, just convert to RGB
+    return im.convert('RGB')
 
 
 def find_files(img_dir):
