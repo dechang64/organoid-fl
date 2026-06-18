@@ -224,6 +224,7 @@ def process_split(src_dir, dst_dir, split, tile_size, stride,
             continue
 
         print(f"\n  {split}/{class_name} (id={class_id})...")
+        class_img_count = 0
 
         for plate_name in sorted(os.listdir(class_dir)):
             plate_dir = os.path.join(class_dir, plate_name)
@@ -234,7 +235,7 @@ def process_split(src_dir, dst_dir, split, tile_size, stride,
                 if not os.path.isdir(img_dir):
                     continue
 
-                if max_images and img_count >= max_images:
+                if max_images and class_img_count >= max_images:
                     break
 
                 n = process_image(
@@ -243,16 +244,15 @@ def process_split(src_dir, dst_dir, split, tile_size, stride,
                 )
                 total += n
                 class_counts[class_id] += n
+                class_img_count += 1
                 img_count += 1
 
                 if img_count % 20 == 0:
                     print(f"    [{img_count} images processed] "
                           f"running total: {total} patches")
 
-            if max_images and img_count >= max_images:
+            if max_images and class_img_count >= max_images:
                 break
-        if max_images and img_count >= max_images:
-            break
 
     return total, class_counts
 
