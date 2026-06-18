@@ -132,7 +132,8 @@ def find_files(img_dir):
 
 
 def process_image(img_dir, output_img_dir, output_lbl_dir, class_id,
-                  tile_size, stride, min_objects=1):
+                  tile_size, stride, min_objects=1,
+                  split='', class_name='', plate_name=''):
     """Process one image → patches."""
     img_name = os.path.basename(img_dir)
     tiff_file, json_file = find_files(img_dir)
@@ -191,7 +192,7 @@ def process_image(img_dir, output_img_dir, output_lbl_dir, class_id,
             if not yolo_lines:
                 continue
 
-            patch_name = f"{img_name}_tx{tx}_ty{ty}"
+            patch_name = f"{split}_{class_name}_{plate_name}_{img_name}_tx{tx}_ty{ty}"
             tile_img.save(os.path.join(output_img_dir, f"{patch_name}.png"))
             with open(os.path.join(output_lbl_dir, f"{patch_name}.txt"), 'w') as f:
                 f.write('\n'.join(yolo_lines))
@@ -240,7 +241,8 @@ def process_split(src_dir, dst_dir, split, tile_size, stride,
 
                 n = process_image(
                     img_dir, out_img, out_lbl, class_id,
-                    tile_size, stride, min_objects
+                    tile_size, stride, min_objects,
+                    split=split, class_name=class_name, plate_name=plate_name
                 )
                 total += n
                 class_counts[class_id] += n
