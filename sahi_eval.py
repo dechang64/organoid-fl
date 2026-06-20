@@ -34,12 +34,43 @@ with open(DATA_YAML, 'r') as f:
     data_cfg = yaml.safe_load(f)
 base_path = Path(data_cfg.get('path', str(Path(DATA_YAML).parent)))
 val_rel = data_cfg.get('val', 'val')
-# 去掉可能的 ../ 或绝对前缀
+# 去掉可能的 ../ 前缀
 if val_rel.startswith('../'):
     val_rel = val_rel[3:]
-img_dir = base_path / val_rel / "images"
-label_dir = base_path / val_rel / "labels"
-class_names = data_cfg.get('names', {0: 'organoid0', 1: 'organoid1', 2: 'organoid2', 3: 'organoid3'})
+
+# 自动探测正确路径：val 可能是 "val" 或 "val/images"
+candidate_img_dirs = [
+    base_path / val_rel / "images",
+    base_path / val_rel,               # val 本身就是 images 目录
+    base_path / val_rel.replace("/images", ""),  # val="val/images" -> "val"
+]
+img_dir = None
+for d in candidate_img_dirs:
+    if d.exists() and any(f.suffix.lower() in ('.jpg', '.png', '.jpeg') for f in d.iterdir()):
+        img_dir = d
+        break
+if img_dir is None:
+    # 尝试 val_rel 本身
+    img_dir = base_path / val_rel
+
+# labels 目录 = img_dir 同级或父级的 labels
+label_dir = img_dir.parent / "labels"
+if not label_dir.exists():
+    label_dir = img_dir / "labels"     # 备选
+if not label_dir.exists():
+    # 搜索附近
+    for d in [img_dir.parent, img_dir.parent.parent]:
+        cand = d / "labels"
+        if cand.exists():
+            label_dir = cand
+            break
+
+# class_names 可能是 list 或 dict
+raw_names = data_cfg.get('names', {0: 'organoid0', 1: 'organoid1', 2: 'organoid2', 3: 'organoid3'})
+if isinstance(raw_names, list):
+    class_names = {i: n for i, n in enumerate(raw_names)}
+else:
+    class_names = raw_names
 
 print(f"图片目录: {img_dir}")
 print(f"标签目录: {label_dir}")
