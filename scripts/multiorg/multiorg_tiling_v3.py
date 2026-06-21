@@ -25,8 +25,8 @@ from PIL import Image
 import numpy as np
 
 
-TILE_SIZE = 512
-STRIDE = 512  # 无重叠
+TILE_SIZE = 640
+STRIDE = 640  # 无重叠
 CLASS_ID = 0  # 单类 organoid
 CLASS_NAMES = ["organoid"]
 
@@ -157,9 +157,11 @@ def find_tiff(img_dir):
 
 def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
                                tile_size, stride, min_objects=1,
-                               split='', plate_name='', img_name=''):
+                               split='', plate_name='', img_name='',
+                               drop_boundary=True):
     """Process one image with multiple annotators.
     output_lbl_dirs: dict of {'annotator_a': path, 'annotator_b': path, ...}
+    drop_boundary: True for train (clean signal), False for val (keep all bboxes, clip to edge)
     """
     tiff_file = find_tiff(img_dir)
     if tiff_file is None:
@@ -217,11 +219,10 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
             # 为每个标注者生成标签
             if is_any_mode:
                 # 单标注者模式：合并所有标注到同一目录
-                # （train 中每张图只有一个标注者，所以实际就是写入那个标注者的标签）
                 yolo_lines = []
                 for ann_key, annotations in all_annotations.items():
                     for ann in annotations:
-                        result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=True)
+                        result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=drop_boundary)
                         if result is not None:
                             xc, yc, w, h = result
                             yolo_lines.append(
@@ -237,7 +238,7 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
                         continue
                     yolo_lines = []
                     for ann in annotations:
-                        result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=True)
+                        result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=drop_boundary)
                         if result is not None:
                             xc, yc, w, h = result
                             yolo_lines.append(
@@ -254,7 +255,13 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
 
 def process_split(src_dir, dst_dir, split, tile_size, stride,
                   min_objects=1, multi_rater=False):
-    """Process train or test split."""
+    """Process train or test split.
+    
+    train: drop_boundary=True (clean training signal, only center-in-patch bboxes)
+    test:  drop_boundary=False (keep all bboxes, clip to patch edge — avoids false positives in val)
+    """
+    is_train = (split == 'train')
+    drop_boundary = is_train  # train: True, val: False
     split_dir = os.path.join(src_dir, split)
     if not os.path.isdir(split_dir):
         print(f"[WARN] {split_dir} not found")
@@ -324,7 +331,8 @@ def process_split(src_dir, dst_dir, split, tile_size, stride,
                 n = process_image_multi_rater(
                     img_dir, out_img, output_lbl_dirs,
                     tile_size, stride, min_objects,
-                    split=split, plate_name=plate_name, img_name=img_dir_name
+                    split=split, plate_name=plate_name, img_name=img_dir_name,
+                    drop_boundary=drop_boundary
                 )
                 total += n
                 img_count += 1
