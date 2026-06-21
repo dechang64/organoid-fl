@@ -2,19 +2,22 @@
 """
 多标注者共识标签生成 + CLOD 风格标签噪声清洗
 
-功能:
-1. 读取多标注者标签（t0/Annotator_A, t1_A, t1_B）
-2. IoU 投票生成共识标签：
-   - 高 IoU (>0.5) 的 bbox 跨标注者配对 → 共识 bbox（高置信度）
-   - 仅一个标注者标记的 bbox → 不确定 bbox（低置信度）
-   - 多标注者都不标记的区域 → 可能漏标
-3. 输出清洗后的标签 + 噪声报告
+数据结构（explore_multiorg.py 确认）:
+- Train: 每张图只有一个标注者（A 或 B），不同图片标注者不同
+  → labels_annotator_a/ 和 labels_annotator_b/ 是不同 patch 的标签
+  → 共识 = 合并到 labels/（无 IoU 匹配，因为同一 patch 只有一个标注者）
+- Test: 每张图有三套标注（t0/t1_a/t1_b）
+  → labels_t0/, labels_t1_a/, labels_t1_b/ 是同一 patch 的三套标签
+  → 共识 = IoU 投票生成 labels/（≥2 标注者同意 = 高置信度）
+
+输出: labels/ 目录（YOLO 标准标签路径，data.yaml 直接可用）
 
 Usage:
-    python label_consensus.py --data D:\\datasets\\MultiOrg_v3_512_multi
+    # 先用 --multi-rater 模式生成 tiling
+    python multiorg_tiling_v3.py --src ... --dst ... --multi-rater
 
-    # 仅 train set
-    python label_consensus.py --data D:\\datasets\\MultiOrg_v3_512_multi --split train
+    # 再生成共识标签（写入 labels/）
+    python label_consensus.py --data D:\\datasets\\MultiOrg_v3_512_multi
 """
 
 import os
@@ -190,8 +193,18 @@ def process_split(data_dir, split, iou_threshold=0.5):
 
     print(f"\n  Annotators found: {list(lbl_dirs.keys())}")
 
-    # 输出目录
-    consensus_dir = os.path.join(data_dir, split, 'labels_consensus')
+    # 输出目录: labels/ (YOLO 标准路径)
+    # 如果 labels/ 已存在（单标注者模式生成的），改用 labels_consensus/
+    consensus_dir = os.path.join(data_dir, split, 'labels')
+    if os.path.exists(consensus_dir) and any(
+        consensus_dir != os.path.join(data_dir, split, d)
+        for d in os.listdir(os.path.join(data_dir, split))
+        if d == 'labels'
+    ):
+        # labels/ 已存在且不是我们创建的，检查是否有 labels_* 目录
+        has_multi = any(d.startswith('labels_') for d in os.listdir(os.path.join(data_dir, split)))
+        if has_multi:
+            consensus_dir = os.path.join(data_dir, split, 'labels_consensus')
     os.makedirs(consensus_dir, exist_ok=True)
 
     # 处理每个 patch
@@ -280,9 +293,29 @@ def main():
     print(f"Report saved: {report_path}")
 
     # 输出 data.yaml for consensus labels
+    # 检查实际使用的标签目录名
+    def get_label_dirname(split_name):
+        labels_path = os.path.join(args.data, split_name, 'labels')
+        consensus_path = os.path.join(args.data, split_name, 'labels_consensus')
+        if os.path.exists(consensus_path):
+            return 'labels_consensus'
+        elif os.path.exists(labels_path):
+            return 'labels'
+        return 'labels'
+
+    train_label = get_label_dirname('train')
+    test_label = get_label_dirname('test')
+    
+    # YOLO 约定: images 路径中的 'images' 替换为 label 目录名
+    # 所以 train: train/images → labels at train/labels
+    # 或自定义: train: train/images_consensus → labels at train/labels_consensus
+    # 但更简单的方式: 直接用标准路径, 只是标签目录可能是 labels 或 labels_consensus
+    
     yaml_path = os.path.join(args.data, 'data_consensus.yaml')
     with open(yaml_path, 'w') as f:
         f.write(f"""# MultiOrg Consensus Labels (CLOD-cleaned)
+# Train: merged A+B labels (each image has single annotator)
+# Val: IoU consensus of t0/t1_a/t1_b (each image has 3 annotators)
 path: {args.data.replace(chr(92), '/')}
 train: train/images
 val: test/images
@@ -290,14 +323,21 @@ val: test/images
 nc: 1
 names: ["organoid"]
 
-# Use consensus labels:
-# train: train/labels_consensus
-# val: test/labels_consensus
+# Label directories:
+#   train labels at: train/{train_label}/
+#   test labels at: test/{test_label}/
+# If using labels_consensus, create symlinks or rename:
+#   rename train/labels_consensus -> train/labels
+#   rename test/labels_consensus -> test/labels
 """)
     print(f"Data YAML: {yaml_path}")
     print(f"\nTrain with consensus labels:")
     print(f"  yolo detect train model=yolo12s.pt "
           f"data={yaml_path} epochs=400 imgsz=512 batch=8")
+    print(f"\nNote: if label dir is 'labels_consensus', rename to 'labels' for YOLO:")
+    for s, lbl in [('train', train_label), ('test', test_label)]:
+        if lbl == 'labels_consensus':
+            print(f"  rename {args.data}\\{s}\\labels_consensus -> {s}\\labels")
 
 
 if __name__ == '__main__':

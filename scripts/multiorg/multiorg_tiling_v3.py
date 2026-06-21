@@ -169,10 +169,16 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
     if not ann_files:
         return 0
 
+    # 检查输出目录中是否有 'any' 模式（单标注者合并）
+    is_any_mode = 'any' in output_lbl_dirs
+
     # 加载所有标注
     all_annotations = {}
     for ann_key, ann_path in ann_files.items():
         all_annotations[ann_key] = load_annotations(ann_path)
+
+    if not all_annotations:
+        return 0
 
     # 使用第一个标注者的 bbox 来决定哪些 patch 有内容
     primary_key = list(all_annotations.keys())[0]
@@ -209,20 +215,37 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
             tile_img.save(os.path.join(output_img_dir, f"{patch_name}.png"))
 
             # 为每个标注者生成标签
-            for ann_key, annotations in all_annotations.items():
-                if ann_key not in output_lbl_dirs:
-                    continue
+            if is_any_mode:
+                # 单标注者模式：合并所有标注到同一目录
+                # （train 中每张图只有一个标注者，所以实际就是写入那个标注者的标签）
                 yolo_lines = []
-                for ann in annotations:
-                    result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=True)
-                    if result is not None:
-                        xc, yc, w, h = result
-                        yolo_lines.append(
-                            f"{CLASS_ID} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}"
-                        )
-                lbl_path = os.path.join(output_lbl_dirs[ann_key], f"{patch_name}.txt")
+                for ann_key, annotations in all_annotations.items():
+                    for ann in annotations:
+                        result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=True)
+                        if result is not None:
+                            xc, yc, w, h = result
+                            yolo_lines.append(
+                                f"{CLASS_ID} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}"
+                            )
+                lbl_path = os.path.join(output_lbl_dirs['any'], f"{patch_name}.txt")
                 with open(lbl_path, 'w') as f:
                     f.write('\n'.join(yolo_lines))
+            else:
+                # 多标注者模式：每个标注者一个标签目录
+                for ann_key, annotations in all_annotations.items():
+                    if ann_key not in output_lbl_dirs:
+                        continue
+                    yolo_lines = []
+                    for ann in annotations:
+                        result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=True)
+                        if result is not None:
+                            xc, yc, w, h = result
+                            yolo_lines.append(
+                                f"{CLASS_ID} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}"
+                            )
+                    lbl_path = os.path.join(output_lbl_dirs[ann_key], f"{patch_name}.txt")
+                    with open(lbl_path, 'w') as f:
+                        f.write('\n'.join(yolo_lines))
 
             patch_count += 1
 
@@ -272,10 +295,11 @@ def process_split(src_dir, dst_dir, split, tile_size, stride,
             os.makedirs(lbl_dir, exist_ok=True)
             output_lbl_dirs[ann_type] = lbl_dir
     else:
-        # 单标注者：只用 Annotator_A（或第一个可用的）
+        # 单标注者：用所有可用标注（train 中 A 和 B 是不同图片，合并到同一目录）
         lbl_dir = os.path.join(dst_dir, split, 'labels')
         os.makedirs(lbl_dir, exist_ok=True)
-        output_lbl_dirs['annotator_a'] = lbl_dir  # 会尝试 A，找不到用第一个
+        # 标记为 'any' — process_image_multi_rater 会用找到的第一个标注
+        output_lbl_dirs['any'] = lbl_dir
 
     total = 0
     img_count = 0
