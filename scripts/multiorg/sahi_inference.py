@@ -222,16 +222,22 @@ def load_ground_truth(json_path, img_w, img_h):
     return gts
 
 
-def compute_ap(detections, ground_truths, iou_threshold=0.5):
-    """计算单张图的 AP"""
-    # 简化版 AP 计算
+def compute_ap_full(detections, ground_truths, iou_threshold=0.5):
+    """计算 AP（单 IoU 阈值）+ 返回 TP/FP/FN。
+    
+    使用面积插值法（COCO 风格），不是 11-point。
+    """
     if not ground_truths:
-        return 0.0, 0, 0
+        return 0.0, 0, 0, 0  # ap, tp, fp, fn
+
+    if not detections:
+        return 0.0, 0, 0, len(ground_truths)
 
     det_sorted = sorted(detections, key=lambda d: -d[4])
-    matched_gt = [False] * len(ground_truths)
-    tp = 0
-    fp = 0
+    n_gt = len(ground_truths)
+    matched_gt = [False] * n_gt
+    tp_list = []
+    fp_list = []
 
     for det in det_sorted:
         best_iou = 0
@@ -246,81 +252,75 @@ def compute_ap(detections, ground_truths, iou_threshold=0.5):
 
         if best_iou >= iou_threshold and best_gt >= 0:
             matched_gt[best_gt] = True
-            tp += 1
+            tp_list.append(1)
+            fp_list.append(0)
         else:
-            fp += 1
+            tp_list.append(0)
+            fp_list.append(1)
 
-    fn = sum(1 for m in matched_gt if not m)
+    tp_cum = np.cumsum(tp_list)
+    fp_cum = np.cumsum(fp_list)
+    recalls = tp_cum / n_gt
+    precisions = tp_cum / (tp_cum + fp_cum + 1e-16)
 
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    # 面积插值
+    # 在 recall 单调递增方向取 precision 最大值
+    mrec = np.concatenate(([0.0], recalls, [1.0]))
+    mpre = np.concatenate(([0.0], precisions, [0.0]))
+    for i in range(len(mpre) - 1, 0, -1):
+        mpre[i - 1] = max(mpre[i - 1], mpre[i])
+    indices = np.where(mrec[1:] != mrec[:-1])[0]
+    ap = np.sum((mrec[indices + 1] - mrec[indices]) * mpre[indices + 1])
 
-    # Simple AP (not 11-point interpolation)
-    if tp + fp == 0:
-        return 0.0, tp, fn
+    tp = int(tp_cum[-1]) if len(tp_cum) > 0 else 0
+    fp = int(fp_cum[-1]) if len(fp_cum) > 0 else 0
+    fn = n_gt - tp
 
-    # Accumulate precision-recall
-    det_sorted = sorted(detections, key=lambda d: -d[4])
-    matched_gt = [False] * len(ground_truths)
-    precisions = []
-    recalls = []
-    tp_cum = 0
-    fp_cum = 0
-
-    for det in det_sorted:
-        best_iou = 0
-        best_gt = -1
-        for i, gt in enumerate(ground_truths):
-            if matched_gt[i]:
-                continue
-            iou = compute_iou(det[:4], gt)
-            if iou > best_iou:
-                best_iou = iou
-                best_gt = i
-
-        if best_iou >= iou_threshold and best_gt >= 0:
-            matched_gt[best_gt] = True
-            tp_cum += 1
-        else:
-            fp_cum += 1
-
-        precisions.append(tp_cum / (tp_cum + fp_cum))
-        recalls.append(tp_cum / len(ground_truths))
-
-    if not precisions:
-        return 0.0, 0, len(ground_truths)
-
-    # 11-point interpolation
-    ap = 0
-    for t in [i / 10 for i in range(11)]:
-        mask = [p for p, r in zip(precisions, recalls) if r >= t]
-        p_at_t = max(mask) if mask else 0
-        ap += p_at_t / 11
-
-    return ap, tp_cum, len(ground_truths) - tp_cum
+    return float(ap), tp, fp, fn
 
 
-def find_annotation_for_image(img_dir):
-    """找到图像对应的标注文件"""
+def compute_map_range(detections, ground_truths):
+    """计算 mAP@0.5:0.05:0.95（COCO 标准 10 个阈值平均）。"""
+    iou_thresholds = np.arange(0.5, 1.0, 0.05)
+    aps = []
+    for t in iou_thresholds:
+        ap, _, _, _ = compute_ap_full(detections, ground_truths, iou_threshold=t)
+        aps.append(ap)
+    return float(np.mean(aps))
+
+
+def find_annotation_for_image(img_dir, annotator='t1_b'):
+    """找到图像对应的标注文件。
+    
+    annotator: 't0' | 't1_a' | 't1_b' | 'annotator_a' | 'annotator_b' | 'any'
+    """
+    # 精确匹配
+    target = annotator.lower()
     for f in os.listdir(img_dir):
-        if 'annotator_a' in f.lower() and f.lower().endswith('.json'):
+        if not f.lower().endswith('.json'):
+            continue
+        if target in f.lower():
             return os.path.join(img_dir, f)
+    
     # fallback: any json
-    for f in os.listdir(img_dir):
-        if f.lower().endswith('.json'):
-            return os.path.join(img_dir, f)
+    if annotator == 'any':
+        for f in os.listdir(img_dir):
+            if f.lower().endswith('.json'):
+                return os.path.join(img_dir, f)
     return None
 
 
 def process_test_set(model, model_type, src_dir, dst_dir,
-                     window_sizes=(512, 2048), overlap=0.5, conf=0.25,
-                     device='cuda:0'):
-    """处理整个 test set"""
+                     window_sizes=(640,), overlap=0.5, conf=0.25,
+                     device='cuda:0', annotator='t1_b'):
+    """处理整个 test set，用指定标注者评估。"""
     os.makedirs(dst_dir, exist_ok=True)
 
     all_results = []
-    total_ap = 0
+    total_ap50 = 0
+    total_ap5095 = 0
     total_tp = 0
+    total_fp = 0
     total_fn = 0
     n_images = 0
 
@@ -349,10 +349,10 @@ def process_test_set(model, model_type, src_dir, dst_dir,
                 if tiff_file is None:
                     continue
 
-                # 找标注
-                gt_path = find_annotation_for_image(img_dir)
+                # 找标注（指定标注者）
+                gt_path = find_annotation_for_image(img_dir, annotator=annotator)
 
-                print(f"  [{n_images+1}] {class_name}/{plate}/{img_dir_name}...", end=" ")
+                print(f"  [{n_images+1:3d}] {class_name}/{plate}/{img_dir_name}...", end=" ")
 
                 start = time.time()
                 detections, (img_w, img_h) = inference_image(
@@ -362,37 +362,49 @@ def process_test_set(model, model_type, src_dir, dst_dir,
                 elapsed = time.time() - start
 
                 # 评估
-                ap, tp, fn = 0.0, 0, 0
+                ap50, tp, fp, fn = 0.0, 0, 0, 0
+                ap5095 = 0.0
                 if gt_path:
                     gts = load_ground_truth(gt_path, img_w, img_h)
-                    ap, tp, fn = compute_ap(detections, gts, iou_threshold=0.5)
+                    ap50, tp, fp, fn = compute_ap_full(detections, gts, iou_threshold=0.5)
+                    ap5095 = compute_map_range(detections, gts)
 
-                total_ap += ap
+                total_ap50 += ap50
+                total_ap5095 += ap5095
                 total_tp += tp
+                total_fp += fp
                 total_fn += fn
                 n_images += 1
 
-                print(f"AP={ap:.4f} TP={tp} FN={fn} ({elapsed:.1f}s)")
+                print(f"AP50={ap50:.4f} AP50-95={ap5095:.4f} TP={tp} FP={fp} FN={fn} ({len(detections)} dets, {elapsed:.1f}s)")
 
                 all_results.append({
                     'image': f"{class_name}/{plate}/{img_dir_name}",
                     'n_detections': len(detections),
                     'n_gt': tp + fn,
-                    'ap': ap,
+                    'ap50': ap50,
+                    'ap5095': ap5095,
                     'tp': tp,
+                    'fp': fp,
                     'fn': fn,
                     'time_s': elapsed,
                 })
 
     # 汇总
-    mean_ap = total_ap / n_images if n_images > 0 else 0
+    mean_ap50 = total_ap50 / n_images if n_images > 0 else 0
+    mean_ap5095 = total_ap5095 / n_images if n_images > 0 else 0
+    overall_precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
     overall_recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
 
     summary = {
         'n_images': n_images,
-        'mean_ap_50': mean_ap,
-        'overall_recall_50': overall_recall,
+        'annotator': annotator,
+        'mean_ap50': mean_ap50,
+        'mean_ap5095': mean_ap5095,
+        'overall_precision': overall_precision,
+        'overall_recall': overall_recall,
         'total_tp': total_tp,
+        'total_fp': total_fp,
         'total_fn': total_fn,
         'window_sizes': list(window_sizes),
         'overlap': overlap,
@@ -405,13 +417,15 @@ def process_test_set(model, model_type, src_dir, dst_dir,
         json.dump({'summary': summary, 'per_image': all_results}, f, indent=2)
 
     print(f"\n{'='*60}")
-    print(f"SAHI INFERENCE SUMMARY")
+    print(f"SAHI INFERENCE SUMMARY (annotator={annotator})")
     print(f"{'='*60}")
     print(f"  Images: {n_images}")
-    print(f"  mAP@0.5: {mean_ap:.4f} ({mean_ap*100:.1f}%)")
-    print(f"  Recall@0.5: {overall_recall:.4f} ({overall_recall*100:.1f}%)")
-    print(f"  TP: {total_tp}, FN: {total_fn}")
-    print(f"  Windows: {window_sizes}, Overlap: {overlap}")
+    print(f"  mAP@0.5:      {mean_ap50:.4f} ({mean_ap50*100:.1f}%)")
+    print(f"  mAP@0.5:0.95: {mean_ap5095:.4f} ({mean_ap5095*100:.1f}%)")
+    print(f"  Precision:    {overall_precision:.4f} ({overall_precision*100:.1f}%)")
+    print(f"  Recall:       {overall_recall:.4f} ({overall_recall*100:.1f}%)")
+    print(f"  TP={total_tp} FP={total_fp} FN={total_fn}")
+    print(f"  Windows: {window_sizes}, Overlap: {overlap}, Conf: {conf}")
     print(f"  Report: {report_path}")
 
     return summary
@@ -425,16 +439,20 @@ def main():
     parser.add_argument('--weights', required=True, help='Model weights path')
     parser.add_argument('--src', required=True, help='Test set directory (MultiOrg_v2/test)')
     parser.add_argument('--dst', default='./results/sahi', help='Output directory')
-    parser.add_argument('--windows', type=int, nargs='+', default=[512, 2048],
-                        help='Window sizes (default: 512 2048)')
+    parser.add_argument('--windows', type=int, nargs='+', default=[640],
+                        help='Window sizes (default: 640, matching training resolution)')
     parser.add_argument('--overlap', type=float, default=0.5)
     parser.add_argument('--conf', type=float, default=0.25)
     parser.add_argument('--device', default='cuda:0')
+    parser.add_argument('--annotator', default='t1_b',
+                        choices=['t0', 't1_a', 't1_b', 'annotator_a', 'annotator_b', 'any'],
+                        help='Which annotator labels to evaluate against (default: t1_b)')
     args = parser.parse_args()
 
     print(f"Model: {args.model}")
     print(f"Weights: {args.weights}")
     print(f"Source: {args.src}")
+    print(f"Annotator: {args.annotator}")
     print(f"Windows: {args.windows}, Overlap: {args.overlap}, Conf: {args.conf}")
     print("=" * 60)
 
@@ -447,7 +465,8 @@ def main():
     # 推理
     process_test_set(
         model, args.model, args.src, args.dst,
-        tuple(args.windows), args.overlap, args.conf, args.device
+        tuple(args.windows), args.overlap, args.conf, args.device,
+        annotator=args.annotator
     )
 
 
