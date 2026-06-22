@@ -218,16 +218,18 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
 
             # 为每个标注者生成标签
             if is_any_mode:
-                # 单标注者模式：合并所有标注到同一目录
+                # 单标注者模式：只使用 primary 标注者（第一个找到的）
+                # 避免合并多套标注导致 GT 重复
+                # - train: 每图只有1个标注者(A或B)，primary 就是它
+                # - test: 每图有3套(t0/t1_a/t1_b)，只用 t0 避免重复
                 yolo_lines = []
-                for ann_key, annotations in all_annotations.items():
-                    for ann in annotations:
-                        result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=drop_boundary)
-                        if result is not None:
-                            xc, yc, w, h = result
-                            yolo_lines.append(
-                                f"{CLASS_ID} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}"
-                            )
+                for ann in primary_annotations:
+                    result = bbox_to_yolo(ann, tx, ty, tile_size, drop_boundary=drop_boundary)
+                    if result is not None:
+                        xc, yc, w, h = result
+                        yolo_lines.append(
+                            f"{CLASS_ID} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}"
+                        )
                 lbl_path = os.path.join(output_lbl_dirs['any'], f"{patch_name}.txt")
                 with open(lbl_path, 'w') as f:
                     f.write('\n'.join(yolo_lines))
