@@ -257,11 +257,12 @@ def process_split(src_dir, dst_dir, split, tile_size, stride,
                   min_objects=1, multi_rater=False):
     """Process train or test split.
     
-    train: drop_boundary=True (clean training signal, only center-in-patch bboxes)
-    test:  drop_boundary=False (keep all bboxes, clip to patch edge — avoids false positives in val)
+    Both train and val use drop_boundary=True:
+    - train: clean signal (only center-in-patch bboxes)
+    - val: each organoid evaluated only in patch where its center lies
+      (closest to real sliding-window inference — edge organoids detected by neighboring patch)
     """
-    is_train = (split == 'train')
-    drop_boundary = is_train  # train: True, val: False
+    drop_boundary = True  # both train and val
     split_dir = os.path.join(src_dir, split)
     if not os.path.isdir(split_dir):
         print(f"[WARN] {split_dir} not found")
