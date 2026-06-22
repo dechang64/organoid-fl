@@ -63,11 +63,15 @@ def weighted_box_fusion(detections, iou_threshold=0.5):
 
     detections: list of (x1, y1, x2, y2, score, model_size)
     Returns: fused list of (x1, y1, x2, y2, score)
+
+    使用 IoU + 中心点距离双判据：
+    - IoU ≥ iou_threshold → 同一目标
+    - 或一个小框的中心在另一个框内 → 同一目标
+    这解决了 overlap=0.5 滑动窗口中同一目标被两个窗口各检测一半的问题。
     """
     if not detections:
         return []
 
-    # 按分数排序
     sorted_det = sorted(detections, key=lambda d: -d[4])
     used = [False] * len(sorted_det)
     fused = []
@@ -82,7 +86,18 @@ def weighted_box_fusion(detections, iou_threshold=0.5):
             if used[j]:
                 continue
             iou = compute_iou(det[:4], sorted_det[j][:4])
-            if iou >= iou_threshold:
+
+            # 中心点判据：小框中心在大框内
+            cx_j = (sorted_det[j][0] + sorted_det[j][2]) / 2
+            cy_j = (sorted_det[j][1] + sorted_det[j][3]) / 2
+            cx_i = (det[0] + det[2]) / 2
+            cy_i = (det[1] + det[3]) / 2
+
+            center_in_i = (det[0] <= cx_j <= det[2] and det[1] <= cy_j <= det[3])
+            center_in_j = (sorted_det[j][0] <= cx_i <= sorted_det[j][2] and
+                           sorted_det[j][1] <= cy_i <= sorted_det[j][3])
+
+            if iou >= iou_threshold or center_in_i or center_in_j:
                 used[j] = True
                 cluster.append(sorted_det[j])
 
@@ -93,8 +108,9 @@ def weighted_box_fusion(detections, iou_threshold=0.5):
             y1 = sum(c[1] * c[4] for c in cluster) / total_score
             x2 = sum(c[2] * c[4] for c in cluster) / total_score
             y2 = sum(c[3] * c[4] for c in cluster) / total_score
-            avg_score = total_score / len(cluster)
-            fused.append((x1, y1, x2, y2, avg_score))
+            # 保留最高分（不是平均分），更接近真实置信度
+            max_score = max(c[4] for c in cluster)
+            fused.append((x1, y1, x2, y2, max_score))
 
     return fused
 
