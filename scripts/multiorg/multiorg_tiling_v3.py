@@ -158,10 +158,12 @@ def find_tiff(img_dir):
 def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
                                tile_size, stride, min_objects=1,
                                split='', plate_name='', img_name='',
-                               drop_boundary=True):
+                               drop_boundary=True,
+                               include_negative=False, max_negatives=2000):
     """Process one image with multiple annotators.
     output_lbl_dirs: dict of {'annotator_a': path, 'annotator_b': path, ...}
     drop_boundary: True for train (clean signal), False for val (keep all bboxes, clip to edge)
+    include_negative: If True, keep empty patches (no organoid) as negative samples for training.
     """
     tiff_file = find_tiff(img_dir)
     if tiff_file is None:
@@ -173,6 +175,7 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
 
     # 检查输出模式：'any' = 合并到单目录, 其他 = 每标注者一个目录
     is_any_mode = 'any' in output_lbl_dirs
+    neg_count = 0  # 负样本计数器
 
     # 加载所有标注
     all_annotations = {}
@@ -209,7 +212,16 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
                 if tx <= ann['cx'] < tx + tile_w and ty <= ann['cy'] < ty + tile_h
             ]
             if len(tile_anns_primary) < min_objects:
-                continue
+                # 负样本：保留空白 patch（无目标），用于训练减少 FP
+                if not include_negative:
+                    continue
+                # 负样本只在 train split 保留，test 不需要
+                if split != 'train':
+                    continue
+                # 限制负样本数量（避免正负样本严重不平衡）
+                if neg_count >= max_negatives:
+                    continue
+                neg_count += 1
 
             # 裁剪 & 填充
             tile_img = img_pil.crop((tx, ty, tx + tile_w, ty + tile_h))
@@ -261,7 +273,8 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
 
 
 def process_split(src_dir, dst_dir, split, tile_size, stride,
-                  min_objects=1, multi_rater=False):
+                  min_objects=1, multi_rater=False,
+                  include_negative=False, max_negatives=2000):
     """Process train or test split.
     
     Both train and val use drop_boundary=True:
@@ -370,7 +383,8 @@ def process_split(src_dir, dst_dir, split, tile_size, stride,
                     img_dir, out_img, output_lbl_dirs,
                     tile_size, stride, min_objects,
                     split=split, plate_name=plate_name, img_name=img_dir_name,
-                    drop_boundary=drop_boundary
+                    drop_boundary=drop_boundary,
+                    include_negative=include_negative, max_negatives=max_negatives
                 )
                 total += n
                 img_count += 1
@@ -451,6 +465,11 @@ def main():
     parser.add_argument('--min-objects', type=int, default=1)
     parser.add_argument('--multi-rater', action='store_true',
                         help='Generate separate labels for each annotator')
+    parser.add_argument('--include-negative', action='store_true',
+                        help='Include empty patches (no organoid) as negative samples for training. '
+                             'Reduces FP per Bulten et al. PMC 2021 (FP 62.5%->25%)')
+    parser.add_argument('--max-negatives', type=int, default=2000,
+                        help='Max negative samples to include (default: 2000, ~12%% of train set)')
     args = parser.parse_args()
 
     print(f"Source:  {args.src}")
@@ -458,6 +477,7 @@ def main():
     print(f"Tile: {args.tile}, Stride: {args.stride}")
     print(f"Class: single (organoid)")
     print(f"Multi-rater: {args.multi_rater}")
+    print(f"Include negative: {args.include_negative} (max: {args.max_negatives})")
     print("=" * 60)
 
     all_counts = {}
@@ -465,7 +485,8 @@ def main():
         n = process_split(
             args.src, args.dst, split,
             args.tile, args.stride, args.min_objects,
-            args.multi_rater
+            args.multi_rater,
+            include_negative=args.include_negative, max_negatives=args.max_negatives
         )
         all_counts[split] = n
         print(f"\n  => {split}: {n} patches")
