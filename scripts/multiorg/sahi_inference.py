@@ -147,6 +147,42 @@ def nms(detections, iou_threshold=0.5):
     return kept
 
 
+def soft_nms(detections, iou_threshold=0.5, sigma=0.5, score_threshold=0.001):
+    """Soft-NMS：降低重叠框的分数而非直接删除。
+
+    Bodla et al., ICCV 2017.
+
+    对密集目标场景比标准 NMS 更好：
+    - 标准 NMS 直接删除重叠框 → 密集目标漏检
+    - Soft-NMS 用高斯函数降低重叠框分数 → 保留但降权
+
+    sigma=0.5 是论文推荐值。
+    """
+    if not detections:
+        return []
+
+    # 转为可变列表
+    dets = [list(d[:5]) for d in detections]  # x1,y1,x2,y2,score
+    kept = []
+
+    while dets:
+        # 选最高分
+        dets.sort(key=lambda d: -d[4])
+        best = dets.pop(0)
+        if best[4] < score_threshold:
+            break
+        kept.append(tuple(best))
+
+        # 对剩余框降分
+        for d in dets:
+            iou = compute_iou(best[:4], d[:4])
+            if iou > 0:
+                # 高斯衰减
+                d[4] = d[4] * np.exp(-(iou ** 2) / sigma)
+
+    return kept
+
+
 def filter_boundary_detections(detections, img_w, img_h, min_size=10, boundary_margin=0):
     """过滤边界碎片检测。
 
@@ -302,6 +338,8 @@ def inference_image(model, model_type, img_path, window_sizes=(640,),
     # 合并重叠检测
     if merge == 'wbf':
         fused = weighted_box_fusion(all_detections, iou_threshold=nms_threshold)
+    elif merge == 'soft_nms':
+        fused = soft_nms(all_detections, iou_threshold=nms_threshold, sigma=0.5)
     else:  # nms
         fused = nms(all_detections, iou_threshold=nms_threshold)
 
@@ -566,8 +604,8 @@ def main():
     parser.add_argument('--annotator', default='t1_b',
                         choices=['t0', 't1_a', 't1_b', 'annotator_a', 'annotator_b', 'any'],
                         help='Which annotator labels to evaluate against (default: t1_b)')
-    parser.add_argument('--merge', default='nms', choices=['nms', 'wbf'],
-                        help='Merge method: nms (paper protocol) or wbf (default: nms)')
+    parser.add_argument('--merge', default='nms', choices=['nms', 'wbf', 'soft_nms'],
+                        help='Merge method: nms (paper protocol), wbf, or soft_nms (default: nms)')
     parser.add_argument('--nms-threshold', type=float, default=0.5,
                         help='NMS/WBF IoU threshold (default: 0.5, paper protocol)')
     parser.add_argument('--min-size', type=int, default=10,
