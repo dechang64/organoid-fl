@@ -16,8 +16,8 @@
 % -- Compact spacing ------------------------------------------------------
 \setbeamersize{text margin left=6mm, text margin right=6mm}
 \renewcommand{\baselinestretch}{0.95}
-\setbeamertemplate{block begin}{\vskip0.6em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip-0.2ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body}\usebeamerfont{block body}}
-\setbeamertemplate{block end}{\end{beamercolorbox}\vskip0.5em}
+\setbeamertemplate{block begin}{\vskip0.8em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip0.2ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body}\usebeamerfont{block body}}
+\setbeamertemplate{block end}{\end{beamercolorbox}\vskip0.8em}
 
 % -- Colors --------------------------------------------------------------
 \definecolor{myblue}{HTML}{2B5EA7}
@@ -230,19 +230,16 @@
 
 \begin{frame}{SAHI 优化的理论基础}
   \begin{block}{FP 来源分析}
-    \begin{itemize}
-      \item \textbf{Orga-Dete TIDE 分解}（Applied Sciences 2025）：organoid 检测中背景误检（Bkg Error）是最大误差源，滑动窗口重叠区域加剧此问题
-      \item \textbf{碎片框}：overlap 区域目标被多个窗口各检测一次，NMS 删除不彻底
-    \end{itemize}
+    \textbf{Orga-Dete TIDE 分解}（Appl. Sci. 2025）：背景误检是 organoid 检测最大误差源，滑动窗口重叠区域加剧此问题。
   \end{block}
   \vspace{0em}
   \begin{block}{优化策略与文献依据}
     \begin{itemize}
-      \item \textbf{Overlap 优化}（YOLO-Patch-Based-Inference, 2025）：建议 15\%--40\%，过高导致重复检测；本实验确认 0.3 最优
-      \item \textbf{Soft-NMS}（Bodla et al., ICCV 2017）：高斯衰减替代硬删除，密集场景保留更多 TP
-      \item \textbf{NMS vs WBF}（Solovyev et al.）：WBF 加权融合优于 NMS 硬删除，但 Soft-NMS 在 AP 指标上更优
-      \item \textbf{MultiOrg 论文协议}（Bukas et al., NeurIPS 2024）：512+2048 双尺度 + downsample 2/8 + NMS 0.5
-      \item \textbf{负样本训练}（Bulten et al., PMC 2021）：加入空白 patch，FP 62.5\%$\rightarrow$25\%
+      \item \textbf{Overlap}（YOLO-Patch-Based-Inference, 2025）：建议 15\%--40\%；本实验确认 0.3 最优
+      \item \textbf{Soft-NMS}（Bodla et al., ICCV 2017）：高斯衰减替代硬删除，保留更多 TP
+      \item \textbf{WBF vs NMS}（Solovyev et al.）：WBF 融合优于 NMS，但 Soft-NMS 在 AP 上更优
+      \item \textbf{论文协议}（Bukas et al., NeurIPS 2024）：512+2048 双尺度 + NMS 0.5
+      \item \textbf{负样本}（Bulten et al., PMC 2021）：空白 patch，FP 62.5\%$\rightarrow$25\%
     \end{itemize}
   \end{block}
 \end{frame}
