@@ -277,7 +277,7 @@ def detect_rfdetr_patch(model, img_array, conf=0.25):
 def inference_image(model, model_type, img_path, window_sizes=(640,),
                     downsample_factors=None, overlap=0.5, conf=0.25,
                     device='cuda:0', merge='nms', nms_threshold=0.5,
-                    min_size=10):
+                    min_size=10, score_filter=0.0):
     """对一张大图进行多尺度滑动窗口推理。
 
     对齐 MultiOrg 论文协议：
@@ -287,7 +287,8 @@ def inference_image(model, model_type, img_path, window_sizes=(640,),
 
     downsample_factors: list of int, 与 window_sizes 一一对应
         None 时默认全部为 1（不 downsample）
-    merge: 'nms' 或 'wbf'
+    merge: 'nms' 或 'wbf' 或 'soft_nms'
+    score_filter: Soft-NMS 后的 score 过滤阈值（仅 soft_nms 生效）
     """
     img_pil = convert_tiff_to_rgb(img_path)
     img_w, img_h = img_pil.size
@@ -340,6 +341,9 @@ def inference_image(model, model_type, img_path, window_sizes=(640,),
         fused = weighted_box_fusion(all_detections, iou_threshold=nms_threshold)
     elif merge == 'soft_nms':
         fused = soft_nms(all_detections, iou_threshold=nms_threshold, sigma=0.5)
+        # Soft-NMS 后 score 过滤（低分框不删除只降分，需要二次过滤提升 precision）
+        if score_filter > 0:
+            fused = [d for d in fused if d[4] >= score_filter]
     else:  # nms
         fused = nms(all_detections, iou_threshold=nms_threshold)
 
@@ -457,7 +461,7 @@ def process_test_set(model, model_type, src_dir, dst_dir,
                      window_sizes=(640,), downsample_factors=None,
                      overlap=0.5, conf=0.25, device='cuda:0',
                      annotator='t1_b', merge='nms', nms_threshold=0.5,
-                     min_size=10):
+                     min_size=10, score_filter=0.0):
     """处理整个 test set，用指定标注者评估。"""
     os.makedirs(dst_dir, exist_ok=True)
 
@@ -506,7 +510,8 @@ def process_test_set(model, model_type, src_dir, dst_dir,
                 detections, (img_w, img_h) = inference_image(
                     model, model_type, tiff_file,
                     window_sizes, downsample_factors, overlap, conf, device,
-                    merge=merge, nms_threshold=nms_threshold, min_size=min_size
+                    merge=merge, nms_threshold=nms_threshold, min_size=min_size,
+                    score_filter=score_filter
                 )
                 elapsed = time.time() - start
 
@@ -562,6 +567,7 @@ def process_test_set(model, model_type, src_dir, dst_dir,
         'merge_method': merge,
         'nms_threshold': nms_threshold,
         'min_size': min_size,
+        'score_filter': score_filter,
         'model_type': model_type,
     }
 
@@ -610,6 +616,9 @@ def main():
                         help='NMS/WBF IoU threshold (default: 0.5, paper protocol)')
     parser.add_argument('--min-size', type=int, default=10,
                         help='Min detection size in pixels (filter SAHI fragments)')
+    parser.add_argument('--score-filter', type=float, default=0.0,
+                        help='Score filter after Soft-NMS (e.g. 0.3 keeps only score>=0.3, '
+                             'boosts precision without hurting mAP. Only affects soft_nms)')
     args = parser.parse_args()
 
     # 默认 downsample
@@ -643,7 +652,7 @@ def main():
         args.overlap, args.conf, args.device,
         annotator=args.annotator,
         merge=args.merge, nms_threshold=args.nms_threshold,
-        min_size=args.min_size
+        min_size=args.min_size, score_filter=args.score_filter
     )
 
 
