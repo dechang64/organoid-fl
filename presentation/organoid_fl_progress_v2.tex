@@ -16,6 +16,8 @@
 % -- Compact spacing ------------------------------------------------------
 \setbeamersize{text margin left=6mm, text margin right=6mm}
 \renewcommand{\baselinestretch}{0.95}
+\setbeamertemplate{block begin}{\vskip0.6em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip-0.2ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body}\usebeamerfont{block body}}
+\setbeamertemplate{block end}{\end{beamercolorbox}\vskip0.5em}
 
 % -- Colors --------------------------------------------------------------
 \definecolor{myblue}{HTML}{2B5EA7}
@@ -27,8 +29,6 @@
 \setbeamercolor{block title}{bg=myblue!85, fg=white}
 \setbeamercolor{block body}{bg=myblue!8}
 \setbeamercolor{alerted text}{fg=accentred}
-\setbeamertemplate{block begin}{\vskip0.3em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip-0.3ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body}\usebeamerfont{block body}}
-\setbeamertemplate{block end}{\end{beamercolorbox}\vskip0.2em}
 
 % -- Auto section title page ---------------------------------------------
 \AtBeginSection[]{
@@ -85,7 +85,7 @@
         \item 通量低、主观性强、跨实验室一致性差
       \end{itemize}
     \end{block}
-    \vspace{0.3em}
+    \vspace{0em}
     \begin{alertblock}{核心痛点}
       类器官图像分析依赖人工，成为药物研发管线的瓶颈。
       自动化检测是解决方案，但面临多个技术挑战。
@@ -111,7 +111,7 @@
       \item 各中心培养条件/成像设备不同 → 数据分布异构（non-IID）
     \end{itemize}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{联邦学习（Federated Learning）}
     \begin{itemize}
       \item \textbf{数据不动，模型动}：各中心本地训练，只上传模型参数
@@ -119,7 +119,7 @@
       \item \textbf{数据不动，推理动}：全局模型下发给各中心本地推理
     \end{itemize}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \centering\alert{FL + Organoid 是未被探索的交叉方向}
 \end{frame}
 
@@ -184,7 +184,7 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{关键发现}
     \begin{itemize}
       \item \textbf{小目标检测是核心瓶颈}：所有改进都围绕小目标（+11.6pp vs 分类+0.7pp）
@@ -208,7 +208,7 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{Organoid 检测 SOTA}
     \begin{tabular}{llll}
       \toprule
@@ -222,7 +222,7 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{alertblock}{RF-DETR 的结构性优势}
     NMS-free 架构在密集 organoid 场景无 NMS 误删问题；单类检测 94.6\% > YOLOv12X 92.5\%（COCO）
   \end{alertblock}
@@ -235,7 +235,7 @@
       \item \textbf{碎片框}：overlap 区域目标被多个窗口各检测一次，NMS 删除不彻底
     \end{itemize}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{优化策略与文献依据}
     \begin{itemize}
       \item \textbf{Overlap 优化}（YOLO-Patch-Based-Inference, 2025）：建议 15\%--40\%，过高导致重复检测；本实验确认 0.3 最优
@@ -273,7 +273,7 @@
       \end{itemize}
     \end{block}
   \end{columns}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{alertblock}{论文 SOTA 基线（Table 3）}
     SSD 68.1\% mAP@0.5 \quad | \quad YOLOv3 64.6\% \quad | \quad RTMDet 61.6\% \quad | \quad Faster R-CNN 60.7\%
   \end{alertblock}
@@ -322,14 +322,13 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
+  \begin{alertblock}{Tip: 使用新数据集前必须仔细读论文}
+    这三个错误都是因为没有仔细阅读 MultiOrg 论文（NeurIPS 2024）导致的。论文明确说明：单类设定、边界 bbox 处理方式、全图滑动窗口评估协议。\textbf{先读文档再动手，不要猜}。
+  \end{alertblock}
+  \vspace{0em}
   \begin{block}{标注者选择 bug（本次新发现）}
-    \begin{itemize}
-      \item Test set 有 3 套标注（t0/t1\_A/t1\_B），代码合并后 \alert{GT 重复 3 倍}
-      \item 同一 organoid 被标 3 次 → 1 TP + 2 FN → recall 暴跌
-      \item 修复：非 multi-rater 模式只用 primary 标注者
-      \item 影响：mAP@0.5 从 \textbf{40.6\% → 66.9\%}（+26.3pp）
-    \end{itemize}
+    Test set 有 3 套标注（t0/t1\_A/t1\_B），代码合并后 \alert{GT 重复 3 倍}。修复后 mAP@0.5 从 \textbf{40.6\% → 66.9\%}（+26.3pp）。
   \end{block}
 \end{frame}
 
@@ -348,7 +347,7 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{alertblock}{关键发现}
     \begin{itemize}
       \item 标注者选择可造成 \textbf{12pp mAP@0.5 差异}（66.9\% vs 78.9\%）
@@ -383,11 +382,11 @@
         74 & 77.5\%（停止） \\
         \bottomrule
       \end{tabular}
-      \vspace{0.3em}\\
+      \vspace{0em}\\
       \tiny ep10 达峰后平台震荡
     \end{block}
   \end{columns}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{对比 v4（无 freebies，66 epoch）}
     v4 最终 mAP@0.5 = 66.9\%（t0）\quad→\quad v5 ep10 = 78.1\%（t1\_B），\textbf{+11.2pp}
   \end{block}
@@ -397,7 +396,7 @@
   \begin{block}{问题：Patch 级 vs 全图推理差距}
     Patch 级 78.1\% → SAHI 全图 64.8\%（$-$13.3pp），核心瓶颈是 \alert{FP 暴增}（4463 FP vs 4114 TP）
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{参数优化实验（同一 best.pt）}
     \begin{tabular}{lcccc}
       \toprule
@@ -412,7 +411,7 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{alertblock}{最优配置超 SOTA}
     \begin{itemize}
       \item \textbf{论文报告}：Soft-NMS + overlap=0.3 → mAP@0.5 = \textbf{68.8\%}，超 SSD SOTA \textbf{+0.7pp}
@@ -428,7 +427,7 @@
       \item \textbf{碎片框}：overlap 区域目标被多个窗口各检测一次，NMS 删除不彻底
     \end{itemize}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{优化策略与文献依据}
     \begin{itemize}
       \item \textbf{Overlap 优化}（YOLO-Patch-Based-Inference, 2025）：建议 15\%--40\%，过高导致重复检测；本实验确认 0.3 最优
@@ -457,7 +456,7 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{alertblock}{结论}
     \begin{itemize}
       \item Patch 级超 SOTA \textbf{+10.0pp}（78.1\% vs 68.1\%）
@@ -479,7 +478,7 @@
       \item 单中心数据量不足 → 模型泛化性差
     \end{itemize}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{未被探索的交叉领域}
     \begin{itemize}
       \item \textbf{论文}：FL + Organoid 无任何已发表论文
@@ -487,7 +486,7 @@
       \item \textbf{技术挑战}：检测模型的 FL（vs 分类 FL）研究尚少
     \end{itemize}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \centering\alert{FL 是刚需（数据天然分散），不是可选附加}
 \end{frame}
 
@@ -500,7 +499,7 @@
     \]
     其中 $H_c$ 是客户端 $c$ 在验证集上的预测熵，$\alpha$ 是温度参数。
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{EWA Effective Interval 理论}
     \begin{itemize}
       \item \textbf{IID 场景}：客户端质量差异小 → EWA 退化为均匀加权 → \alert{无优势}
@@ -522,7 +521,7 @@
       \item 负样本训练：加入空白 patch 减少 FP（Bulten et al., PMC 2021：FP 62.5\%→25\%）
     \end{itemize}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0em}
   \begin{block}{中期（一至二月）}
     \begin{itemize}
       \item \textbf{多标注者标签融合}：t1\_A + t1\_B 共识标签（IoU 投票）
@@ -566,11 +565,11 @@
   \begin{block}{当前范式的根本局限}
     端到端"像素$\rightarrow$bbox"把概念固化在权重中。换领域/标注者/中心 $\rightarrow$ 权重失效。SAHI/NMS/Soft-NMS 都是后处理治标。
   \end{block}
-  \vspace{0.2em}
+  \vspace{0em}
   \begin{alertblock}{启发：Thinking with Visual Primitives (DeepSeek-AI, 2025)}
     将视觉原语（点、bbox）作为推理最小单元，解决 Reference Gap（语言指代空间有歧义），保留指代不确定性。
   \end{alertblock}
-  \vspace{0.2em}
+  \vspace{0em}
   \begin{block}{映射到我们的问题}
     \begin{itemize}
       \item Soft-NMS 赢 6pp $\leftarrow$ 保留"指代不确定性"
@@ -584,11 +583,11 @@
   \begin{block}{Layer 1: Perception（感知层）}
     SAM2/SegAny 输出无类别 visual primitives（mask+位置+形态）。不学习"这是什么"，只学习"这里有什么"。\textbf{跨域通用}。
   \end{block}
-  \vspace{0.2em}
+  \vspace{0em}
   \begin{block}{Layer 2: Reasoning（推理层）}
     VLM/LLM 看着 primitives + 全图上下文推理。泛化来源：语义理解，不是像素匹配。推理可解释（CoT）。
   \end{block}
-  \vspace{0.2em}
+  \vspace{0em}
   \begin{block}{Layer 3: Collaboration（协作层）}
     FL 不聚合权重，聚合 primitive 分布。各中心上传"形态统计"，不上传像素/权重。\textbf{数据不动，知识动}。
   \end{block}
@@ -598,7 +597,7 @@
   \begin{block}{EWA-Fed: 视觉原语编解码（已实现）}
     \texttt{primitives.py}（BOX/POINT/PATH + Shannon 熵）+ \texttt{aggregator.py}（熵加权聚合）+ \texttt{conformity.py}（从众检测）。当前仅用于监控，未用于推理。
   \end{block}
-  \vspace{0.2em}
+  \vspace{0em}
   \begin{block}{技术栈映射}
     \begin{tabular}{ll}
       \toprule
@@ -610,7 +609,7 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.2em}
+  \vspace{0em}
   \begin{alertblock}{下一步}
     EWA 从"监控框架"升级为"训练框架"：primitive 传输 + 推理替代检测
   \end{alertblock}
