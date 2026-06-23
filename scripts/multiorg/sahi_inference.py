@@ -4,16 +4,20 @@ SAHI + 双尺度滑动窗口推理 for MultiOrg
 
 关键设计:
 1. 全图滑动窗口推理（不是在 patch 上评估）
-2. 双尺度: 512 + 2048 (大目标+小目标)
-3. WBF (Weighted Box Fusion) 合并重叠检测
+2. 双尺度+downsample: 512(ds=2) + 2048(ds=8)，对齐 MultiOrg 论文协议
+3. NMS 或 WBF 合并重叠检测（论文用 NMS threshold=0.5）
 4. 支持 YOLOv12 和 RF-DETR
+5. 边界框过滤：丢弃 SAHI 切割产生的碎片 FP
 
 Usage:
-    # YOLOv12 推理
-    python sahi_inference.py --model yolo --weights path/to/best.pt --src D:\\datasets\\mutliorg\\MultiOrg_v2\\test --dst ./results/sahi
+    # YOLOv12 单尺度 640
+    python sahi_inference.py --model yolo --weights path/to/best.pt --src D:\\datasets\\mutliorg\\MultiOrg_v2\\test --dst ./results/sahi --windows 640
+
+    # 双尺度+downsample（对齐论文协议）
+    python sahi_inference.py --model yolo --weights path/to/best.pt --src ... --dst ... --windows 512 2048 --downsample 2 8 --merge nms
 
     # RF-DETR 推理
-    python sahi_inference.py --model rfdetr --weights path/to/checkpoint.pt --src D:\\datasets\\mutliorg\\MultiOrg_v2\\test --dst ./results/sahi
+    python sahi_inference.py --model rfdetr --weights path/to/checkpoint.pt --src ... --dst ...
 """
 
 import os
@@ -115,6 +119,59 @@ def weighted_box_fusion(detections, iou_threshold=0.5):
     return fused
 
 
+def nms(detections, iou_threshold=0.5):
+    """标准 NMS（对齐 MultiOrg 论文协议）。
+
+    detections: list of (x1, y1, x2, y2, score, ...)
+    Returns: kept list of (x1, y1, x2, y2, score)
+
+    与 WBF 的区别：NMS 只保留最高分框，不融合。
+    论文用的就是 NMS threshold=0.5。
+    """
+    if not detections:
+        return []
+
+    sorted_det = sorted(detections, key=lambda d: -d[4])
+    kept = []
+
+    for det in sorted_det:
+        suppressed = False
+        for k in kept:
+            iou = compute_iou(det[:4], k[:4])
+            if iou >= iou_threshold:
+                suppressed = True
+                break
+        if not suppressed:
+            kept.append(det[:5])  # 只保留 x1,y1,x2,y2,score
+
+    return kept
+
+
+def filter_boundary_detections(detections, img_w, img_h, min_size=10, boundary_margin=0):
+    """过滤边界碎片检测。
+
+    - 丢弃面积过小的检测（min_size 像素）
+    - 丢弃完全在图像边界外的检测
+    - boundary_margin > 0 时丢弃紧贴边界的检测（SAHI 切割碎片）
+    """
+    filtered = []
+    for det in detections:
+        x1, y1, x2, y2 = det[:4]
+        w = x2 - x1
+        h = y2 - y1
+        if w < min_size or h < min_size:
+            continue
+        if x2 <= 0 or y2 <= 0 or x1 >= img_w or y1 >= img_h:
+            continue
+        # 裁剪到图像范围内
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = min(img_w, x2)
+        y2 = min(img_h, y2)
+        filtered.append((x1, y1, x2, y2) + tuple(det[4:]))
+    return filtered
+
+
 def compute_iou(box1, box2):
     """IoU for (x1,y1,x2,y2) format"""
     ix1 = max(box1[0], box2[0])
@@ -181,15 +238,31 @@ def detect_rfdetr_patch(model, img_array, conf=0.25):
     return detections
 
 
-def inference_image(model, model_type, img_path, window_sizes=(512, 2048),
-                    overlap=0.5, conf=0.25, device='cuda:0'):
-    """对一张大图进行多尺度滑动窗口推理"""
+def inference_image(model, model_type, img_path, window_sizes=(640,),
+                    downsample_factors=None, overlap=0.5, conf=0.25,
+                    device='cuda:0', merge='nms', nms_threshold=0.5,
+                    min_size=10):
+    """对一张大图进行多尺度滑动窗口推理。
+
+    对齐 MultiOrg 论文协议：
+    - window=512, downsample=2 → 实际输入 256px（小目标）
+    - window=2048, downsample=8 → 实际输入 256px（大目标）
+    - overlap=0.5, NMS threshold=0.5
+
+    downsample_factors: list of int, 与 window_sizes 一一对应
+        None 时默认全部为 1（不 downsample）
+    merge: 'nms' 或 'wbf'
+    """
     img_pil = convert_tiff_to_rgb(img_path)
     img_w, img_h = img_pil.size
 
+    if downsample_factors is None:
+        downsample_factors = [1] * len(window_sizes)
+
     all_detections = []
 
-    for ws in window_sizes:
+    for ws_idx, ws in enumerate(window_sizes):
+        ds = downsample_factors[ws_idx] if ws_idx < len(downsample_factors) else 1
         if ws > max(img_w, img_h):
             continue  # 跳过比图还大的窗口
 
@@ -197,6 +270,13 @@ def inference_image(model, model_type, img_path, window_sizes=(512, 2048),
 
         for (x, y, x_end, y_end) in windows:
             tile = img_pil.crop((x, y, x_end, y_end))
+
+            # Downsample: 把 ws×ws 的 tile 缩小到 (ws/ds)×(ws/ds)
+            if ds > 1:
+                tile_w, tile_h = tile.size
+                new_w = max(1, tile_w // ds)
+                new_h = max(1, tile_h // ds)
+                tile = tile.resize((new_w, new_h), Image.LANCZOS)
 
             if model_type == 'yolo':
                 dets = detect_yolo_patch(model, tile, conf)
@@ -206,15 +286,24 @@ def inference_image(model, model_type, img_path, window_sizes=(512, 2048),
             else:
                 continue
 
-            # 转换到全图坐标
+            # 转换到全图坐标（检测坐标 × downsample + window offset）
             for x1, y1, x2, y2, score in dets:
                 all_detections.append((
-                    x + x1, y + y1, x + x2, y + y2,
+                    x + x1 * ds, y + y1 * ds,
+                    x + x2 * ds, y + y2 * ds,
                     score, ws
                 ))
 
-    # WBF 融合
-    fused = weighted_box_fusion(all_detections, iou_threshold=0.5)
+    # 边界框过滤
+    all_detections = filter_boundary_detections(
+        all_detections, img_w, img_h, min_size=min_size
+    )
+
+    # 合并重叠检测
+    if merge == 'wbf':
+        fused = weighted_box_fusion(all_detections, iou_threshold=nms_threshold)
+    else:  # nms
+        fused = nms(all_detections, iou_threshold=nms_threshold)
 
     return fused, (img_w, img_h)
 
@@ -327,10 +416,15 @@ def find_annotation_for_image(img_dir, annotator='t1_b'):
 
 
 def process_test_set(model, model_type, src_dir, dst_dir,
-                     window_sizes=(640,), overlap=0.5, conf=0.25,
-                     device='cuda:0', annotator='t1_b'):
+                     window_sizes=(640,), downsample_factors=None,
+                     overlap=0.5, conf=0.25, device='cuda:0',
+                     annotator='t1_b', merge='nms', nms_threshold=0.5,
+                     min_size=10):
     """处理整个 test set，用指定标注者评估。"""
     os.makedirs(dst_dir, exist_ok=True)
+
+    if downsample_factors is None:
+        downsample_factors = [1] * len(window_sizes)
 
     all_results = []
     total_ap50 = 0
@@ -373,7 +467,8 @@ def process_test_set(model, model_type, src_dir, dst_dir,
                 start = time.time()
                 detections, (img_w, img_h) = inference_image(
                     model, model_type, tiff_file,
-                    window_sizes, overlap, conf, device
+                    window_sizes, downsample_factors, overlap, conf, device,
+                    merge=merge, nms_threshold=nms_threshold, min_size=min_size
                 )
                 elapsed = time.time() - start
 
@@ -423,8 +518,12 @@ def process_test_set(model, model_type, src_dir, dst_dir,
         'total_fp': total_fp,
         'total_fn': total_fn,
         'window_sizes': list(window_sizes),
+        'downsample_factors': list(downsample_factors),
         'overlap': overlap,
         'conf_threshold': conf,
+        'merge_method': merge,
+        'nms_threshold': nms_threshold,
+        'min_size': min_size,
         'model_type': model_type,
     }
 
@@ -441,7 +540,8 @@ def process_test_set(model, model_type, src_dir, dst_dir,
     print(f"  Precision:    {overall_precision:.4f} ({overall_precision*100:.1f}%)")
     print(f"  Recall:       {overall_recall:.4f} ({overall_recall*100:.1f}%)")
     print(f"  TP={total_tp} FP={total_fp} FN={total_fn}")
-    print(f"  Windows: {window_sizes}, Overlap: {overlap}, Conf: {conf}")
+    print(f"  Windows: {window_sizes}, Downsample: {downsample_factors}")
+    print(f"  Overlap: {overlap}, Conf: {conf}, Merge: {merge} (threshold={nms_threshold})")
     print(f"  Report: {report_path}")
 
     return summary
@@ -456,20 +556,40 @@ def main():
     parser.add_argument('--src', required=True, help='Test set directory (MultiOrg_v2/test)')
     parser.add_argument('--dst', default='./results/sahi', help='Output directory')
     parser.add_argument('--windows', type=int, nargs='+', default=[640],
-                        help='Window sizes (default: 640, matching training resolution)')
+                        help='Window sizes (default: 640)')
+    parser.add_argument('--downsample', type=int, nargs='+', default=None,
+                        help='Downsample factors per window (default: 1 for all). '
+                             'Paper protocol: --windows 512 2048 --downsample 2 8')
     parser.add_argument('--overlap', type=float, default=0.5)
     parser.add_argument('--conf', type=float, default=0.25)
     parser.add_argument('--device', default='cuda:0')
     parser.add_argument('--annotator', default='t1_b',
                         choices=['t0', 't1_a', 't1_b', 'annotator_a', 'annotator_b', 'any'],
                         help='Which annotator labels to evaluate against (default: t1_b)')
+    parser.add_argument('--merge', default='nms', choices=['nms', 'wbf'],
+                        help='Merge method: nms (paper protocol) or wbf (default: nms)')
+    parser.add_argument('--nms-threshold', type=float, default=0.5,
+                        help='NMS/WBF IoU threshold (default: 0.5, paper protocol)')
+    parser.add_argument('--min-size', type=int, default=10,
+                        help='Min detection size in pixels (filter SAHI fragments)')
     args = parser.parse_args()
+
+    # 默认 downsample
+    if args.downsample is None:
+        args.downsample = [1] * len(args.windows)
+
+    # 长度校验
+    if len(args.downsample) != len(args.windows):
+        print(f"ERROR: --windows ({len(args.windows)}) and --downsample ({len(args.downsample)}) must have same length")
+        return
 
     print(f"Model: {args.model}")
     print(f"Weights: {args.weights}")
     print(f"Source: {args.src}")
     print(f"Annotator: {args.annotator}")
-    print(f"Windows: {args.windows}, Overlap: {args.overlap}, Conf: {args.conf}")
+    print(f"Windows: {args.windows}, Downsample: {args.downsample}")
+    print(f"Overlap: {args.overlap}, Conf: {args.conf}")
+    print(f"Merge: {args.merge} (threshold={args.nms_threshold}), Min size: {args.min_size}")
     print("=" * 60)
 
     # 加载模型
@@ -481,8 +601,11 @@ def main():
     # 推理
     process_test_set(
         model, args.model, args.src, args.dst,
-        tuple(args.windows), args.overlap, args.conf, args.device,
-        annotator=args.annotator
+        tuple(args.windows), tuple(args.downsample),
+        args.overlap, args.conf, args.device,
+        annotator=args.annotator,
+        merge=args.merge, nms_threshold=args.nms_threshold,
+        min_size=args.min_size
     )
 
 
