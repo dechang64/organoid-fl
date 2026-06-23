@@ -102,10 +102,12 @@ def train_rfdetr(data_yaml, model_variant='base', epochs=200, imgsz=512,
     os.makedirs(output_dir, exist_ok=True)
     start_time = time.time()
 
+    dataset_dir = os.path.dirname(os.path.abspath(data_yaml))
     train_kwargs = {
-        'dataset_dir': os.path.dirname(data_yaml),
+        'dataset_dir': dataset_dir,
         'epochs': epochs,
         'grad_accum_steps': 4,  # 3060 12GB 需要梯度累积
+        'img_size': imgsz,
     }
     if batch_size is not None:
         train_kwargs['batch_size'] = batch_size
