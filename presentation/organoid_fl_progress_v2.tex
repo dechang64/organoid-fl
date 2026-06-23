@@ -16,10 +16,10 @@
 % -- Compact spacing ------------------------------------------------------
 \setbeamersize{text margin left=6mm, text margin right=6mm}
 \renewcommand{\baselinestretch}{0.95}
-\setbeamertemplate{block begin}{\vskip0.8em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip0.2ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body}\usebeamerfont{block body}}
-\setbeamertemplate{block end}{\end{beamercolorbox}\vskip0.8em}
-\setbeamertemplate{block alerted begin}{\vskip0.8em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title alerted}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip0.2ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body alerted}\usebeamerfont{block body}}
-\setbeamertemplate{block alerted end}{\end{beamercolorbox}\vskip0.8em}
+\setbeamertemplate{block begin}{\vskip0.5em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip1.0ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body}\usebeamerfont{block body}}
+\setbeamertemplate{block end}{\end{beamercolorbox}\vskip0.5em}
+\setbeamertemplate{block alerted begin}{\vskip0.5em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title alerted}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip1.0ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body alerted}\usebeamerfont{block body}}
+\setbeamertemplate{block alerted end}{\end{beamercolorbox}\vskip0.5em}
 
 % -- Colors --------------------------------------------------------------
 \definecolor{myblue}{HTML}{2B5EA7}
@@ -239,11 +239,10 @@
   \vspace{0em}
   \begin{block}{优化策略与文献依据}
     \begin{itemize}
-      \item \textbf{Overlap}（YOLO-Patch-Based-Inference, 2025）：建议 15\%--40\%；本实验确认 0.3 最优
-      \item \textbf{Soft-NMS}（Bodla et al., ICCV 2017）：高斯衰减替代硬删除，保留更多 TP
-      \item \textbf{WBF vs NMS}（Solovyev et al.）：WBF 融合优于 NMS，但 Soft-NMS 在 AP 上更优
-      \item \textbf{论文协议}（Bukas et al., NeurIPS 2024）：512+2048 双尺度 + NMS 0.5
-      \item \textbf{负样本}（Bulten et al., PMC 2021）：空白 patch，FP 62.5\%$\rightarrow$25\%
+      \item \textbf{Overlap}（YOLO-Patch-Based-Inference, 2025）：15\%--40\% 最优；本实验 0.3
+      \item \textbf{Soft-NMS}（Bodla et al., ICCV 2017）：高斯衰减，保留更多 TP
+      \item \textbf{WBF vs NMS}（Solovyev et al.）：Soft-NMS 在 AP 上最优
+      \item \textbf{论文协议}（NeurIPS 2024）：512+2048 双尺度 + NMS 0.5
     \end{itemize}
   \end{block}
 \end{frame}
@@ -395,29 +394,26 @@
 
 \begin{frame}{SAHI 全图推理优化}
   \begin{block}{问题：Patch 级 vs 全图推理差距}
-    Patch 级 78.1\% → SAHI 全图 64.8\%（$-$13.3pp），核心瓶颈是 \alert{FP 暴增}（4463 FP vs 4114 TP）
+    Patch 级 78.1\% → SAHI 全图 64.8\%（$-$13.3pp），瓶颈是 \alert{FP 暴增}
   \end{block}
   \vspace{0em}
-  \begin{block}{参数优化实验（同一 best.pt）}
+  \begin{block}{参数优化实验}
     \begin{tabular}{lcccc}
       \toprule
-      配置 & mAP@0.5 & Precision & Recall & FP \\
+      配置 & mAP@0.5 & Prec & Rec & FP \\
       \midrule
-      WBF, overlap=0.5 & 64.8\% & 48.0\% & 83.0\% & 4463 \\
-      NMS, overlap=0.5 & 62.4\% & 42.8\% & 86.3\% & 5720 \\
-      WBF, overlap=0.3 & 66.1\% & 52.8\% & 81.3\% & 3602 \\
-      \textbf{Soft-NMS, overlap=0.3} & \textbf{68.8\%} & 27.0\% & 85.5\% & 11466 \\
+      WBF, o=0.5 & 64.8\% & 48.0\% & 83.0\% & 4463 \\
+      NMS, o=0.5 & 62.4\% & 42.8\% & 86.3\% & 5720 \\
+      WBF, o=0.3 & 66.1\% & 52.8\% & 81.3\% & 3602 \\
+      \textbf{Soft-NMS, o=0.3} & \textbf{68.8\%} & 27.0\% & 85.5\% & 11466 \\
       \midrule
-      Soft-NMS + score filter 0.3 & 66.5\% & \textbf{52.1\%} & 81.1\% & 3690 \\
+      + score filter 0.3 & 66.5\% & \textbf{52.1\%} & 81.1\% & 3690 \\
       \bottomrule
     \end{tabular}
   \end{block}
   \vspace{0em}
-  \begin{alertblock}{最优配置超 SOTA}
-    \begin{itemize}
-      \item \textbf{论文报告}：Soft-NMS + overlap=0.3 → mAP@0.5 = \textbf{68.8\%}，超 SSD SOTA \textbf{+0.7pp}
-      \item \textbf{实际部署}：+ score filter 0.3 → Precision 52.1\%，Recall 81.1\%（可用平衡）
-    \end{itemize}
+  \begin{alertblock}{超 SOTA}
+    论文报告 mAP@0.5 = \textbf{68.8\%}（超 SSD \textbf{+0.7pp}）；部署版 Precision 52.1\%
   \end{alertblock}
 \end{frame}
 
@@ -503,10 +499,9 @@
   \vspace{0em}
   \begin{block}{EWA Effective Interval 理论}
     \begin{itemize}
-      \item \textbf{IID 场景}：客户端质量差异小 → EWA 退化为均匀加权 → \alert{无优势}
-      \item \textbf{适度异质}：质量差异可区分 → EWA 优势最明显 → \alert{+1.4\textasciitilde 1.5pp}
-      \item \textbf{极端异质}：信号噪声大 → EWA 略优于 FedAvg → \alert{+1.1pp}
-      \item 实验验证：3-client non-IID，EWA 在适度异质下最佳
+      \item \textbf{IID}：质量差异小 → EWA 退化 → \alert{无优势}
+      \item \textbf{适度异质}：差异可区分 → EWA 最优 → \alert{+1.4\textasciitilde 1.5pp}
+      \item \textbf{极端异质}：信号噪声大 → \alert{+1.1pp}
     \end{itemize}
   \end{block}
 \end{frame}
