@@ -1,4 +1,4 @@
-\documentclass[aspectratio=169, 11pt]{beamer}
+\documentclass[aspectratio=169, 10pt]{beamer}
 \usepackage[fontset=fandol]{ctex}
 \usepackage{amsmath, amssymb, mathtools}
 \usepackage{booktabs}
@@ -13,6 +13,10 @@
 \usefonttheme{professionalfonts}
 \setbeamertemplate{navigation symbols}{}
 
+% -- Compact spacing ------------------------------------------------------
+\setbeamersize{text margin left=6mm, text margin right=6mm}
+\renewcommand{\baselinestretch}{0.95}
+
 % -- Colors --------------------------------------------------------------
 \definecolor{myblue}{HTML}{2B5EA7}
 \definecolor{accentgreen}{HTML}{2E8B57}
@@ -23,6 +27,8 @@
 \setbeamercolor{block title}{bg=myblue!85, fg=white}
 \setbeamercolor{block body}{bg=myblue!8}
 \setbeamercolor{alerted text}{fg=accentred}
+\setbeamertemplate{block begin}{\vskip0.3em\begin{beamercolorbox}[ht=2.5ex,dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block title}\usebeamerfont*{block title}\insertblocktitle\end{beamercolorbox}\vskip-0.3ex\begin{beamercolorbox}[dp=0.8ex,leftskip=0.5em,rightskip=0.5em]{block body}\usebeamerfont{block body}}
+\setbeamertemplate{block end}{\end{beamercolorbox}\vskip0.2em}
 
 % -- Auto section title page ---------------------------------------------
 \AtBeginSection[]{
@@ -558,24 +564,16 @@
 
 \begin{frame}{从检测优化到范式转换}
   \begin{block}{当前范式的根本局限}
-    \begin{itemize}
-      \item 端到端"像素$\rightarrow$bbox"把概念固化在权重中
-      \item 换领域/标注者/中心 $\rightarrow$ 权重失效，需重训
-      \item SAHI/NMS/Soft-NMS 都是后处理治标，不治本
-    \end{itemize}
+    端到端"像素$\rightarrow$bbox"把概念固化在权重中。换领域/标注者/中心 $\rightarrow$ 权重失效。SAHI/NMS/Soft-NMS 都是后处理治标。
   \end{block}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{alertblock}{启发：Thinking with Visual Primitives (DeepSeek-AI, 2025)}
-    将视觉原语（点、bbox）作为推理的最小单元，不依赖自然语言指代。
-    \begin{itemize}
-      \item 解决 Reference Gap：语言描述空间位置有歧义
-      \item 保留指代不确定性：不强迫硬决策
-    \end{itemize}
+    将视觉原语（点、bbox）作为推理最小单元，解决 Reference Gap（语言指代空间有歧义），保留指代不确定性。
   \end{alertblock}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{block}{映射到我们的问题}
     \begin{itemize}
-      \item Soft-NMS 赢 6pp 正是因为保留"指代不确定性"
+      \item Soft-NMS 赢 6pp $\leftarrow$ 保留"指代不确定性"
       \item 多标注者 = 多提案，不需选"正确答案"
       \item FL 泛化 = 聚合视觉原语分布，不是聚合权重
     \end{itemize}
@@ -584,40 +582,23 @@
 
 \begin{frame}{三层通用视觉框架设想}
   \begin{block}{Layer 1: Perception（感知层）}
-    \begin{itemize}
-      \item SAM2/SegAny 输出无类别 visual primitives（mask + 位置 + 形态）
-      \item 不学习"这是什么"，只学习"这里有什么"
-      \item \textbf{跨域通用}：肺器官、肠器官、PCB 缺陷，同一套感知
-    \end{itemize}
+    SAM2/SegAny 输出无类别 visual primitives（mask+位置+形态）。不学习"这是什么"，只学习"这里有什么"。\textbf{跨域通用}。
   \end{block}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{block}{Layer 2: Reasoning（推理层）}
-    \begin{itemize}
-      \item VLM/LLM 看着 visual primitives + 全图上下文做推理
-      \item 泛化来源：语义理解，不是像素匹配
-      \item 推理过程可解释（Chain-of-Thought）
-    \end{itemize}
+    VLM/LLM 看着 primitives + 全图上下文推理。泛化来源：语义理解，不是像素匹配。推理可解释（CoT）。
   \end{block}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{block}{Layer 3: Collaboration（协作层）}
-    \begin{itemize}
-      \item FL 不再聚合权重，聚合 visual primitive 分布
-      \item 各中心上传"形态统计"，不上传像素/权重
-      \item \textbf{真正实现"数据不动，知识动"}
-    \end{itemize}
+    FL 不聚合权重，聚合 primitive 分布。各中心上传"形态统计"，不上传像素/权重。\textbf{数据不动，知识动}。
   \end{block}
 \end{frame}
 
 \begin{frame}{已有探索与技术栈}
   \begin{block}{EWA-Fed: 视觉原语编解码（已实现）}
-    \begin{itemize}
-      \item \texttt{primitives.py}: BOX/POINT/PATH 原语编解码，Shannon 熵
-      \item \texttt{aggregator.py}: 熵加权聚合，per-class 统计
-      \item \texttt{conformity.py}: 跨 client 从众检测
-      \item 当前仅用于监控，未用于推理替代检测
-    \end{itemize}
+    \texttt{primitives.py}（BOX/POINT/PATH + Shannon 熵）+ \texttt{aggregator.py}（熵加权聚合）+ \texttt{conformity.py}（从众检测）。当前仅用于监控，未用于推理。
   \end{block}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{block}{技术栈映射}
     \begin{tabular}{ll}
       \toprule
@@ -629,7 +610,7 @@
       \bottomrule
     \end{tabular}
   \end{block}
-  \vspace{0.3em}
+  \vspace{0.2em}
   \begin{alertblock}{下一步}
     EWA 从"监控框架"升级为"训练框架"：primitive 传输 + 推理替代检测
   \end{alertblock}
@@ -639,26 +620,28 @@
 \section{总结}
 
 \begin{frame}{总结}
-  \begin{block}{已完成}
-    \begin{itemize}
-      \item[\checkmark] SOTA 全面调研（MultiOrg + Intestinal + 专利）
-      \item[\checkmark] 数据预处理管线（tiling + 多标注者支持）
-      \item[\checkmark] 标注 bug 修复（GT 3x 重复 → mAP +26pp）
-      \item[\checkmark] SAHI 全图推理超 SOTA（68.8\% vs 68.1\%，Soft-NMS + overlap=0.3）
-      \item[\checkmark] 评估方法论（标注者影响量化：12pp 差异）
-      \item[\checkmark] Patch 级精度超 SOTA（78.1\% vs 68.1\%，+10.0pp）
-      \item[\checkmark] EWA Effective Interval 理论 + 实验验证
-    \end{itemize}
-  \end{block}
-  \vspace{0.3em}
-  \begin{block}{进行中 / 待完成}
-    \begin{itemize}
-      \item[$\circ$] RF-DETR 对比实验（NMS-free Transformer）
-      \item[$\circ$] 负样本训练（空白 patch 减少 FP，文献预期 FP 62.5\%→25\%）
-      \item[$\circ$] FL + Organoid 系统实验
-      \item[$\circ$] 论文撰写 + 专利申请
-    \end{itemize}
-  \end{block}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{已完成}
+      \begin{itemize}
+        \item[\checkmark] SOTA 全面调研
+        \item[\checkmark] 数据预处理管线（tiling + 多标注者）
+        \item[\checkmark] 标注 bug 修复（mAP +26pp）
+        \item[\checkmark] Patch 级超 SOTA（78.1\%, +10pp）
+        \item[\checkmark] SAHI 全图超 SOTA（68.8\%）
+        \item[\checkmark] EWA Effective Interval 理论
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{进行中 / 待完成}
+      \begin{itemize}
+        \item[$\circ$] RF-DETR 对比实验
+        \item[$\circ$] 负样本训练
+        \item[$\circ$] FL + Organoid 系统实验
+        \item[$\circ$] 论文撰写 + 专利申请
+      \end{itemize}
+    \end{block}
+  \end{columns}
 \end{frame}
 
 \begin{frame}[allowframebreaks]{参考文献}
