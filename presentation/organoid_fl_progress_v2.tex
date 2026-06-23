@@ -31,6 +31,8 @@
 \setbeamercolor{block title}{bg=myblue!85, fg=white}
 \setbeamercolor{block body}{bg=myblue!8}
 \setbeamercolor{alerted text}{fg=accentred}
+\setbeamercolor{block title alerted}{bg=accentred, fg=white}
+\setbeamercolor{block body alerted}{bg=accentred!10}
 
 % -- Auto section title page ---------------------------------------------
 \AtBeginSection[]{
@@ -175,23 +177,23 @@
 
 \begin{frame}{类器官检测 SOTA 全景}
   \begin{block}{数据集与 SOTA}
-    \begin{tabular}{llcc}
+    \begin{tabular}{p{3.2cm}p{3.5cm}cc}
       \toprule
       数据集 & SOTA 方法 & mAP@0.5 & 年份 \\
       \midrule
-      Intestinal (840张/4类) & Deliod (YOLOv8s 改) & 87.5\% & 2025 \\
-      MultiOrg (411张/1类) & SSD & 68.1\% & 2024 \\
-      Colorectal Cancer & YOLOv4 & 36.9\% & 2023 \\
-      Gastric Organoid & YOLOv5 & 79\% acc & 2023 \\
+      Intestinal & Deliod (YOLOv8s) & 87.5\% & 2025 \\
+      MultiOrg & SSD & 68.1\% & 2024 \\
+      Colorectal & YOLOv4 & 36.9\% & 2023 \\
+      Gastric & YOLOv5 & 79\% acc & 2023 \\
       \bottomrule
     \end{tabular}
   \end{block}
   \vspace{0em}
   \begin{block}{关键发现}
     \begin{itemize}
-      \item \textbf{小目标检测是核心瓶颈}：所有改进都围绕小目标（+11.6pp vs 分类+0.7pp）
-      \item \textbf{数据增强贡献 > 架构改进}：Orga-Dete 数据增强 +3.5pp，BiFPN+MPCA +1.5pp
-      \item \textbf{NMS 误删密集目标}：传统 NMS 对密集 organoid 场景有结构性缺陷
+      \item \textbf{小目标检测是核心瓶颈}：改进都围绕小目标（+11.6pp vs 分类+0.7pp）
+      \item \textbf{数据增强 > 架构改进}：Orga-Dete 增强 +3.5pp，BiFPN+MPCA +1.5pp
+      \item \textbf{NMS 误删密集目标}：传统 NMS 对密集 organoid 有结构性缺陷
       \item \textbf{FL + Organoid 无已发表研究}：无论文、无专利
     \end{itemize}
   \end{block}
@@ -199,34 +201,34 @@
 
 \begin{frame}{SOTA 检测器对比（2025--2026）}
   \begin{block}{通用检测 SOTA}
-    \begin{tabular}{llcll}
+    \begin{tabular}{llcl}
       \toprule
-      模型 & 类型 & COCO mAP & 优势 & 来源 \\
+      模型 & 类型 & COCO mAP & 优势 \\
       \midrule
-      YOLOv12 & CNN+Attention & 55.9\% & 速度最优 & Tian et al., 2025 \\
-      RF-DETR & Transformer & \textbf{60+}\% & NMS-free & Solawetz et al., 2025 \\
-      D-FINE & Transformer & 59.5\% & 定位精度 & Peng et al., ICLR 2025 \\
-      RT-DETRv3 & Transformer & 55.3\% & 实时DETR & Lv et al., 2025 \\
+      YOLOv12 & CNN+Attn & 55.9\% & 速度最优 \\
+      RF-DETR & Transformer & \textbf{60+}\% & NMS-free \\
+      D-FINE & Transformer & 59.5\% & 定位精度 \\
+      RT-DETRv3 & Transformer & 55.3\% & 实时DETR \\
       \bottomrule
     \end{tabular}
   \end{block}
   \vspace{0em}
   \begin{block}{Organoid 检测 SOTA}
-    \begin{tabular}{llll}
+    \begin{tabular}{lll}
       \toprule
-      工作 & 数据集 & 模型 & mAP@0.5 \\
+      工作 & 模型 & mAP@0.5 \\
       \midrule
-      Bukas et al. (NeurIPS 2024) & MultiOrg & SSD & 68.1\% \\
-      Yang et al. (Biomimetics 2025) & Mouse Organoid & RTMDet+IDP-Head & +5pp vs baseline \\
-      Orga-Dete (Appl. Sci. 2025) & Lung Organoid & YOLOv8-Lite & TIDE 分析 \\
-      MEF-YOLO (Frontiers 2025) & Organoid & YOLOv10n+MEF & fine-grained \\
-      \textbf{Ours} & MultiOrg & YOLOv12s+SAHI & \textbf{68.8\%} \\
+      Bukas et al. (NeurIPS 2024) & SSD & 68.1\% \\
+      Yang et al. (Biomimetics 2025) & RTMDet+IDP-Head & +5pp \\
+      Orga-Dete (Appl. Sci. 2025) & YOLOv8-Lite & TIDE 分析 \\
+      MEF-YOLO (Frontiers 2025) & YOLOv10n & fine-grained \\
+      \textbf{Ours} & YOLOv12s+SAHI & \textbf{68.8\%} \\
       \bottomrule
     \end{tabular}
   \end{block}
   \vspace{0em}
   \begin{alertblock}{RF-DETR 的结构性优势}
-    NMS-free 架构在密集 organoid 场景无 NMS 误删问题；单类检测 94.6\% > YOLOv12X 92.5\%（COCO）
+    NMS-free 架构在密集 organoid 场景无 NMS 误删问题
   \end{alertblock}
 \end{frame}
 
