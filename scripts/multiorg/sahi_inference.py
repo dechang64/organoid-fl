@@ -235,10 +235,20 @@ def load_yolo_model(weights_path, device='cuda:0'):
     return model
 
 
-def load_rfdetr_model(weights_path):
+def load_rfdetr_model(weights_path, model_variant='small'):
     """加载 RF-DETR 模型"""
-    from rfdetr import RFDETRBase
-    model = RFDETRBase(pretrain_weights=weights_path)
+    from rfdetr import RFDETRBase, RFDETRSmall, RFDETRLarge, RFDETRMedium
+    from rfdetr import RFDETRNano
+
+    model_map = {
+        'nano': RFDETRNano,
+        'small': RFDETRSmall,
+        'base': RFDETRBase,
+        'medium': RFDETRMedium,
+        'large': RFDETRLarge,
+    }
+    ModelClass = model_map.get(model_variant, RFDETRSmall)
+    model = ModelClass(pretrain_weights=weights_path)
     return model
 
 
@@ -596,6 +606,9 @@ def main():
         description='SAHI Multi-Scale Sliding Window Inference for MultiOrg'
     )
     parser.add_argument('--model', required=True, choices=['yolo', 'rfdetr'])
+    parser.add_argument('--model-variant', default='small',
+                        choices=['nano', 'small', 'base', 'medium', 'large'],
+                        help='RF-DETR model variant (only used with --model rfdetr)')
     parser.add_argument('--weights', required=True, help='Model weights path')
     parser.add_argument('--src', required=True, help='Test set directory (MultiOrg_v2/test)')
     parser.add_argument('--dst', default='./results/sahi', help='Output directory')
@@ -643,7 +656,7 @@ def main():
     if args.model == 'yolo':
         model = load_yolo_model(args.weights, args.device)
     else:
-        model = load_rfdetr_model(args.weights)
+        model = load_rfdetr_model(args.weights, args.model_variant)
 
     # 推理
     process_test_set(

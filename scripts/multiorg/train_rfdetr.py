@@ -142,19 +142,29 @@ def train_rfdetr(data_yaml, model_variant='base', epochs=200, imgsz=512,
     print(f"\nResults saved: {results_path}")
 
 
-def evaluate_rfdetr(checkpoint_path, data_yaml, imgsz=512):
+def evaluate_rfdetr(checkpoint_path, data_yaml, imgsz=512, model_variant='small'):
     """评估训练好的 RF-DETR 模型"""
     if not check_install():
         return
 
-    from rfdetr import RFDETRBase
+    from rfdetr import RFDETRBase, RFDETRSmall, RFDETRLarge, RFDETRMedium
+    from rfdetr import RFDETRNano
+
+    model_map = {
+        'nano': RFDETRNano,
+        'small': RFDETRSmall,
+        'base': RFDETRBase,
+        'medium': RFDETRMedium,
+        'large': RFDETRLarge,
+    }
 
     data = load_data_yaml(data_yaml)
-    model = RFDETRBase(pretrain_weights=checkpoint_path)
+    ModelClass = model_map.get(model_variant, RFDETRSmall)
+    model = ModelClass(pretrain_weights=checkpoint_path)
 
     val_dir = os.path.join(os.path.dirname(data_yaml), 'test')
     metrics = model.evaluate(val_dir)
-    print(f"\nEvaluation results:")
+    print(f"\nEvaluation results ({model_variant}):")
     print(json.dumps(metrics, indent=2, default=str))
 
 
@@ -179,7 +189,7 @@ def main():
         if not args.checkpoint:
             print("[ERROR] --checkpoint required for --eval mode")
             sys.exit(1)
-        evaluate_rfdetr(args.checkpoint, args.data, args.imgsz)
+        evaluate_rfdetr(args.checkpoint, args.data, args.imgsz, args.model)
     else:
         train_rfdetr(args.data, args.model, args.epochs, args.imgsz,
                      args.batch_size, args.output)
