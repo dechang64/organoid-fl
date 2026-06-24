@@ -108,7 +108,7 @@ def train_rfdetr(data_yaml, model_variant='base', epochs=200, imgsz=512,
         'dataset_dir': dataset_dir,
         'epochs': epochs,
         'grad_accum_steps': 4,  # 3060 12GB 需要梯度累积
-        'img_size': imgsz,
+        'resolution': imgsz,  # RF-DETR 用 resolution 不是 img_size
     }
     if batch_size is not None:
         train_kwargs['batch_size'] = batch_size
@@ -122,25 +122,18 @@ def train_rfdetr(data_yaml, model_variant='base', epochs=200, imgsz=512,
     hours = elapsed / 3600
     print(f"\nTraining completed in {hours:.2f} hours ({elapsed:.0f}s)")
 
-    # 评估
-    print(f"\nEvaluating on validation set...")
-    val_dir = os.path.join(os.path.dirname(data_yaml), 'test')
-    metrics = model.evaluate(val_dir)
-    print(f"\nValidation metrics:")
-    print(json.dumps(metrics, indent=2, default=str))
-
-    # 保存结果
+    # 保存输出目录信息
     results = {
         'model': f'rf-detr-{model_variant}',
         'epochs': epochs,
         'imgsz': imgsz,
         'training_time_hours': hours,
-        'metrics': metrics,
     }
     results_path = os.path.join(output_dir, 'training_results.json')
     with open(results_path, 'w') as f:
         json.dump(results, f, indent=2, default=str)
     print(f"\nResults saved: {results_path}")
+    print(f"\nUse --eval mode to evaluate the best checkpoint:")
 
 
 def evaluate_rfdetr(checkpoint_path, data_yaml, imgsz=512, model_variant='small'):
