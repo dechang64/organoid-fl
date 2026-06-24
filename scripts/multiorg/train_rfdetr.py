@@ -165,8 +165,8 @@ def evaluate_rfdetr(checkpoint_path, data_yaml, imgsz=512, model_variant='small'
     data = load_data_yaml(data_yaml)
     ModelClass = model_map.get(model_variant, RFDETRSmall)
 
-    # RF-DETR 需要通过 class_weights 传入类别数
-    model = ModelClass(pretrain_weights=checkpoint_path, class_weights=1)
+    # RF-DETR 需要指定 num_classes
+    model = ModelClass(pretrain_weights=checkpoint_path, num_classes=1)
 
     # data.yaml 里 val 字段可能写作 'valid' 或 'val'
     val_field = data.get('val', data.get('valid', 'valid/images'))
