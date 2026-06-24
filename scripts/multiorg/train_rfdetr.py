@@ -274,7 +274,8 @@ def evaluate_rfdetr(checkpoint_path, data_yaml, imgsz=512, model_variant='small'
     # 计算 mAP
     print(f"\nComputing mAP on {len(img_paths)} images...")
     metric = MeanAveragePrecision()
-    result = metric.update(all_predictions, all_ground_truths)
+    metric.update(all_predictions, all_ground_truths)
+    result = metric.compute()
 
     print(f"\n{'='*50}")
     print(f"RF-DETR {model_variant.upper()} Evaluation Results")
