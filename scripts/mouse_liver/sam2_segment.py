@@ -60,6 +60,8 @@ def compute_morphology(mask, bbox):
     return {
         "area": area, "perimeter": float(perimeter), "circularity": float(circularity),
         "solidity": float(solidity), "aspect_ratio": float(aspect_ratio), "eccentricity": float(eccentricity),
+        "bbox": bbox,
+        "centroid": centroid,
     }
 
 def mask_iou(mask1, mask2):
