@@ -26,8 +26,15 @@ def load_rfdetr(weights_path, model_variant='small'):
 def load_sam2(checkpoint='sam2_hiera_small.pt', device='cuda'):
     from sam2.build_sam import build_sam2
     from sam2.sam2_image_predictor import SAM2ImagePredictor
-    model = build_sam2(checkpoint, device=device)
-    return SAM2ImagePredictor(model)
+    # config name is sam2_hiera_s or sam2_hiera_small depending on version
+    # try both
+    for cfg in ['sam2_hiera_s', 'sam2_hiera_small']:
+        try:
+            model = build_sam2(cfg, checkpoint, device=device)
+            return SAM2ImagePredictor(model)
+        except Exception:
+            continue
+    raise RuntimeError(f"Could not load SAM2 with checkpoint={checkpoint}")
 
 def compute_morphology(mask, bbox):
     """从 mask 计算形态学指标"""
