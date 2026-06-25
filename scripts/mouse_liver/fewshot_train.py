@@ -92,9 +92,8 @@ def train(pretrained_path, data_yaml, output_dir, epochs=20, resolution=544):
     print(f"\nTraining complete! Checkpoint: {Path(output_dir) / 'checkpoint_best_regular.pth'}")
 
 def evaluate(model_path, data_yaml, output_dir, model_variant='small'):
-    """评估微调后的模型"""
+    """评估微调后的模型（手动计算 TP/FP/FN，不依赖 sv.MeanAveragePrecision）"""
     from rfdetr import RFDETRSmall
-    import supervision as sv
     from PIL import Image
     import numpy as np
     
@@ -106,8 +105,6 @@ def evaluate(model_path, data_yaml, output_dir, model_variant='small'):
     val_lbl_dir = data_dir / 'valid' / 'labels'
     
     images = sorted(val_img_dir.glob('*.jpg'))
-    
-    metric = sv.MeanAveragePrecision()
     total_tp, total_fp, total_fn = 0, 0, 0
     
     for img_path in images:
@@ -131,20 +128,7 @@ def evaluate(model_path, data_yaml, output_dir, model_variant='small'):
                         y2 = (yc + bh/2) * h
                         gt_boxes.append([x1, y1, x2, y2])
         
-        # Convert to sv format
-        sv_dets = sv.Detections(
-            xyxy=dets.xyxy,
-            confidence=dets.confidence,
-            class_id=dets.class_id,
-        )
-        sv_gt = sv.Detections(
-            xyxy=np.array(gt_boxes) if gt_boxes else np.zeros((0, 4)),
-            class_id=np.zeros(len(gt_boxes)),
-        )
-        
-        metric.update([sv_dets], [sv_gt])
-        
-        # Count TP/FP/FN
+        # Match TP/FP/FN
         if len(dets.xyxy) > 0 and gt_boxes:
             matched = set()
             tp = 0
@@ -152,13 +136,14 @@ def evaluate(model_path, data_yaml, output_dir, model_variant='small'):
                 dx1, dy1, dx2, dy2 = dets.xyxy[di]
                 best_iou, best_gi = 0, -1
                 for gi, (gx1, gy1, gx2, gy2) in enumerate(gt_boxes):
-                    if gi in matched: continue
+                    if gi in matched:
+                        continue
                     ix1, iy1 = max(dx1, gx1), max(dy1, gy1)
                     ix2, iy2 = min(dx2, gx2), min(dy2, gy2)
                     if ix2 > ix1 and iy2 > iy1:
-                        inter = (ix2-ix1) * (iy2-iy1)
-                        da = (dx2-dx1) * (dy2-dy1)
-                        ga = (gx2-gx1) * (gy2-gy1)
+                        inter = (ix2 - ix1) * (iy2 - iy1)
+                        da = (dx2 - dx1) * (dy2 - dy1)
+                        ga = (gx2 - gx1) * (gy2 - gy1)
                         iou = inter / (da + ga - inter)
                         if iou > best_iou:
                             best_iou, best_gi = iou, gi
@@ -172,22 +157,18 @@ def evaluate(model_path, data_yaml, output_dir, model_variant='small'):
             total_fp += len(dets.xyxy)
             total_fn += len(gt_boxes)
     
-    result = metric.compute()
-    
     prec = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
     rec = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
+    f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
     
     print(f"\n{'='*60}")
     print(f"FEW-SHOT EVALUATION SUMMARY")
     print(f"{'='*60}")
     print(f"  Val images: {len(images)}")
-    print(f"  mAP50:     {result.map50:.4f} ({result.map50*100:.2f}%)")
-    print(f"  mAP50:95:  {result.map50_95:.4f} ({result.map50_95*100:.2f}%)")
     print(f"  Precision: {prec:.4f} ({prec*100:.1f}%)")
     print(f"  Recall:    {rec:.4f} ({rec*100:.1f}%)")
+    print(f"  F1:        {f1:.4f} ({f1*100:.1f}%)")
     print(f"  TP={total_tp}  FP={total_fp}  FN={total_fn}")
-    
-    return {'mAP50': result.map50, 'mAP50_95': result.map50_95, 'precision': prec, 'recall': rec}
 
 def main():
     parser = argparse.ArgumentParser(description='Few-shot RF-DETR training on mouse liver organoids')
