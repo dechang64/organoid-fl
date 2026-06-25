@@ -1,14 +1,14 @@
-"""
+r"""
 零样本检测：用 MultiOrg 训练的 RF-DETR 模型直接检测鼠肝类器官
 不需要训练，直接推理看效果
 
 Usage (冬生本地):
     cd C:\Users\decha\organoid-fl
     .\.venv\Scripts\activate
-    python C:\path\to\zeroshot_detect.py --weights output\checkpoint_best_regular.pth --src C:\path\to\小鼠-肝-4X --dst C:\path\to\results\zeroshot
+    python scripts\mouse_liver\zeroshot_detect.py --weights output\checkpoint_best_regular.pth --model-variant small --src scripts\mouse_liver\yolo_format\images --gt scripts\mouse_liver\yolo_format\labels --dst results\zeroshot --sahi --windows 640
 
-    # 同时也用 SAHI 切片推理（类器官大，可能需要大窗口）
-    python zeroshot_detect.py --weights output\checkpoint_best_regular.pth --src ... --dst ... --sahi --windows 640
+    # 直接推理（不切片）
+    python scripts\mouse_liver\zeroshot_detect.py --weights output\checkpoint_best_regular.pth --model-variant small --src scripts\mouse_liver\yolo_format\images --gt scripts\mouse_liver\yolo_format\labels --dst results\zeroshot_direct --threshold 0.5
 """
 import argparse
 import os
