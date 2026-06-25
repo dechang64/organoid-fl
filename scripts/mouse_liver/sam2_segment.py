@@ -33,13 +33,13 @@ def compute_morphology(mask, bbox):
     """从 mask 计算形态学指标"""
     area = int(mask.sum())
     if area == 0:
-        return {"area": 0, "perimeter": 0, "circularity": 0, "solidity": 0, "aspect_ratio": 0, "eccentricity": 0}
+        return {"area": 0, "perimeter": 0, "circularity": 0, "solidity": 0, "aspect_ratio": 0, "eccentricity": 0, "bbox": bbox, "centroid": (0, 0)}
     
     mask_uint8 = mask.astype(np.uint8)
     contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     if not contours:
-        return {"area": area, "perimeter": 0, "circularity": 0, "solidity": 0, "aspect_ratio": 0, "eccentricity": 0}
+        return {"area": area, "perimeter": 0, "circularity": 0, "solidity": 0, "aspect_ratio": 0, "eccentricity": 0, "bbox": bbox, "centroid": (0, 0)}
     
     c = max(contours, key=cv2.contourArea)
     perimeter = cv2.arcLength(c, True)
@@ -47,6 +47,11 @@ def compute_morphology(mask, bbox):
     hull = cv2.convexHull(c)
     hull_area = cv2.contourArea(hull)
     solidity = area / hull_area if hull_area > 0 else 0
+    
+    M = cv2.moments(c)
+    cx = int(M["m10"] / M["m00"]) if M["m00"] > 0 else 0
+    cy = int(M["m01"] / M["m00"]) if M["m00"] > 0 else 0
+    centroid = (cx, cy)
     
     if len(c) >= 5:
         ellipse = cv2.fitEllipse(c)
