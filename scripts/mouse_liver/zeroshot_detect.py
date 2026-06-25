@@ -56,7 +56,6 @@ def detect_sahi(model, img_path, window=640, overlap=0.3, conf=0.25, merge='soft
             y1 = min(y0 + window, h)
             patch = Image.fromarray(img[y0:y1, x0:x1])
             
-            from rfdetr.util import predict
             dets = model.predict(patch, threshold=conf)
             
             # Offset detections to original image coordinates
