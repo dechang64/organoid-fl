@@ -66,11 +66,15 @@ def detect_sahi(model, img_path, window=640, overlap=0.3, conf=0.25, merge='soft
                 dets.xyxy[:, 3] += y0
                 all_dets.append(dets)
     
-    # Merge detections
+    # Merge detections manually (avoid sv.Detections.merge metadata conflict)
     if not all_dets:
         return sv.Detections.empty()
     
-    merged = sv.Detections.merge(all_dets)
+    all_xyxy = np.concatenate([d.xyxy for d in all_dets], axis=0)
+    all_conf = np.concatenate([d.confidence for d in all_dets], axis=0)
+    all_cls = np.concatenate([d.class_id for d in all_dets], axis=0)
+    
+    merged = sv.Detections(xyxy=all_xyxy, confidence=all_conf, class_id=all_cls)
     
     # Apply NMS or Soft-NMS
     if merge == 'nms':
