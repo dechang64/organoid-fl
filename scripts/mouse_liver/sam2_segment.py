@@ -223,9 +223,9 @@ def main():
         vis = img_np.copy()
         # Draw SAM2 masks (green filled)
         for seg in seg_results:
-            mask = seg['mask']
+            mask = seg['mask'].astype(bool)
             color = np.array([0, 255, 0], dtype=np.uint8)
-            vis[mask] = vis[mask] * 0.5 + color * 0.5
+            vis[mask] = (vis[mask] * 0.5 + color * 0.5).astype(np.uint8)
             # Draw contour
             mask_uint8 = mask.astype(np.uint8) * 255
             contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
