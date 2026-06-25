@@ -1,0 +1,6 @@
+path: /home/z/my-project/mouse_liver_organoid/data/yolo_format
+train: images
+val: images
+test: images
+nc: 1
+names: ['organoid']
