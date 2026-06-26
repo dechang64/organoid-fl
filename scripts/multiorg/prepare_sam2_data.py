@@ -189,7 +189,7 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
     
     # 保存 manifest
     with open(dst_path / 'manifest.json', 'w') as f:
-        json.dump(manifest, f, indent=2)
+        json.dump(manifest, f, indent=2, default=lambda x: int(x) if isinstance(x, (np.integer,)) else str(x))
     
     print(f"  {split_name}: {len(manifest)} images, {sum(m['n_instances'] for m in manifest)} instances")
     return manifest
@@ -236,7 +236,7 @@ def main():
             item['mask'] = str(dst_mask)
         
         with open(split_dir / 'manifest.json', 'w') as f:
-            json.dump(manifest, f, indent=2)
+            json.dump(manifest, f, indent=2, default=lambda x: int(x) if isinstance(x, (np.integer,)) else str(x))
         
         print(f"  {split}: {len(manifest)} images, {sum(m['n_instances'] for m in manifest)} instances")
     
