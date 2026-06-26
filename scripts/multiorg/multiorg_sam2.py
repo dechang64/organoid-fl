@@ -70,13 +70,16 @@ def load_sam2(checkpoint='sam2_hiera_small.pt', device='cuda'):
     """加载 SAM2 模型"""
     from sam2.build_sam import build_sam2
     from sam2.sam2_image_predictor import SAM2ImagePredictor
+    last_err = None
     for cfg in ['sam2_hiera_s', 'sam2_hiera_small']:
         try:
             model = build_sam2(cfg, checkpoint, device=device)
             return SAM2ImagePredictor(model)
-        except Exception:
+        except Exception as e:
+            last_err = e
+            print(f"    [SAM2] config '{cfg}' failed: {e}")
             continue
-    raise RuntimeError(f"Could not load SAM2 with checkpoint={checkpoint}")
+    raise RuntimeError(f"Could not load SAM2 with checkpoint={checkpoint}. Last error: {last_err}")
 
 
 # ============================================================
