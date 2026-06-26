@@ -139,57 +139,73 @@ def freeze_backbone(model):
 
 
 # ============================================================
-# Forward（用 SAM2ImagePredictor 接口，保持 mask_decoder 梯度）
+# Forward（绕过 predictor 的 @torch.no_grad()，直接调 model 组件）
 # ============================================================
 
-def forward_sam2(predictor, img_np, box_xyxy, orig_hw, device):
+def forward_sam2(model, img_tensor, box_tensor, image_size, device):
     """单 sample forward: image_encoder(no_grad) → mask_decoder(grad)
     
-    用 predictor.set_image 跑 image_encoder（冻结，无梯度），
-    然后直接调 predictor._predict 保持 mask_decoder 梯度。
+    绕过 SAM2ImagePredictor 的 @torch.no_grad() 装饰器，
+    直接调 model 组件以保持 mask_decoder 梯度。
     
     Args:
-        predictor: SAM2ImagePredictor（已加载模型）
-        img_np: (H, W, 3) uint8 RGB numpy array
-        box_xyxy: (4,) tensor [x1,y1,x2,y2] in orig coords
-        orig_hw: (H, W) 原始尺寸
+        model: SAM2Base
+        img_tensor: (1, 3, H, W) on device, 0-1 range, already resized to image_size
+        box_tensor: (4,) on device, [x1,y1,x2,y2] in image_size coords
+        image_size: int, SAM2 内部 resolution
         device: torch device
     
     Returns:
-        pred_masks: (1, 1, H, W) logits on device（未阈值化）
+        pred_masks: (1, 1, H, W) logits on device
     """
-    # Step 1: set_image 跑 image_encoder（冻结参数，自动无梯度）
-    predictor.set_image(img_np)
+    # Step 1: image_encoder (no_grad — image_encoder 冻结)
+    with torch.no_grad():
+        backbone_out = model.forward_image(img_tensor)
+        _, vision_feats, vision_pos_embeds, feat_sizes = model._prepare_backbone_features(backbone_out)
+        if model.directly_add_no_mem_embed:
+            vision_feats[-1] = vision_feats[-1] + model.no_mem_embed
+        # 转成 predictor 用的格式
+        feats = [
+            feat.permute(1, 2, 0).view(1, -1, *feat_size)
+            for feat, feat_size in zip(vision_feats[::-1], feat_sizes[::-1])
+        ][::-1]
+        image_embed = feats[-1]  # (1, C, H', W')
+        high_res_feats = feats[:-1]  # list of (1, C, H'', W'')
     
-    # Step 2: 准备 box prompt（SAM2 格式: (B, 4) tensor）
-    box = box_xyxy.reshape(1, 4).to(device).float()
+    # Step 2: prompt_encoder — box → points 格式（SAM2 内部转换）
+    # SAM2 把 box 转成两个点: [x1,y1] label=2, [x2,y2] label=3
+    box = box_tensor.reshape(1, 4)  # (1, 4)
+    box_coords = box.reshape(-1, 2, 2)  # (1, 2, 2) = [[x1,y1],[x2,y2]]
+    box_labels = torch.tensor([[2, 3]], dtype=torch.int, device=device)
     
-    # Step 3: 直接调 _predict（不调 predict，避免 numpy 转换断梯度）
-    # _predict 期望 box 已 transform 到 SAM2 内部坐标
-    # predictor._transforms 会 normalize box 到 [0,1] 再缩放到 image_size
-    # 但 _predict 假设输入已经是 transformed 的，所以我们手动 transform
-    # box normalize: / orig_hw
-    h, w = orig_hw
-    box_normalized = box.clone()
-    box_normalized[:, 0] = box[:, 0] / w  # x1
-    box_normalized[:, 1] = box[:, 1] / h  # y1
-    box_normalized[:, 2] = box[:, 2] / w  # x2
-    box_normalized[:, 3] = box[:, 3] / h  # y2
-    # 缩放到 SAM2 内部 resolution
-    sam_size = predictor.model.image_size
-    box_transformed = box_normalized * sam_size
-    
-    # 调 _predict（return_logits=True 保持梯度）
-    masks, iou_predictions, low_res_masks = predictor._predict(
-        point_coords=None,
-        point_labels=None,
-        boxes=box_transformed,
-        mask_input=None,
-        multimask_output=False,
-        return_logits=True,
+    sparse_embeddings, dense_embeddings = model.sam_prompt_encoder(
+        points=(box_coords, box_labels),
+        boxes=None,
+        masks=None,
     )
     
-    return masks  # (1, 1, H, W) logits
+    # Step 3: mask_decoder (有梯度)
+    high_res_features = [f for f in high_res_feats]
+    low_res_masks, iou_predictions, _, _ = model.sam_mask_decoder(
+        image_embeddings=image_embed,
+        image_pe=model.sam_prompt_encoder.get_dense_pe(),
+        sparse_prompt_embeddings=sparse_embeddings,
+        dense_prompt_embeddings=dense_embeddings,
+        multimask_output=False,
+        repeat_image=False,
+        high_res_features=high_res_features,
+    )
+    
+    # Step 4: 上采样到原始尺寸
+    # low_res_masks: (1, 1, H', W') → (1, 1, H, W)
+    pred_masks = F.interpolate(
+        low_res_masks,
+        size=(image_size, image_size),
+        mode='bilinear',
+        align_corners=False,
+    )
+    
+    return pred_masks  # (1, 1, H, W) logits
 
 
 
@@ -233,7 +249,7 @@ def compute_iou(pred_logits, gt_mask, threshold=0.0):
 # Training
 # ============================================================
 
-def train_one_epoch(predictor, model, dataloader, optimizer, device, epoch, accumulation_steps=4):
+def train_one_epoch(model, dataloader, optimizer, device, epoch, image_size, accumulation_steps=4):
     """训练一个 epoch — 逐 sample forward，梯度累积"""
     model.train()
     model.image_encoder.eval()  # image_encoder 保持 eval
@@ -248,16 +264,12 @@ def train_one_epoch(predictor, model, dataloader, optimizer, device, epoch, accu
     
     for batch_idx, (images, boxes, masks) in enumerate(dataloader):
         # batch_size=1，直接取第一个
-        img_tensor = images[0]  # (3, H, W)
-        box = boxes[0].to(device)  # (4,)
-        gt_mask = masks.to(device)  # (1, H, W)
-        orig_hw = img_tensor.shape[-2:]
+        img = images.to(device)       # (1, 3, H, W) already resized to image_size
+        box = boxes[0].to(device)     # (4,) in image_size coords
+        gt_mask = masks.to(device)    # (1, H, W)
         
-        # Forward：用 predictor 接口
-        # set_image 需要 numpy RGB HWC
-        img_np = (img_tensor.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
-        pred_masks = forward_sam2(predictor, img_np, box, orig_hw, device)
-        # pred_masks: (1, 1, H, W) logits
+        # Forward
+        pred_masks = forward_sam2(model, img, box, image_size, device)
         
         # Loss（除以 accumulation_steps 做梯度累积）
         loss, bce_val, dice_val = compute_loss(pred_masks, gt_mask)
@@ -306,7 +318,7 @@ def train_one_epoch(predictor, model, dataloader, optimizer, device, epoch, accu
 
 
 @torch.no_grad()
-def validate(predictor, model, dataloader, device):
+def validate(model, dataloader, device, image_size):
     """验证"""
     model.eval()
     
@@ -315,13 +327,11 @@ def validate(predictor, model, dataloader, device):
     n = 0
     
     for images, boxes, masks in dataloader:
-        img_tensor = images[0]
+        img = images.to(device)
         box = boxes[0].to(device)
         gt_mask = masks.to(device)
-        orig_hw = img_tensor.shape[-2:]
         
-        img_np = (img_tensor.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
-        pred_masks = forward_sam2(predictor, img_np, box, orig_hw, device)
+        pred_masks = forward_sam2(model, img, box, image_size, device)
         
         iou = compute_iou(pred_masks, gt_mask)
         pred_bin = (pred_masks > 0).float()
@@ -376,7 +386,6 @@ def main():
     # 加载模型
     print("\n[1/4] Loading SAM2...")
     from sam2.build_sam import build_sam2
-    from sam2.sam2_image_predictor import SAM2ImagePredictor
     
     last_err = None
     model = None
@@ -391,7 +400,6 @@ def main():
     if model is None:
         raise RuntimeError(f"Failed to load SAM2: {last_err}")
     
-    predictor = SAM2ImagePredictor(model)
     model = model.to(device)
 
     # 冻结 backbone
@@ -439,10 +447,10 @@ def main():
         t0 = time.time()
 
         train_metrics = train_one_epoch(
-            predictor, model, train_loader, optimizer, device, epoch,
-            args.accum_steps
+            model, train_loader, optimizer, device, epoch,
+            args.image_size, args.accum_steps
         )
-        val_metrics = validate(predictor, model, val_loader, device)
+        val_metrics = validate(model, val_loader, device, args.image_size)
 
         scheduler.step()
 
