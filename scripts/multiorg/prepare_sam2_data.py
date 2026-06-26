@@ -108,8 +108,12 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
     if max_images:
         tiff_files = tiff_files[:max_images]
     
+    print(f"  Found {len(tiff_files)} TIFF files to process")
+    
     manifest = []
-    for img_path in tiff_files:
+    for i, img_path in enumerate(tiff_files):
+        if i % 10 == 0:
+            print(f"  [{i+1}/{len(tiff_files)}] {img_path.name} ...", end='', flush=True)
         # 找对应标注
         img_stem = img_path.stem  # e.g. image_001
         json_name = f"{img_stem}_{annotator}.json"
@@ -123,7 +127,12 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
                     json_path = alt_path
                     break
             else:
+                if i % 10 == 0:
+                    print(f" no annotation, skip")
                 continue
+        else:
+            if i % 10 == 0:
+                print(f" processing...", end='', flush=True)
         
         # 加载图片
         img = Image.open(img_path)
@@ -148,6 +157,8 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
         instances = mask_to_instances(mask)
         
         if not instances:
+            if i % 10 == 0:
+                print(f" 0 instances, skip")
             continue
         
         # 保存
@@ -170,6 +181,11 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
             'n_instances': len(instances),
             'instances': [{'bbox': inst['bbox'], 'area': inst['area']} for inst in instances],
         })
+        
+        if i % 10 == 0:
+            print(f" {len(instances)} instances OK")
+    
+    print(f"  Processed {len(manifest)}/{len(tiff_files)} images")
     
     # 保存 manifest
     with open(dst_path / 'manifest.json', 'w') as f:
