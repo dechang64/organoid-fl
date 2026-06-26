@@ -109,6 +109,7 @@ def train_rfdetr(data_yaml, model_variant='base', epochs=200, imgsz=512,
         'epochs': epochs,
         'grad_accum_steps': 4,  # 3060 12GB 需要梯度累积
         'resolution': imgsz,  # RF-DETR 用 resolution 不是 img_size
+        'output_dir': output_dir,  # 防止 checkpoint 覆盖
     }
     if batch_size is not None:
         train_kwargs['batch_size'] = batch_size
