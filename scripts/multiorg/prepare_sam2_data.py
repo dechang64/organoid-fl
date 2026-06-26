@@ -166,6 +166,21 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
         img_out = dst_path / 'images' / f'{out_name}.png'
         mask_out = dst_path / 'masks' / f'{out_name}.png'
         
+        # 跳过已处理的图片
+        if img_out.exists() and mask_out.exists():
+            # 从已有 mask 恢复 instance 数
+            existing_mask = cv2.imread(str(mask_out), cv2.IMREAD_UNCHANGED)
+            n_inst = int(existing_mask.max()) if existing_mask is not None else 0
+            manifest.append({
+                'image': str(img_out),
+                'mask': str(mask_out),
+                'n_instances': n_inst,
+                'instances': [],  # 跳过的不恢复 bbox 详情，微调不需要
+            })
+            if i % 10 == 0:
+                print(f" cached ({n_inst} inst)")
+            continue
+        
         cv2.imwrite(str(img_out), img8)
         # mask 保存为单通道，每个 instance 一个文件
         # 实际上我们保存 instance map（每个像素 = instance id）
