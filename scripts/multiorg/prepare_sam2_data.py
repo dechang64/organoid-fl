@@ -240,13 +240,18 @@ def main():
         split_dir = Path(args.dst) / split
         (split_dir / 'images').mkdir(parents=True, exist_ok=True)
         (split_dir / 'masks').mkdir(parents=True, exist_ok=True)
+        import shutil
         for item in manifest:
             src_img = Path(item['image'])
             src_mask = Path(item['mask'])
             dst_img = split_dir / 'images' / src_img.name
             dst_mask = split_dir / 'masks' / src_mask.name
-            os.rename(str(src_img), str(dst_img))
-            os.rename(str(src_mask), str(dst_mask))
+            if dst_img.exists():
+                dst_img.unlink()
+            if dst_mask.exists():
+                dst_mask.unlink()
+            shutil.move(str(src_img), str(dst_img))
+            shutil.move(str(src_mask), str(dst_mask))
             item['image'] = str(dst_img)
             item['mask'] = str(dst_mask)
         
