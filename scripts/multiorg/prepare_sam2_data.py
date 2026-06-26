@@ -114,7 +114,10 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
     for i, img_path in enumerate(tiff_files):
         # 先检查是否已处理（在加载图片之前！）
         img_stem = img_path.stem
-        out_name = f"{img_path.parent.parent.name}_{img_path.parent.name}_{img_stem}"
+        # 路径结构: train/{Normal,Macros}/Plate_X/image_Y/image_Y.tiff
+        # parent=Plate_X/image_Y, parent.parent=Plate_X, parent.parent.parent=Normal/Macros
+        class_name = img_path.parent.parent.parent.name  # Normal or Macros
+        out_name = f"{class_name}_{img_path.parent.parent.name}_{img_path.parent.name}_{img_stem}"
         img_out = dst_path / 'images' / f'{out_name}.png'
         mask_out = dst_path / 'masks' / f'{out_name}.png'
 
