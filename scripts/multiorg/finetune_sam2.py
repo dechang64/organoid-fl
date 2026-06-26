@@ -1,12 +1,12 @@
 r"""
-SAM2 Mask Decoder 微调 for MultiOrg
+SAM2 Mask Decoder 微调 for MultiOrg（重写版）
 
 策略：
 - 冻结 image_encoder + memory_attention + memory_encoder
 - 只解冻 sam_mask_decoder + sam_prompt_encoder
-- Forward: image → image_encoder (no_grad) → features; box prompt → mask_decoder → mask
+- 逐 sample forward（image_encoder no_grad，mask_decoder 有 grad）
 - Loss: BCE + Dice
-- 3060 12GB: batch_size=4, image_size=1024 (SAM2 默认)
+- 3060 12GB: batch_size=1（逐 sample 累积梯度），image_size=1024
 
 数据格式（由 prepare_sam2_data.py 生成）:
     data/
@@ -20,14 +20,6 @@ SAM2 Mask Decoder 微调 for MultiOrg
 Usage:
     cd C:\Users\decha\organoid-fl
     .\.venv\Scripts\activate
-
-    python scripts\multiorg\finetune_sam2.py ^
-        --data data\multiorg_sam2 ^
-        --checkpoint sam2_checkpoints\sam2_hiera_small.pt ^
-        --dst runs\sam2_finetune ^
-        --epochs 5 --lr 1e-5 --batch-size 2
-
-    # 多行在 PowerShell 不行，用 .bat:
     scripts\multiorg\run_sam2_finetune.bat
 """
 import os
@@ -37,7 +29,6 @@ import time
 import argparse
 from pathlib import Path
 import numpy as np
-from PIL import Image
 import cv2
 
 import torch
@@ -56,13 +47,13 @@ class MultiOrgSAM2Dataset(Dataset):
     每个 sample = (image_tensor, box_prompt, gt_mask)
     一个 image 可能有多个 instances，每个 instance 一个 sample
     """
-    
+
     def __init__(self, manifest_path, image_size=1024):
         with open(manifest_path) as f:
             self.manifest = json.load(f)
         self.image_size = image_size
         self.samples = []
-        
+
         for item in self.manifest:
             n = item['n_instances']
             for i in range(n):
@@ -72,31 +63,31 @@ class MultiOrgSAM2Dataset(Dataset):
                     'inst_idx': i,  # 0-based
                     'bbox': item['instances'][i]['bbox'],  # [x1,y1,x2,y2] in original coords
                 })
-    
+
     def __len__(self):
         return len(self.samples)
-    
+
     def __getitem__(self, idx):
         s = self.samples[idx]
-        
+
         # 加载图片
         img = cv2.imread(s['image'])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         h, w = img.shape[:2]
-        
+
         # 加载 instance mask
         inst_map = cv2.imread(s['mask'], cv2.IMREAD_UNCHANGED)
         mask = (inst_map == (s['inst_idx'] + 1)).astype(np.float32)
-        
+
         # box prompt
         x1, y1, x2, y2 = s['bbox']
         box = np.array([x1, y1, x2, y2], dtype=np.float32)
-        
+
         # Resize 到 image_size（SAM2 默认 1024）
         img_resized = cv2.resize(img, (self.image_size, self.image_size))
-        mask_resized = cv2.resize(mask, (self.image_size, self.image_size), 
+        mask_resized = cv2.resize(mask, (self.image_size, self.image_size),
                                   interpolation=cv2.INTER_NEAREST)
-        
+
         # box 坐标缩放
         scale_x = self.image_size / w
         scale_y = self.image_size / h
@@ -104,17 +95,12 @@ class MultiOrgSAM2Dataset(Dataset):
             x1 * scale_x, y1 * scale_y,
             x2 * scale_x, y2 * scale_y
         ], dtype=np.float32)
-        
-        # To tensor
+
+        # To tensor（不 normalize，SAM2 transforms 会处理）
         img_tensor = torch.from_numpy(img_resized).permute(2, 0, 1).float() / 255.0
-        # Normalize (ImageNet stats, SAM2 内部会处理，但这里简单 normalize)
-        mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-        std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-        img_tensor = (img_tensor - mean) / std
-        
         mask_tensor = torch.from_numpy(mask_resized).float()  # (H, W)
         box_tensor = torch.from_numpy(box_resized)  # (4,)
-        
+
         return img_tensor, box_tensor, mask_tensor
 
 
@@ -122,30 +108,12 @@ class MultiOrgSAM2Dataset(Dataset):
 # SAM2 Loader
 # ============================================================
 
-def load_sam2_model(checkpoint_path, device='cuda'):
-    """加载 SAM2 模型，返回 model 和 predictor"""
-    from sam2.build_sam import build_sam2
-    from sam2.sam2_image_predictor import SAM2ImagePredictor
-    
-    last_err = None
-    for cfg in ['sam2_hiera_s', 'sam2_hiera_small']:
-        try:
-            model = build_sam2(cfg, checkpoint_path, device=device)
-            predictor = SAM2ImagePredictor(model)
-            return model, predictor
-        except Exception as e:
-            last_err = e
-            print(f"  [SAM2] config '{cfg}' failed: {e}")
-            continue
-    raise RuntimeError(f"Could not load SAM2: {last_err}")
-
-
 def freeze_backbone(model):
     """冻结 image_encoder + memory，只解冻 mask_decoder + prompt_encoder"""
     # 冻结 image_encoder
     for param in model.image_encoder.parameters():
         param.requires_grad = False
-    
+
     # 冻结 memory_attention + memory_encoder
     if hasattr(model, 'memory_attention'):
         for param in model.memory_attention.parameters():
@@ -153,15 +121,15 @@ def freeze_backbone(model):
     if hasattr(model, 'memory_encoder'):
         for param in model.memory_encoder.parameters():
             param.requires_grad = False
-    
+
     # 解冻 mask_decoder
     for param in model.sam_mask_decoder.parameters():
         param.requires_grad = True
-    
+
     # 解冻 prompt_encoder
     for param in model.sam_prompt_encoder.parameters():
         param.requires_grad = True
-    
+
     # 统计
     total = sum(p.numel() for p in model.parameters())
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -171,12 +139,88 @@ def freeze_backbone(model):
 
 
 # ============================================================
-# Training
+# Forward（用 SAM2ImagePredictor 接口，保持 mask_decoder 梯度）
 # ============================================================
 
-def compute_iou(pred_mask, gt_mask, threshold=0.0):
+def forward_sam2(predictor, img_np, box_xyxy, orig_hw, device):
+    """单 sample forward: image_encoder(no_grad) → mask_decoder(grad)
+    
+    用 predictor.set_image 跑 image_encoder（冻结，无梯度），
+    然后直接调 predictor._predict 保持 mask_decoder 梯度。
+    
+    Args:
+        predictor: SAM2ImagePredictor（已加载模型）
+        img_np: (H, W, 3) uint8 RGB numpy array
+        box_xyxy: (4,) tensor [x1,y1,x2,y2] in orig coords
+        orig_hw: (H, W) 原始尺寸
+        device: torch device
+    
+    Returns:
+        pred_masks: (1, 1, H, W) logits on device（未阈值化）
+    """
+    # Step 1: set_image 跑 image_encoder（冻结参数，自动无梯度）
+    predictor.set_image(img_np)
+    
+    # Step 2: 准备 box prompt（SAM2 格式: (B, 4) tensor）
+    box = box_xyxy.reshape(1, 4).to(device).float()
+    
+    # Step 3: 直接调 _predict（不调 predict，避免 numpy 转换断梯度）
+    # _predict 期望 box 已 transform 到 SAM2 内部坐标
+    # predictor._transforms 会 normalize box 到 [0,1] 再缩放到 image_size
+    # 但 _predict 假设输入已经是 transformed 的，所以我们手动 transform
+    # box normalize: / orig_hw
+    h, w = orig_hw
+    box_normalized = box.clone()
+    box_normalized[:, 0] = box[:, 0] / w  # x1
+    box_normalized[:, 1] = box[:, 1] / h  # y1
+    box_normalized[:, 2] = box[:, 2] / w  # x2
+    box_normalized[:, 3] = box[:, 3] / h  # y2
+    # 缩放到 SAM2 内部 resolution
+    sam_size = predictor.model.image_size
+    box_transformed = box_normalized * sam_size
+    
+    # 调 _predict（return_logits=True 保持梯度）
+    masks, iou_predictions, low_res_masks = predictor._predict(
+        point_coords=None,
+        point_labels=None,
+        boxes=box_transformed,
+        mask_input=None,
+        multimask_output=False,
+        return_logits=True,
+    )
+    
+    return masks  # (1, 1, H, W) logits
+
+
+
+# ============================================================
+# Loss & Metrics
+# ============================================================
+
+def compute_loss(pred_logits, gt_mask):
+    """BCE + Dice loss
+    
+    Args:
+        pred_logits: (1, 1, H, W) or (H, W)
+        gt_mask: (1, H, W) or (H, W) — 0/1
+    """
+    pred_logits = pred_logits.squeeze()
+    gt = gt_mask.squeeze()
+    
+    # BCE
+    bce_loss = F.binary_cross_entropy_with_logits(pred_logits, gt)
+    
+    # Dice
+    pred_prob = torch.sigmoid(pred_logits)
+    intersection = (pred_prob * gt).sum()
+    dice_loss = 1 - 2 * intersection / (pred_prob.sum() + gt.sum() + 1e-8)
+    
+    return bce_loss + dice_loss, bce_loss.item(), dice_loss.item()
+
+
+def compute_iou(pred_logits, gt_mask, threshold=0.0):
     """计算 IoU"""
-    pred_bin = (pred_mask > threshold).float()
+    pred_bin = (pred_logits > threshold).float()
     gt_bin = (gt_mask > 0.5).float()
     intersection = (pred_bin * gt_bin).sum()
     union = pred_bin.sum() + gt_bin.sum() - intersection
@@ -185,120 +229,84 @@ def compute_iou(pred_mask, gt_mask, threshold=0.0):
     return (intersection / union).item()
 
 
-def train_one_epoch(model, predictor, dataloader, optimizer, device, epoch):
-    """训练一个 epoch"""
+# ============================================================
+# Training
+# ============================================================
+
+def train_one_epoch(predictor, model, dataloader, optimizer, device, epoch, accumulation_steps=4):
+    """训练一个 epoch — 逐 sample forward，梯度累积"""
     model.train()
-    # image_encoder 保持 eval 模式（no_grad）
-    model.image_encoder.eval()
+    model.image_encoder.eval()  # image_encoder 保持 eval
     
     total_loss = 0
     total_bce = 0
     total_dice = 0
     total_iou = 0
-    n_batches = 0
+    n_samples = 0
+    
+    optimizer.zero_grad()
     
     for batch_idx, (images, boxes, masks) in enumerate(dataloader):
-        images = images.to(device)  # (B, 3, H, W)
-        boxes = boxes.to(device)    # (B, 4)
-        masks = masks.to(device)    # (B, H, W)
+        # batch_size=1，直接取第一个
+        img_tensor = images[0]  # (3, H, W)
+        box = boxes[0].to(device)  # (4,)
+        gt_mask = masks.to(device)  # (1, H, W)
+        orig_hw = img_tensor.shape[-2:]
         
-        optimizer.zero_grad()
+        # Forward：用 predictor 接口
+        # set_image 需要 numpy RGB HWC
+        img_np = (img_tensor.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+        pred_masks = forward_sam2(predictor, img_np, box, orig_hw, device)
+        # pred_masks: (1, 1, H, W) logits
         
-        batch_loss = 0
-        batch_iou = 0
+        # Loss（除以 accumulation_steps 做梯度累积）
+        loss, bce_val, dice_val = compute_loss(pred_masks, gt_mask)
+        loss = loss / accumulation_steps
         
-        for i in range(images.size(0)):
-            img = images[i:i+1]  # (1, 3, H, W)
-            box = boxes[i:i+1]   # (1, 4)
-            gt_mask = masks[i:i+1]  # (1, H, W)
-            
-            # Forward: image_encoder (no_grad)
-            with torch.no_grad():
-                predictor.set_image(img.cpu().numpy()[0])  # SAM2 内部处理
-                # 实际上 predictor.set_image 会调 image_encoder
-                # 我们需要确保它用 no_grad
-            
-            # Box prompt → mask_decoder
-            # predictor._predict 内部调 mask_decoder
-            # 我们需要 return_logits=True 来拿 logits 做 loss
-            with torch.enable_grad():
-                # 准备 box prompt
-                box_t = box.reshape(-1, 2, 2)  # (1, 2, 2) - two points
-                box_labels = torch.tensor([[2, 3]], dtype=torch.int, device=device)
-                box_labels = box_labels.repeat(box.size(0), 1)
-                
-                concat_points = (box_t, box_labels)
-                
-                sparse_embeddings, dense_embeddings = model.sam_prompt_encoder(
-                    points=concat_points,
-                    boxes=None,
-                    masks=None,
-                )
-                
-                high_res_features = [
-                    feat_level[i].unsqueeze(0)
-                    for feat_level in predictor._features["high_res_feats"]
-                ]
-                
-                low_res_masks, iou_predictions, _, _ = model.sam_mask_decoder(
-                    image_embeddings=predictor._features["image_embed"][i].unsqueeze(0),
-                    image_pe=model.sam_prompt_encoder.get_dense_pe(),
-                    sparse_prompt_embeddings=sparse_embeddings,
-                    dense_prompt_embeddings=dense_embeddings,
-                    multimask_output=False,  # 单 mask
-                    repeat_image=False,
-                    high_res_features=high_res_features,
-                )
-                
-                # Upscale to original resolution
-                pred_masks = predictor._transforms.postprocess_masks(
-                    low_res_masks, predictor._orig_hw[i]
-                )  # (1, 1, H, W)
-                
-                # Loss: BCE + Dice
-                pred_logits = pred_masks.squeeze()  # (H, W)
-                gt = gt_mask.squeeze()  # (H, W)
-                
-                # BCE
-                bce_loss = F.binary_cross_entropy_with_logits(pred_logits, gt)
-                
-                # Dice
-                pred_prob = torch.sigmoid(pred_logits)
-                intersection = (pred_prob * gt).sum()
-                dice_loss = 1 - 2 * intersection / (pred_prob.sum() + gt.sum() + 1e-8)
-                
-                loss = bce_loss + dice_loss
-                
-                batch_loss += loss
-                batch_iou += compute_iou(pred_logits.detach(), gt)
-            
-        batch_loss = batch_loss / images.size(0)
-        batch_loss.backward()
+        loss.backward()
         
-        # Gradient clipping
+        # IoU（不参与梯度）
+        with torch.no_grad():
+            iou = compute_iou(pred_masks.detach(), gt_mask)
+        
+        total_loss += loss.item() * accumulation_steps
+        total_bce += bce_val
+        total_dice += dice_val
+        total_iou += iou
+        n_samples += 1
+        
+        # 梯度累积
+        if n_samples % accumulation_steps == 0:
+            torch.nn.utils.clip_grad_norm_(
+                [p for p in model.parameters() if p.requires_grad],
+                max_norm=1.0
+            )
+            optimizer.step()
+            optimizer.zero_grad()
+        
+        if batch_idx % 20 == 0:
+            print(f"  Epoch {epoch} [{batch_idx}/{len(dataloader)}] "
+                  f"loss={loss.item()*accumulation_steps:.4f} iou={iou:.4f}", flush=True)
+    
+    # 处理剩余的梯度
+    if n_samples % accumulation_steps != 0:
         torch.nn.utils.clip_grad_norm_(
-            [p for p in model.parameters() if p.requires_grad], 
+            [p for p in model.parameters() if p.requires_grad],
             max_norm=1.0
         )
-        
         optimizer.step()
-        
-        total_loss += batch_loss.item()
-        total_iou += batch_iou / images.size(0)
-        n_batches += 1
-        
-        if batch_idx % 10 == 0:
-            print(f"  Epoch {epoch} [{batch_idx}/{len(dataloader)}] "
-                  f"loss={batch_loss.item():.4f} iou={batch_iou/images.size(0):.4f}")
+        optimizer.zero_grad()
     
     return {
-        'loss': total_loss / n_batches,
-        'iou': total_iou / n_batches,
+        'loss': total_loss / n_samples,
+        'bce': total_bce / n_samples,
+        'dice': total_dice / n_samples,
+        'iou': total_iou / n_samples,
     }
 
 
 @torch.no_grad()
-def validate(model, predictor, dataloader, device):
+def validate(predictor, model, dataloader, device):
     """验证"""
     model.eval()
     
@@ -307,53 +315,32 @@ def validate(model, predictor, dataloader, device):
     n = 0
     
     for images, boxes, masks in dataloader:
-        for i in range(images.size(0)):
-            img = images[i:i+1].to(device)
-            box = boxes[i:i+1].to(device)
-            gt_mask = masks[i:i+1].to(device)
-            
-            predictor.set_image(img.cpu().numpy()[0])
-            
-            box_t = box.reshape(-1, 2, 2)
-            box_labels = torch.tensor([[2, 3]], dtype=torch.int, device=device)
-            box_labels = box_labels.repeat(box.size(0), 1)
-            concat_points = (box_t, box_labels)
-            
-            sparse_embeddings, dense_embeddings = model.sam_prompt_encoder(
-                points=concat_points, boxes=None, masks=None,
-            )
-            high_res_features = [
-                feat_level[i].unsqueeze(0)
-                for feat_level in predictor._features["high_res_feats"]
-            ]
-            low_res_masks, _, _, _ = model.sam_mask_decoder(
-                image_embeddings=predictor._features["image_embed"][i].unsqueeze(0),
-                image_pe=model.sam_prompt_encoder.get_dense_pe(),
-                sparse_prompt_embeddings=sparse_embeddings,
-                dense_prompt_embeddings=dense_embeddings,
-                multimask_output=False,
-                repeat_image=False,
-                high_res_features=high_res_features,
-            )
-            pred_masks = predictor._transforms.postprocess_masks(
-                low_res_masks, predictor._orig_hw[i]
-            )
-            
-            pred_bin = (pred_masks.squeeze() > 0).float()
-            gt = gt_mask.squeeze()
-            
-            iou = compute_iou(pred_bin, gt)
-            dice = 2 * (pred_bin * gt).sum() / (pred_bin.sum() + gt.sum() + 1e-8)
-            
-            total_iou += iou
-            total_dice += dice.item()
-            n += 1
+        img_tensor = images[0]
+        box = boxes[0].to(device)
+        gt_mask = masks.to(device)
+        orig_hw = img_tensor.shape[-2:]
+        
+        img_np = (img_tensor.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+        pred_masks = forward_sam2(predictor, img_np, box, orig_hw, device)
+        
+        iou = compute_iou(pred_masks, gt_mask)
+        pred_bin = (pred_masks > 0).float()
+        gt = (gt_mask > 0.5).float()
+        dice = 2 * (pred_bin * gt).sum() / (pred_bin.sum() + gt.sum() + 1e-8)
+        
+        total_iou += iou
+        total_dice += dice.item()
+        n += 1
     
     return {
-        'iou': total_iou / n,
-        'dice': total_dice / n,
+        'iou': total_iou / max(n, 1),
+        'dice': total_dice / max(n, 1),
     }
 
+
+# ============================================================
+# Main
+# ============================================================
 
 def main():
     parser = argparse.ArgumentParser(description='Finetune SAM2 mask decoder for MultiOrg')
@@ -362,112 +349,137 @@ def main():
     parser.add_argument('--dst', required=True, help='Output directory')
     parser.add_argument('--epochs', type=int, default=5)
     parser.add_argument('--lr', type=float, default=1e-5)
-    parser.add_argument('--batch-size', type=int, default=2)
+    parser.add_argument('--batch-size', type=int, default=1, help='Must be 1 (per-sample forward)')
+    parser.add_argument('--accum-steps', type=int, default=4, help='Gradient accumulation steps')
     parser.add_argument('--num-workers', type=int, default=0)
     parser.add_argument('--device', default='cuda:0')
     parser.add_argument('--image-size', type=int, default=1024)
-    parser.add_argument('--save-every', type=int, default=1, help='Save checkpoint every N epochs')
+    parser.add_argument('--save-every', type=int, default=1)
+    parser.add_argument('--max-train-samples', type=int, default=None, help='Limit train samples for testing')
     args = parser.parse_args()
-    
+
     print("=" * 60)
     print("SAM2 Mask Decoder Finetune for MultiOrg")
     print("=" * 60)
     print(f"  Data: {args.data}")
     print(f"  Checkpoint: {args.checkpoint}")
     print(f"  Output: {args.dst}")
-    print(f"  Epochs: {args.epochs}, LR: {args.lr}, Batch: {args.batch_size}")
+    print(f"  Epochs: {args.epochs}, LR: {args.lr}")
+    print(f"  Accum steps: {args.accum_steps}")
     print(f"  Image size: {args.image_size}")
     print(f"  Device: {args.device}")
     print("=" * 60)
-    
+
     os.makedirs(args.dst, exist_ok=True)
     device = torch.device(args.device if torch.cuda.is_available() else 'cpu')
-    
+
     # 加载模型
     print("\n[1/4] Loading SAM2...")
-    model, predictor = load_sam2_model(args.checkpoint, device=device.device.type)
-    model = model.to(device)
+    from sam2.build_sam import build_sam2
+    from sam2.sam2_image_predictor import SAM2ImagePredictor
     
+    last_err = None
+    model = None
+    for cfg_name in ['sam2_hiera_s', 'sam2_hiera_small']:
+        try:
+            model = build_sam2(cfg_name, args.checkpoint, device=args.device)
+            print(f"  Loaded with config '{cfg_name}'")
+            break
+        except Exception as e:
+            last_err = e
+            print(f"  config '{cfg_name}' failed: {e}")
+    if model is None:
+        raise RuntimeError(f"Failed to load SAM2: {last_err}")
+    
+    predictor = SAM2ImagePredictor(model)
+    model = model.to(device)
+
     # 冻结 backbone
     print("\n[2/4] Freezing backbone...")
     freeze_backbone(model)
-    
+
     # 数据
     print("\n[3/4] Loading data...")
     train_ds = MultiOrgSAM2Dataset(
-        Path(args.data) / 'train' / 'manifest.json', 
+        Path(args.data) / 'train' / 'manifest.json',
         image_size=args.image_size
     )
     val_ds = MultiOrgSAM2Dataset(
         Path(args.data) / 'val' / 'manifest.json',
         image_size=args.image_size
     )
+    
+    # 限制样本数（测试用）
+    if args.max_train_samples and len(train_ds) > args.max_train_samples:
+        train_ds.samples = train_ds.samples[:args.max_train_samples]
+    
     print(f"  Train: {len(train_ds)} samples")
     print(f"  Val: {len(val_ds)} samples")
-    
+
     train_loader = DataLoader(
-        train_ds, batch_size=args.batch_size, shuffle=True,
+        train_ds, batch_size=1, shuffle=True,
         num_workers=args.num_workers, pin_memory=True
     )
     val_loader = DataLoader(
         val_ds, batch_size=1, shuffle=False,
         num_workers=args.num_workers, pin_memory=True
     )
-    
+
     # Optimizer
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(trainable_params, lr=args.lr, weight_decay=0.01)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
-    
+
     # 训练
     print(f"\n[4/4] Training...")
     best_iou = 0
     history = []
-    
+
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
-        
-        train_metrics = train_one_epoch(model, predictor, train_loader, optimizer, device, epoch)
-        val_metrics = validate(model, predictor, val_loader, device)
-        
+
+        train_metrics = train_one_epoch(
+            predictor, model, train_loader, optimizer, device, epoch,
+            args.accum_steps
+        )
+        val_metrics = validate(predictor, model, val_loader, device)
+
         scheduler.step()
-        
+
         elapsed = time.time() - t0
         print(f"\n  Epoch {epoch}/{args.epochs} ({elapsed:.0f}s)")
-        print(f"    Train: loss={train_metrics['loss']:.4f} iou={train_metrics['iou']:.4f}")
+        print(f"    Train: loss={train_metrics['loss']:.4f} bce={train_metrics['bce']:.4f} "
+              f"dice={train_metrics['dice']:.4f} iou={train_metrics['iou']:.4f}")
         print(f"    Val:   iou={val_metrics['iou']:.4f} dice={val_metrics['dice']:.4f}")
-        
+
         history.append({
             'epoch': epoch,
             'train_loss': train_metrics['loss'],
+            'train_bce': train_metrics['bce'],
+            'train_dice': train_metrics['dice'],
             'train_iou': train_metrics['iou'],
             'val_iou': val_metrics['iou'],
             'val_dice': val_metrics['dice'],
             'lr': optimizer.param_groups[0]['lr'],
+            'time_s': elapsed,
         })
-        
-        # Save checkpoint
+
+        # Save checkpoint（只存 trainable params）
         if val_metrics['iou'] > best_iou:
             best_iou = val_metrics['iou']
             ckpt_path = Path(args.dst) / 'sam2_finetuned.pt'
             torch.save({
-                'model_state_dict': model.state_dict(),
+                'trainable_state_dict': {k: v for k, v in model.state_dict().items() if 'sam_mask_decoder' in k or 'sam_prompt_encoder' in k},
+                'model_state_dict': model.state_dict(),  # 全量，用于 build_sam2 加载
                 'epoch': epoch,
                 'val_iou': val_metrics['iou'],
             }, ckpt_path)
             print(f"    ★ Best! Saved to {ckpt_path}")
-        
-        if epoch % args.save_every == 0:
-            ckpt_path = Path(args.dst) / f'sam2_epoch{epoch}.pt'
-            torch.save({
-                'model_state_dict': model.state_dict(),
-                'epoch': epoch,
-            }, ckpt_path)
-    
+
     # Save history
     with open(Path(args.dst) / 'training_history.json', 'w') as f:
         json.dump(history, f, indent=2)
-    
+
     print(f"\n{'='*60}")
     print(f"Done! Best val IoU: {best_iou:.4f}")
     print(f"  Finetuned model: {Path(args.dst) / 'sam2_finetuned.pt'}")
