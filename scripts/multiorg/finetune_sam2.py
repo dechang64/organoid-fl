@@ -42,66 +42,53 @@ from torch.utils.data import Dataset, DataLoader
 # ============================================================
 
 class MultiOrgSAM2Dataset(Dataset):
-    """MultiOrg SAM2 微调数据集
+    """MultiOrg SAM2 微调数据集（按 image 组织，每张图一次 image_encoder）
     
-    每个 sample = (image_tensor, box_prompt, gt_mask)
-    一个 image 可能有多个 instances，每个 instance 一个 sample
+    每个 sample = 一张图的所有 instances
+    __getitem__ 返回 (img_tensor, list of boxes, list of gt_masks)
     """
 
     def __init__(self, manifest_path, image_size=1024):
         with open(manifest_path) as f:
             self.manifest = json.load(f)
         self.image_size = image_size
-        self.samples = []
-
-        for item in self.manifest:
-            n = item['n_instances']
-            for i in range(n):
-                self.samples.append({
-                    'image': item['image'],
-                    'mask': item['mask'],
-                    'inst_idx': i,  # 0-based
-                    'bbox': item['instances'][i]['bbox'],  # [x1,y1,x2,y2] in original coords
-                })
 
     def __len__(self):
-        return len(self.samples)
+        return len(self.manifest)
 
     def __getitem__(self, idx):
-        s = self.samples[idx]
+        item = self.manifest[idx]
 
         # 加载图片
-        img = cv2.imread(s['image'])
+        img = cv2.imread(item['image'])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         h, w = img.shape[:2]
 
         # 加载 instance mask
-        inst_map = cv2.imread(s['mask'], cv2.IMREAD_UNCHANGED)
-        mask = (inst_map == (s['inst_idx'] + 1)).astype(np.float32)
+        inst_map = cv2.imread(item['mask'], cv2.IMREAD_UNCHANGED)
 
-        # box prompt
-        x1, y1, x2, y2 = s['bbox']
-        box = np.array([x1, y1, x2, y2], dtype=np.float32)
-
-        # Resize 到 image_size（SAM2 默认 1024）
+        # Resize 到 image_size
         img_resized = cv2.resize(img, (self.image_size, self.image_size))
-        mask_resized = cv2.resize(mask, (self.image_size, self.image_size),
-                                  interpolation=cv2.INTER_NEAREST)
+        img_tensor = torch.from_numpy(img_resized).permute(2, 0, 1).float() / 255.0
 
-        # box 坐标缩放
+        # 所有 instances 的 box 和 mask
         scale_x = self.image_size / w
         scale_y = self.image_size / h
-        box_resized = np.array([
-            x1 * scale_x, y1 * scale_y,
-            x2 * scale_x, y2 * scale_y
-        ], dtype=np.float32)
+        boxes = []
+        masks = []
+        for i, inst in enumerate(item['instances']):
+            x1, y1, x2, y2 = inst['bbox']
+            box = torch.tensor([
+                x1 * scale_x, y1 * scale_y,
+                x2 * scale_x, y2 * scale_y
+            ], dtype=torch.float32)
+            mask = (inst_map == (i + 1)).astype(np.float32)
+            mask_resized = cv2.resize(mask, (self.image_size, self.image_size),
+                                      interpolation=cv2.INTER_NEAREST)
+            boxes.append(box)
+            masks.append(torch.from_numpy(mask_resized))
 
-        # To tensor（不 normalize，SAM2 transforms 会处理）
-        img_tensor = torch.from_numpy(img_resized).permute(2, 0, 1).float() / 255.0
-        mask_tensor = torch.from_numpy(mask_resized).float()  # (H, W)
-        box_tensor = torch.from_numpy(box_resized)  # (4,)
-
-        return img_tensor, box_tensor, mask_tensor
+        return img_tensor, boxes, masks
 
 
 # ============================================================
@@ -142,40 +129,48 @@ def freeze_backbone(model):
 # Forward（绕过 predictor 的 @torch.no_grad()，直接调 model 组件）
 # ============================================================
 
-def forward_sam2(model, img_tensor, box_tensor, image_size, device):
-    """单 sample forward: image_encoder(no_grad) → mask_decoder(grad)
-    
-    绕过 SAM2ImagePredictor 的 @torch.no_grad() 装饰器，
-    直接调 model 组件以保持 mask_decoder 梯度。
+def forward_sam2_image(model, img_tensor, image_size, device):
+    """跑一次 image_encoder，返回 features（可被多个 box prompt 复用）
     
     Args:
         model: SAM2Base
-        img_tensor: (1, 3, H, W) on device, 0-1 range, already resized to image_size
-        box_tensor: (4,) on device, [x1,y1,x2,y2] in image_size coords
-        image_size: int, SAM2 内部 resolution
+        img_tensor: (1, 3, H, W) on device
+        image_size: int
         device: torch device
     
     Returns:
-        pred_masks: (1, 1, H, W) logits on device
+        image_embed: (1, C, H', W')
+        high_res_feats: list of (1, C, H'', W'')
     """
-    # Step 1: image_encoder (no_grad — image_encoder 冻结)
     with torch.no_grad():
         backbone_out = model.forward_image(img_tensor)
         _, vision_feats, vision_pos_embeds, feat_sizes = model._prepare_backbone_features(backbone_out)
         if model.directly_add_no_mem_embed:
             vision_feats[-1] = vision_feats[-1] + model.no_mem_embed
-        # 转成 predictor 用的格式
         feats = [
             feat.permute(1, 2, 0).view(1, -1, *feat_size)
             for feat, feat_size in zip(vision_feats[::-1], feat_sizes[::-1])
         ][::-1]
-        image_embed = feats[-1]  # (1, C, H', W')
-        high_res_feats = feats[:-1]  # list of (1, C, H'', W'')
+        image_embed = feats[-1]
+        high_res_feats = feats[:-1]
+    return image_embed, high_res_feats
+
+
+def forward_mask_decoder(model, image_embed, high_res_feats, box_tensor, device):
+    """用 image features + box prompt 跑 mask_decoder（有梯度）
     
-    # Step 2: prompt_encoder — box → points 格式（SAM2 内部转换）
-    # SAM2 把 box 转成两个点: [x1,y1] label=2, [x2,y2] label=3
-    box = box_tensor.reshape(1, 4)  # (1, 4)
-    box_coords = box.reshape(-1, 2, 2)  # (1, 2, 2) = [[x1,y1],[x2,y2]]
+    Args:
+        model: SAM2Base
+        image_embed: (1, C, H', W') from forward_sam2_image
+        high_res_feats: list from forward_sam2_image
+        box_tensor: (4,) [x1,y1,x2,y2] in image_size coords
+        device: torch device
+    
+    Returns:
+        pred_masks: (1, 1, H, W) logits
+    """
+    box = box_tensor.reshape(1, 4)
+    box_coords = box.reshape(-1, 2, 2)  # (1, 2, 2)
     box_labels = torch.tensor([[2, 3]], dtype=torch.int, device=device)
     
     sparse_embeddings, dense_embeddings = model.sam_prompt_encoder(
@@ -184,8 +179,6 @@ def forward_sam2(model, img_tensor, box_tensor, image_size, device):
         masks=None,
     )
     
-    # Step 3: mask_decoder (有梯度)
-    high_res_features = [f for f in high_res_feats]
     low_res_masks, iou_predictions, _, _ = model.sam_mask_decoder(
         image_embeddings=image_embed,
         image_pe=model.sam_prompt_encoder.get_dense_pe(),
@@ -193,18 +186,15 @@ def forward_sam2(model, img_tensor, box_tensor, image_size, device):
         dense_prompt_embeddings=dense_embeddings,
         multimask_output=False,
         repeat_image=False,
-        high_res_features=high_res_features,
+        high_res_features=high_res_feats,
     )
     
-    # Step 4: 上采样到原始尺寸
-    # low_res_masks: (1, 1, H', W') → (1, 1, H, W)
     pred_masks = F.interpolate(
         low_res_masks,
-        size=(image_size, image_size),
+        size=(image_embed.shape[-2] * 16, image_embed.shape[-1] * 16),
         mode='bilinear',
         align_corners=False,
     )
-    
     return pred_masks  # (1, 1, H, W) logits
 
 
@@ -250,58 +240,73 @@ def compute_iou(pred_logits, gt_mask, threshold=0.0):
 # ============================================================
 
 def train_one_epoch(model, dataloader, optimizer, device, epoch, image_size, accumulation_steps=4):
-    """训练一个 epoch — 逐 sample forward，梯度累积"""
+    """训练一个 epoch — 按 image 迭代，每张图一次 image_encoder + 多次 mask_decoder"""
     model.train()
-    model.image_encoder.eval()  # image_encoder 保持 eval
+    model.image_encoder.eval()
     
     total_loss = 0
     total_bce = 0
     total_dice = 0
     total_iou = 0
-    n_samples = 0
+    n_instances = 0
+    n_images = 0
     
     optimizer.zero_grad()
     
-    for batch_idx, (images, boxes, masks) in enumerate(dataloader):
-        # batch_size=1，直接取第一个
-        img = images.to(device)       # (1, 3, H, W) already resized to image_size
-        box = boxes[0].to(device)     # (4,) in image_size coords
-        gt_mask = masks.to(device)    # (1, H, W)
+    for batch_idx, (img_tensor, boxes, masks) in enumerate(dataloader):
+        # DataLoader batch_size=1, 但 collate 会把 list 变成 nested structure
+        # img_tensor: (1, 3, H, W), boxes: list of [list of tensors], masks: list of [list of tensors]
+        img = img_tensor.to(device)  # (1, 3, H, W)
+        # 取出第一个 sample 的 boxes 和 masks
+        if isinstance(boxes[0], list):
+            box_list = boxes[0]  # list of (4,) tensors
+            mask_list = masks[0]  # list of (H, W) tensors
+        else:
+            box_list = [boxes[i] for i in range(len(boxes))]
+            mask_list = [masks[i] for i in range(len(masks))]
         
-        # Forward
-        pred_masks = forward_sam2(model, img, box, image_size, device)
+        # Step 1: image_encoder 一次（no_grad）
+        image_embed, high_res_feats = forward_sam2_image(model, img, image_size, device)
         
-        # Loss（除以 accumulation_steps 做梯度累积）
-        loss, bce_val, dice_val = compute_loss(pred_masks, gt_mask)
-        loss = loss / accumulation_steps
+        # Step 2: 每个 instance 跑 mask_decoder（有梯度）
+        for box, gt_mask in zip(box_list, mask_list):
+            box = box.to(device)
+            gt = gt_mask.to(device).unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
+            
+            pred_masks = forward_mask_decoder(model, image_embed, high_res_feats, box, device)
+            
+            # 确保尺寸一致
+            if pred_masks.shape[-2:] != gt.shape[-2:]:
+                pred_masks = F.interpolate(pred_masks, size=gt.shape[-2:], mode='bilinear', align_corners=False)
+            
+            loss, bce_val, dice_val = compute_loss(pred_masks, gt)
+            loss = loss / accumulation_steps
+            loss.backward()
+            
+            with torch.no_grad():
+                iou = compute_iou(pred_masks.detach(), gt)
+            
+            total_loss += loss.item() * accumulation_steps
+            total_bce += bce_val
+            total_dice += dice_val
+            total_iou += iou
+            n_instances += 1
+            
+            if n_instances % accumulation_steps == 0:
+                torch.nn.utils.clip_grad_norm_(
+                    [p for p in model.parameters() if p.requires_grad],
+                    max_norm=1.0
+                )
+                optimizer.step()
+                optimizer.zero_grad()
         
-        loss.backward()
-        
-        # IoU（不参与梯度）
-        with torch.no_grad():
-            iou = compute_iou(pred_masks.detach(), gt_mask)
-        
-        total_loss += loss.item() * accumulation_steps
-        total_bce += bce_val
-        total_dice += dice_val
-        total_iou += iou
-        n_samples += 1
-        
-        # 梯度累积
-        if n_samples % accumulation_steps == 0:
-            torch.nn.utils.clip_grad_norm_(
-                [p for p in model.parameters() if p.requires_grad],
-                max_norm=1.0
-            )
-            optimizer.step()
-            optimizer.zero_grad()
-        
+        n_images += 1
         if batch_idx % 20 == 0:
             print(f"  Epoch {epoch} [{batch_idx}/{len(dataloader)}] "
+                  f"imgs={n_images} insts={n_instances} "
                   f"loss={loss.item()*accumulation_steps:.4f} iou={iou:.4f}", flush=True)
     
-    # 处理剩余的梯度
-    if n_samples % accumulation_steps != 0:
+    if n_instances % accumulation_steps != 0:
         torch.nn.utils.clip_grad_norm_(
             [p for p in model.parameters() if p.requires_grad],
             max_norm=1.0
@@ -310,41 +315,56 @@ def train_one_epoch(model, dataloader, optimizer, device, epoch, image_size, acc
         optimizer.zero_grad()
     
     return {
-        'loss': total_loss / n_samples,
-        'bce': total_bce / n_samples,
-        'dice': total_dice / n_samples,
-        'iou': total_iou / n_samples,
+        'loss': total_loss / max(n_instances, 1),
+        'bce': total_bce / max(n_instances, 1),
+        'dice': total_dice / max(n_instances, 1),
+        'iou': total_iou / max(n_instances, 1),
+        'n_images': n_images,
+        'n_instances': n_instances,
     }
 
 
 @torch.no_grad()
 def validate(model, dataloader, device, image_size):
-    """验证"""
+    """验证 — 按 image 迭代"""
     model.eval()
     
     total_iou = 0
     total_dice = 0
-    n = 0
+    n_instances = 0
     
-    for images, boxes, masks in dataloader:
-        img = images.to(device)
-        box = boxes[0].to(device)
-        gt_mask = masks.to(device)
+    for img_tensor, boxes, masks in dataloader:
+        img = img_tensor.to(device)
+        if isinstance(boxes[0], list):
+            box_list = boxes[0]
+            mask_list = masks[0]
+        else:
+            box_list = [boxes[i] for i in range(len(boxes))]
+            mask_list = [masks[i] for i in range(len(masks))]
         
-        pred_masks = forward_sam2(model, img, box, image_size, device)
+        image_embed, high_res_feats = forward_sam2_image(model, img, image_size, device)
         
-        iou = compute_iou(pred_masks, gt_mask)
-        pred_bin = (pred_masks > 0).float()
-        gt = (gt_mask > 0.5).float()
-        dice = 2 * (pred_bin * gt).sum() / (pred_bin.sum() + gt.sum() + 1e-8)
-        
-        total_iou += iou
-        total_dice += dice.item()
-        n += 1
+        for box, gt_mask in zip(box_list, mask_list):
+            box = box.to(device)
+            gt = gt_mask.to(device).unsqueeze(0).unsqueeze(0)
+            
+            pred_masks = forward_mask_decoder(model, image_embed, high_res_feats, box, device)
+            if pred_masks.shape[-2:] != gt.shape[-2:]:
+                pred_masks = F.interpolate(pred_masks, size=gt.shape[-2:], mode='bilinear', align_corners=False)
+            
+            iou = compute_iou(pred_masks, gt)
+            pred_bin = (pred_masks > 0).float()
+            gt_bin = (gt > 0.5).float()
+            dice = 2 * (pred_bin * gt_bin).sum() / (pred_bin.sum() + gt_bin.sum() + 1e-8)
+            
+            total_iou += iou
+            total_dice += dice.item()
+            n_instances += 1
     
     return {
-        'iou': total_iou / max(n, 1),
-        'dice': total_dice / max(n, 1),
+        'iou': total_iou / max(n_instances, 1),
+        'dice': total_dice / max(n_instances, 1),
+        'n_instances': n_instances,
     }
 
 
@@ -419,10 +439,10 @@ def main():
     
     # 限制样本数（测试用）
     if args.max_train_samples and len(train_ds) > args.max_train_samples:
-        train_ds.samples = train_ds.samples[:args.max_train_samples]
-    
-    print(f"  Train: {len(train_ds)} samples")
-    print(f"  Val: {len(val_ds)} samples")
+        train_ds.manifest = train_ds.manifest[:args.max_train_samples]
+
+    print(f"  Train: {len(train_ds)} images")
+    print(f"  Val: {len(val_ds)} images")
 
     train_loader = DataLoader(
         train_ds, batch_size=1, shuffle=True,
