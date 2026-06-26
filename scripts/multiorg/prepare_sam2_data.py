@@ -223,6 +223,13 @@ def main():
     print("=" * 60)
     
     # 处理所有图片
+    # 清理旧目录（避免之前部分移动导致文件不一致）
+    import shutil
+    for subdir in ['all', 'train', 'val']:
+        old = Path(args.dst) / subdir
+        if old.exists():
+            shutil.rmtree(old, ignore_errors=True)
+
     all_manifest = process_split(args.src, args.dst, args.annotator, 'all', args.max_images)
     
     # 随机划分 train/val
