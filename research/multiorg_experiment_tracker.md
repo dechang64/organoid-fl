@@ -1,6 +1,6 @@
 # MultiOrg 实验追踪表
 
-> 最后更新：2026-06-25（含权威来源核实 + 训练日志精确提取）
+> 最后更新：2026-06-26（SAM2 zero-shot 形态学过滤实验 + SAM2 微调进行中）
 > 目标：突破 SOTA SSD 68.1% mAP@0.5 → 达到 80%+
 > 数据集：MultiOrg_v2 (411张 6K×5.7K, 单类 organoid, **肺类器官**) / MultiOrg_v3_512 (512px tiling)
 
@@ -14,6 +14,7 @@
 | 训练日志 | upload 目录 txt 文件精确提取 | ✅ 已核实 |
 | nano+640 训练数据 | **workspace 无日志** | ❌ 来源不明，待核实 |
 | SAHI 结果 | TOOLS.md 记录（从聊天记录搬） | ⚠️ 未从日志核实 |
+| SAM2 zero-shot 结果 | upload/6a3dd648 JSON ✅ | ✅ 已核实 |
 
 ---
 
@@ -142,11 +143,53 @@ checkpoint 来源（06-24 daily notes 确认）：S6 系列用的是 **R1 (small
 | ✅ | T2 | nano+640 SAHI 评估 | T1 | 完成（S8a EMA=71.17%, S8b reg=72.72%） |
 | ✅ | T3 | small+640 SAHI 评估 | S6d 已有 | 完成（75.84%） |
 | ✅ | T4 | 核实全部 SAHI 数据 | 12个JSON | 完成，8个RF-DETR+4个YOLOv12 |
+| ✅ | T9 | SAM2 zero-shot 形态学过滤 | upload/6a3dd648 | 完成，**无效**（见 §2.4） |
+| 🟡 | T10 | SAM2 mask_decoder 微调 | 数据准备中 | Step 1 跑ing，Step 2 待跑 |
 | 🟡 | T3b | 确认 S7b vs S8b 差异 | 需查看脚本调用历史 | 参数相同结果不同 |
 | 🟢 | T5 | 双尺度 SAHI (512+2048) | — | — |
 | 🟢 | T6 | t1_A 标签训练 | — | 阶段3 |
 | 🟢 | T7 | CLOD 标签清洗 | — | 阶段3 |
 | 🟢 | T8 | FL 仿真 | — | — |
+
+---
+
+## 2.4 SAM2 形态学过滤实验（2026-06-26）
+
+### Zero-shot SAM2（5张测试, annotator=t1_b）
+
+**配置**：RF-DETR small + SAHI(512窗, overlap=0.3, soft_nms, sf=0.3) → SAM2 zero-shot → 形态学特征
+
+**Baseline**：mAP50=77.54%, mAP50-95=48.54%, P=30.4%, R=93.3%, F1=45.8%, TP=462, FP=1059, FN=33
+
+**过滤效果**：
+
+| 过滤器 | FP砍掉 | TP丢失 | mAP50 | F1 |
+|--------|--------|--------|-------|-----|
+| circ>=0.5 | 6 (0.6%) | 0 | 77.54% | 46.0% |
+| solid>=0.90 | 11 (1.0%) | 0 | 77.55% | 46.1% |
+| ar>=0.5 | 23 (2.2%) | 0 | 77.54% | — |
+| **conf>=0.4** | **504 (48%)** | **21 (5%)** | **76.17%** | **59.2%** |
+| conf>=0.5 | 786 (74%) | 70 (15%) | 72.05% | 67.6% |
+| conf>=0.6 | 959 (91%) | 139 (30%) | 63.22% | 70.4% |
+
+**结论**：
+- **形态学过滤无效**：circularity/solidity/aspect_ratio 几乎不砍 FP（<2%）
+- **原因**：TP 和 FP 的 circularity 分布重叠（76% 检测在 0.8-0.9 区间）
+- **conf>=0.4 是有效阈值**：砍 48% FP 只丢 5% TP
+- **根本原因**：zero-shot SAM2 没有 organoid 形态先验——鼠肝有效是因为做了 few-shot 微调，MultiOrg 没有
+
+### SAM2 mask_decoder 微调（进行中）
+
+**实验设计**：MultiOrg GT 多边形 → mask → 微调 SAM2 mask_decoder（冻结 image_encoder）→ 用微调后 SAM2 跑形态学过滤
+
+**流程**：
+1. `prepare_sam2_data.py`：napari 多边形 → instance mask（cv2.fillPoly）
+2. `finetune_sam2.py`：冻结 image_encoder+memory，只训练 mask_decoder+prompt_encoder，BCE+Dice loss
+3. `multiorg_sam2.py --sam2-checkpoint runs/sam2_finetune/sam2_finetuned.pt`：用微调后 SAM2 评估
+
+**假设**：微调后 SAM2 对 organoid 形态有判别力 → 形态学特征能区分 TP/FP
+
+**数据**：upload/6a3dd6487422736f6269f8f0_multiorg_sam2_results.json ✅
 
 ---
 
@@ -215,3 +258,5 @@ checkpoint 来源（06-24 daily notes 确认）：S6 系列用的是 **R1 (small
 | 2026-06-25 | 从训练日志精确提取 R1/R3 数据，修正多处错误，标记 R2 nano+640 数据来源不明 |
 | 2026-06-25 | 从 eval_results.json 核实 R2=80.07%/51.20%（非之前的82.72%/55.23%），修正排名为 R3>R1>R2 |
 | 2026-06-25 | 从 12 个 SAHI JSON 核实全部 SAHI 数据，发现 S6 sf=0.0=77.15%（比之前记录的 76.47% 高），新增 S6c/S6d/S7b/S9-S12 |
+| 2026-06-26 | SAM2 zero-shot 形态学过滤实验（5张测试），结论：无效。新增 §2.4 |
+| 2026-06-26 | 新增 T9（完成）/ T10（进行中）SAM2 mask_decoder 微调实验 |
