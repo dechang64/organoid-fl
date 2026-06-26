@@ -112,10 +112,26 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
     
     manifest = []
     for i, img_path in enumerate(tiff_files):
+        # 先检查是否已处理（在加载图片之前！）
+        img_stem = img_path.stem
+        out_name = f"{img_path.parent.parent.name}_{img_path.parent.name}_{img_stem}"
+        img_out = dst_path / 'images' / f'{out_name}.png'
+        mask_out = dst_path / 'masks' / f'{out_name}.png'
+
+        if img_out.exists() and mask_out.exists():
+            manifest.append({
+                'image': str(img_out),
+                'mask': str(mask_out),
+                'n_instances': 0,
+                'instances': [],
+            })
+            if i % 50 == 0:
+                print(f"  [{i+1}/{len(tiff_files)}] cached")
+            continue
+
         if i % 10 == 0:
             print(f"  [{i+1}/{len(tiff_files)}] {img_path.name} ...", end='', flush=True)
         # 找对应标注
-        img_stem = img_path.stem  # e.g. image_001
         json_name = f"{img_stem}_{annotator}.json"
         json_path = img_path.parent / json_name
         
@@ -161,23 +177,7 @@ def process_split(src_dir, dst_dir, annotator='Annotator_A', split_name='train',
                 print(f" 0 instances, skip")
             continue
         
-        # 保存
-        out_name = f"{img_path.parent.parent.name}_{img_path.parent.name}_{img_stem}"
-        img_out = dst_path / 'images' / f'{out_name}.png'
-        mask_out = dst_path / 'masks' / f'{out_name}.png'
-        
-        # 跳过已处理的图片（不读 mask，只检查文件存在）
-        if img_out.exists() and mask_out.exists():
-            manifest.append({
-                'image': str(img_out),
-                'mask': str(mask_out),
-                'n_instances': 0,  # 不读 mask，微调脚本会自己算
-                'instances': [],
-            })
-            if i % 50 == 0:
-                print(f" cached")
-            continue
-        
+        # 保存（out_name/img_out/mask_out 已在循环开头定义）
         cv2.imwrite(str(img_out), img8)
         # mask 保存为单通道，每个 instance 一个文件
         # 实际上我们保存 instance map（每个像素 = instance id）
