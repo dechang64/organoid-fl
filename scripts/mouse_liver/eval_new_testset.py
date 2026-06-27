@@ -144,6 +144,9 @@ def main():
     parser.add_argument('--threshold', type=float, default=0.25)
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--no-sam2', action='store_true', help='Skip SAM2, use bbox only')
+    parser.add_argument('--resolution', type=int, default=None, help='RF-DETR inference resolution (default: model default)')
+    parser.add_argument('--resize-to', type=int, nargs=2, default=None, metavar=('W', 'H'),
+                        help='Resize images to WxH before processing (e.g. --resize-to 2592 1944)')
     args = parser.parse_args()
 
     os.makedirs(args.dst, exist_ok=True)
@@ -195,11 +198,25 @@ def main():
 
         annot_np = np.array(Image.open(annot_path).convert('RGB'))
 
+        # Resize if requested (e.g. --resize-to 2592 1944 to match training resolution)
+        if args.resize_to:
+            tgt_w, tgt_h = args.resize_to
+            # Resize original
+            img_pil = img_pil.resize((tgt_w, tgt_h), Image.LANCZOS)
+            img_np = np.array(img_pil.convert('RGB'))
+            h, w = img_np.shape[:2]
+            # Resize annotation (keep red lines sharp)
+            annot_pil = Image.fromarray(annot_np).resize((tgt_w, tgt_h), Image.LANCZOS)
+            annot_np = np.array(annot_pil.convert('RGB'))
+
         # 1. Extract GT from annotation
         gt_bboxes, gt_masks, gt_full_mask = extract_gt_from_annot(annot_np)
 
         # 2. RF-DETR detection
-        dets = det_model.predict(img_pil, threshold=args.threshold)
+        if args.resolution:
+            dets = det_model.predict(img_pil, threshold=args.threshold, shape=(args.resolution, args.resolution))
+        else:
+            dets = det_model.predict(img_pil, threshold=args.threshold)
 
         # 3. SAM2 segmentation
         seg_results = []
