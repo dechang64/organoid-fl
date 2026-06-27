@@ -597,11 +597,10 @@ def main():
                 gts = []
                 gt_masks = []
                 if gt_path:
-                    # 先获取图片尺寸
+                    # 只获取图片尺寸，不转 RGB（节省内存）
                     print(f"    Loading TIFF...", flush=True)
-                    img_pil = convert_tiff_to_rgb(tiff_file)
-                    img_w, img_h = img_pil.size
-                    del img_pil  # 释放内存
+                    with Image.open(tiff_file) as _im:
+                        img_w, img_h = _im.size
                     print(f"    Image size: {img_w}x{img_h}", flush=True)
                     gts = load_ground_truth(gt_path, img_w, img_h)
                     print(f"    GT bboxes: {len(gts)}", flush=True)
