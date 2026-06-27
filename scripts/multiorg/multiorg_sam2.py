@@ -253,17 +253,17 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
             morph = compute_morphology(mask, [x1, y1, x2, y2])
             morph['confidence'] = float(score)
             morph['window'] = int(det[5]) if len(det) > 5 else 0
+            morph['mask'] = mask  # 保留 mask 用于 mask IoU 评估
             detections.append(morph)
     else:
         # 不用 SAM2，只用 bbox
         for det in fused:
             x1, y1, x2, y2, score = det[:5]
-            morph = compute_morphology(
-                bbox_to_mask([x1, y1, x2, y2], img_h, img_w),
-                [x1, y1, x2, y2]
-            )
+            mask = bbox_to_mask([x1, y1, x2, y2], img_h, img_w)
+            morph = compute_morphology(mask, [x1, y1, x2, y2])
             morph['confidence'] = float(score)
             morph['window'] = int(det[5]) if len(det) > 5 else 0
+            morph['mask'] = mask
             detections.append(morph)
 
     return detections, (img_w, img_h)
