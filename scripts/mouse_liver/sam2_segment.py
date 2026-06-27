@@ -122,6 +122,8 @@ def main():
     parser.add_argument('--threshold', type=float, default=0.25)
     parser.add_argument('--sam2-checkpoint', default='sam2_hiera_small.pt')
     parser.add_argument('--device', default='cuda')
+    parser.add_argument('--resize-to', type=int, nargs=2, default=None, metavar=('W', 'H'),
+                        help='Resize images to WxH before processing (e.g. --resize-to 2592 1944)')
     args = parser.parse_args()
     
     os.makedirs(args.dst, exist_ok=True)
@@ -148,7 +150,14 @@ def main():
         img_pil = Image.open(img_path)
         img_np = np.array(img_pil.convert('RGB'))
         h, w = img_np.shape[:2]
-        
+
+        # Resize if requested
+        if args.resize_to:
+            tgt_w, tgt_h = args.resize_to
+            img_pil = img_pil.resize((tgt_w, tgt_h), Image.LANCZOS)
+            img_np = np.array(img_pil.convert('RGB'))
+            h, w = img_np.shape[:2]
+
         # 1. RF-DETR detection
         dets = det_model.predict(img_pil, threshold=args.threshold)
         
