@@ -109,14 +109,20 @@ def compute_morphology(mask, bbox):
     - aspect_ratio: 宽/高, 1=等轴。TP 0.85-1.0, FP < 0.7
     - confidence: RF-DETR 分数。TP > 0.65, FP < 0.65
     """
-    area = int(mask.sum())
+    # 裁剪 mask 到 bbox 区域（节省内存，全图 mask 太大）
+    x1, y1, x2, y2 = [int(v) for v in bbox]
+    x1, y1 = max(0, x1), max(0, y1)
+    x2, y2 = max(x1+1, x2), max(y1+1, y2)
+    mask_crop = mask[y1:y2, x1:x2]
+    
+    area = int(mask_crop.sum())
     if area == 0:
         return {
             "area": 0, "perimeter": 0, "circularity": 0, "solidity": 0,
             "aspect_ratio": 0, "bbox": bbox, "has_mask": False
         }
 
-    mask_uint8 = mask.astype(np.uint8)
+    mask_uint8 = mask_crop.astype(np.uint8)
     contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
