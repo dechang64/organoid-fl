@@ -32,12 +32,13 @@ from PIL import Image
 
 
 def convert_tiff_to_rgb(tiff_path):
-    """16-bit TIFF → 8-bit RGB"""
-    im = Image.open(tiff_path)
-    if im.mode == 'I;16' or im.mode == 'I':
-        arr = np.array(im, dtype=np.float64)
+    """16-bit TIFF → 8-bit RGB (用 tifffile 避免 PIL I;16 segfault)"""
+    try:
+        import tifffile
+        arr = tifffile.imread(tiff_path)
         if arr.ndim == 3:
             arr = arr[:, :, 0]
+        arr = arr.astype(np.float32)
         vmin, vmax = float(arr.min()), float(arr.max())
         if vmax > vmin:
             arr8 = ((arr - vmin) / (vmax - vmin) * 255.0).astype(np.uint8)
@@ -47,7 +48,21 @@ def convert_tiff_to_rgb(tiff_path):
         rgb = np.stack([arr8, arr8, arr8], axis=-1)
         del arr8
         return Image.fromarray(rgb, mode='RGB')
-    return im.convert('RGB')
+    except ImportError:
+        # fallback: PIL
+        im = Image.open(tiff_path)
+        if im.mode == 'I;16' or im.mode == 'I':
+            arr = np.array(im, dtype=np.float64)
+            if arr.ndim == 3:
+                arr = arr[:, :, 0]
+            vmin, vmax = float(arr.min()), float(arr.max())
+            if vmax > vmin:
+                arr8 = ((arr - vmin) / (vmax - vmin) * 255.0).astype(np.uint8)
+            else:
+                arr8 = np.zeros_like(arr, dtype=np.uint8)
+            rgb = np.stack([arr8, arr8, arr8], axis=-1)
+            return Image.fromarray(rgb, mode='RGB')
+        return im.convert('RGB')
 
 
 def sliding_windows(img_w, img_h, window_size, overlap=0.5):
