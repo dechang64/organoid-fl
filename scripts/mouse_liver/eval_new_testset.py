@@ -240,7 +240,7 @@ def main():
                 morph['mask'] = mask
                 seg_results.append(morph)
 
-        # 4. Match detections to GT (IoU > 0.5)
+        # 4. Match detections to GT (mask IoU > 0.5)
         tp = 0
         matched = set()
         tp_morphs = []
@@ -248,10 +248,11 @@ def main():
 
         for seg in seg_results:
             best_iou, best_gi = 0, -1
-            for gi, gt in enumerate(gt_bboxes):
+            for gi, gt_mask in enumerate(gt_masks):
                 if gi in matched:
                     continue
-                iou = bbox_iou(seg['bbox'], gt)
+                # Use mask IoU (SAM2 mask vs GT contour mask)
+                iou = mask_iou(seg['mask'], gt_mask)
                 if iou > best_iou:
                     best_iou, best_gi = iou, gi
             if best_iou > 0.5 and best_gi >= 0:
