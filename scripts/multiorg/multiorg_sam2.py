@@ -244,7 +244,8 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
     detections = []
     if use_sam2 and sam2_predictor and len(fused) > 0:
         sam2_predictor.set_image(img_np)
-        for det in fused:
+        import gc
+        for det_idx, det in enumerate(fused):
             x1, y1, x2, y2, score = det[:5]
             cx1, cy1, cx2, cy2 = int(x1), int(y1), int(x2), int(y2)
             box = np.array([x1, y1, x2, y2], dtype=np.float32)
@@ -252,8 +253,8 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
                 masks, scores, _ = sam2_predictor.predict(box=box, multimask_output=False)
                 mask_full = masks[0]
                 # 裁剪到 bbox 区域（节省内存）
-                mask = mask_full[cy1:cy2, cx1:cx2]
-                del mask_full
+                mask = mask_full[cy1:cy2, cx1:cx2].copy()
+                del masks, mask_full, scores
             except Exception as e:
                 mask = bbox_to_mask([x1, y1, x2, y2], img_h, img_w)
 
@@ -263,6 +264,8 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
             morph['mask'] = mask
             morph['mask_offset'] = (cx1, cy1)
             detections.append(morph)
+            if det_idx % 50 == 0:
+                gc.collect()
     else:
         # 不用 SAM2，只用 bbox
         for det in fused:
