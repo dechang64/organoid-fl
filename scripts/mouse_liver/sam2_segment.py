@@ -124,6 +124,7 @@ def main():
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--resize-to', type=int, nargs=2, default=None, metavar=('W', 'H'),
                         help='Resize images to WxH before processing (e.g. --resize-to 2592 1944)')
+    parser.add_argument('--resolution', type=int, default=None, help='RF-DETR inference resolution (e.g. 768)')
     args = parser.parse_args()
     
     os.makedirs(args.dst, exist_ok=True)
@@ -159,7 +160,10 @@ def main():
             h, w = img_np.shape[:2]
 
         # 1. RF-DETR detection
-        dets = det_model.predict(img_pil, threshold=args.threshold)
+        if args.resolution:
+            dets = det_model.predict(img_pil, threshold=args.threshold, shape=(args.resolution, args.resolution))
+        else:
+            dets = det_model.predict(img_pil, threshold=args.threshold)
         
         # 2. SAM2 segmentation
         seg_results = []
