@@ -57,7 +57,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from sahi_inference import (
     convert_tiff_to_rgb, sliding_windows, filter_boundary_detections,
     detect_rfdetr_patch, soft_nms, nms, weighted_box_fusion,
-    load_ground_truth, compute_iou, compute_ap_full, compute_map_range,
+    load_ground_truth, load_ground_truth_masks, compute_iou, compute_ap_full, compute_map_range,
     find_annotation_for_image, load_rfdetr_model
 )
 
@@ -290,8 +290,73 @@ def filter_by_morphology(detections, min_circularity=0.0, min_solidity=0.0,
     return filtered
 
 
+def mask_iou(mask1, mask2):
+    """两个 mask 的 IoU"""
+    inter = np.logical_and(mask1, mask2).sum()
+    union = np.logical_or(mask1, mask2).sum()
+    return inter / union if union > 0 else 0
+
+
+def evaluate_detections_mask(detections, gt_masks, iou_threshold=0.5):
+    """用 mask IoU 评估检测结果（detections 带 mask，gt_masks 是 [(bbox, mask), ...]）
+    
+    返回 (ap50, tp, fp, fn)
+    """
+    if not gt_masks:
+        return 0.0, 0, 0, 0
+    if not detections:
+        return 0.0, 0, 0, len(gt_masks)
+
+    det_sorted = sorted(detections, key=lambda d: -d['confidence'])
+    n_gt = len(gt_masks)
+    matched_gt = [False] * n_gt
+    tp_list, fp_list = [], []
+
+    for det in det_sorted:
+        det_mask = det.get('mask')
+        if det_mask is None:
+            # 没有 mask，用 bbox 近似
+            x1, y1, x2, y2 = det['bbox']
+            det_mask = np.zeros_like(gt_masks[0][1])
+            det_mask[int(y1):int(y2), int(x1):int(x2)] = True
+
+        best_iou, best_gt = 0, -1
+        for i, (gt_bbox, gt_mask) in enumerate(gt_masks):
+            if matched_gt[i]:
+                continue
+            iou = mask_iou(det_mask, gt_mask)
+            if iou > best_iou:
+                best_iou, best_gt = iou, i
+
+        if best_iou >= iou_threshold and best_gt >= 0:
+            matched_gt[best_gt] = True
+            tp_list.append(1)
+            fp_list.append(0)
+        else:
+            tp_list.append(0)
+            fp_list.append(1)
+
+    tp_cum = np.cumsum(tp_list)
+    fp_cum = np.cumsum(fp_list)
+    recalls = tp_cum / n_gt
+    precisions = tp_cum / (tp_cum + fp_cum + 1e-16)
+
+    # 面积插值 AP
+    mrec = np.concatenate(([0.0], recalls, [1.0]))
+    mpre = np.concatenate(([0.0], precisions, [0.0]))
+    for i in range(len(mpre) - 1, 0, -1):
+        mpre[i - 1] = max(mpre[i - 1], mpre[i])
+    indices = np.where(mrec[1:] != mrec[:-1])[0]
+    ap50 = np.sum((mrec[indices + 1] - mrec[indices]) * mpre[indices + 1])
+
+    tp = int(tp_cum[-1]) if len(tp_cum) > 0 else 0
+    fp = int(fp_cum[-1]) if len(fp_cum) > 0 else 0
+    fn = n_gt - tp
+    return float(ap50), tp, fp, fn
+
+
 def evaluate_detections(detections, gts, iou_threshold=0.5):
-    """评估检测结果（detections 是带 morphology 的 list）"""
+    """评估检测结果（detections 是带 morphology 的 list）— bbox IoU"""
     if not gts:
         return 0.0, 0.0, 0, 0, 0
 
@@ -493,12 +558,14 @@ def main():
 
                 # 加载 GT
                 gts = []
+                gt_masks = []
                 if gt_path:
                     # 先获取图片尺寸
                     img_pil = convert_tiff_to_rgb(tiff_file)
                     img_w, img_h = img_pil.size
                     gts = load_ground_truth(gt_path, img_w, img_h)
-                    print(f"    GT: {len(gts)} organoids")
+                    gt_masks = load_ground_truth_masks(gt_path, img_w, img_h)
+                    print(f"    GT: {len(gts)} organoids (with masks)")
 
                 # SAHI + SAM2
                 start = time.time()
@@ -513,13 +580,17 @@ def main():
                 )
                 elapsed = time.time() - start
 
-                # 评估
-                ap50, ap5095, tp, fp, fn = evaluate_detections(detections, gts)
+                # 评估 — bbox IoU 和 mask IoU 都算
+                ap50_bbox, ap5095, tp, fp, fn = evaluate_detections(detections, gts)
+                ap50_mask, tp_m, fp_m, fn_m = evaluate_detections_mask(detections, gt_masks)
                 prec = tp / (tp + fp) if (tp + fp) > 0 else 0
                 rec = tp / (tp + fn) if (tp + fn) > 0 else 0
+                prec_m = tp_m / (tp_m + fp_m) if (tp_m + fp_m) > 0 else 0
+                rec_m = tp_m / (tp_m + fn_m) if (tp_m + fn_m) > 0 else 0
 
-                print(f"    Det: {len(detections)}  TP={tp}  FP={fp}  FN={fn}")
-                print(f"    AP50={ap50:.4f}  AP50-95={ap5095:.4f}  Prec={prec:.3f}  Rec={rec:.3f}  ({elapsed:.1f}s)")
+                print(f"    Det: {len(detections)}  [bbox] TP={tp} FP={fp} FN={fn}  [mask] TP={tp_m} FP={fp_m} FN={fn_m}")
+                print(f"    [bbox] AP50={ap50_bbox:.4f}  Prec={prec:.3f}  Rec={rec:.3f}")
+                print(f"    [mask] AP50={ap50_mask:.4f}  Prec={prec_m:.3f}  Rec={rec_m:.3f}  ({elapsed:.1f}s)")
 
                 # 可视化
                 if args.save_vis and n_processed < 10:
@@ -528,13 +599,21 @@ def main():
                     vis_path = Path(args.dst) / f'vis_{n_processed:03d}_{class_name}_{img_dir_name}.jpg'
                     visualize_sam2(img_np, detections, gts, vis_path)
 
+                # 注意：detections 里的 mask 不能 JSON 序列化，保存时去掉
+                detections_save = []
+                for d in detections:
+                    d_save = {k: v for k, v in d.items() if k != 'mask'}
+                    detections_save.append(d_save)
+
                 all_image_results.append({
                     'image': img_label,
-                    'detections': detections,
+                    'detections': detections_save,
                     'gts': gts,
-                    'ap50': ap50,
+                    'ap50_bbox': ap50_bbox,
+                    'ap50_mask': ap50_mask,
                     'ap5095': ap5095,
-                    'tp': tp, 'fp': fp, 'fn': fn,
+                    'tp_bbox': tp, 'fp_bbox': fp, 'fn_bbox': fn,
+                    'tp_mask': tp_m, 'fp_mask': fp_m, 'fn_mask': fn_m,
                     'time_s': elapsed,
                 })
 
@@ -554,22 +633,38 @@ def main():
     print(f"BASELINE (no morphology filter)")
     print(f"{'='*60}")
 
-    total_tp = sum(r['tp'] for r in all_image_results)
-    total_fp = sum(r['fp'] for r in all_image_results)
-    total_fn = sum(r['fn'] for r in all_image_results)
-    mean_ap50 = sum(r['ap50'] for r in all_image_results) / len(all_image_results) if all_image_results else 0
+    total_tp = sum(r['tp_bbox'] for r in all_image_results)
+    total_fp = sum(r['fp_bbox'] for r in all_image_results)
+    total_fn = sum(r['fn_bbox'] for r in all_image_results)
+    mean_ap50 = sum(r['ap50_bbox'] for r in all_image_results) / len(all_image_results) if all_image_results else 0
     mean_ap5095 = sum(r['ap5095'] for r in all_image_results) / len(all_image_results) if all_image_results else 0
     prec = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
     rec = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
     f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
 
+    # Mask IoU 汇总
+    total_tp_m = sum(r['tp_mask'] for r in all_image_results)
+    total_fp_m = sum(r['fp_mask'] for r in all_image_results)
+    total_fn_m = sum(r['fn_mask'] for r in all_image_results)
+    mean_ap50_m = sum(r['ap50_mask'] for r in all_image_results) / len(all_image_results) if all_image_results else 0
+    prec_m = total_tp_m / (total_tp_m + total_fp_m) if (total_tp_m + total_fp_m) > 0 else 0
+    rec_m = total_tp_m / (total_tp_m + total_fn_m) if (total_tp_m + total_fn_m) > 0 else 0
+    f1_m = 2 * prec_m * rec_m / (prec_m + rec_m) if (prec_m + rec_m) > 0 else 0
+
     print(f"  Images: {len(all_image_results)}")
+    print(f"\n  [bbox IoU]")
     print(f"  mAP@0.5:      {mean_ap50:.4f} ({mean_ap50*100:.1f}%)")
     print(f"  mAP@0.5:0.95: {mean_ap5095:.4f} ({mean_ap5095*100:.1f}%)")
     print(f"  Precision:    {prec:.4f} ({prec*100:.1f}%)")
     print(f"  Recall:       {rec:.4f} ({rec*100:.1f}%)")
     print(f"  F1:           {f1:.4f} ({f1*100:.1f}%)")
     print(f"  TP={total_tp}  FP={total_fp}  FN={total_fn}")
+    print(f"\n  [mask IoU]")
+    print(f"  mAP@0.5:      {mean_ap50_m:.4f} ({mean_ap50_m*100:.1f}%)")
+    print(f"  Precision:    {prec_m:.4f} ({prec_m*100:.1f}%)")
+    print(f"  Recall:       {rec_m:.4f} ({rec_m*100:.1f}%)")
+    print(f"  F1:           {f1_m:.4f} ({f1_m*100:.1f}%)")
+    print(f"  TP={total_tp_m}  FP={total_fp_m}  FN={total_fn_m}")
 
     # 形态学过滤分析
     print(f"\n{'='*60}")
@@ -620,11 +715,14 @@ def main():
         },
         'baseline': {
             'mAP50': mean_ap50,
+            'mAP50_mask': mean_ap50_m,
             'mAP5095': mean_ap5095,
             'precision': prec,
             'recall': rec,
             'f1': f1,
             'tp': total_tp, 'fp': total_fp, 'fn': total_fn,
+            'tp_mask': total_tp_m, 'fp_mask': total_fp_m, 'fn_mask': total_fn_m,
+            'precision_mask': prec_m, 'recall_mask': rec_m, 'f1_mask': f1_m,
         },
         'filter_analysis': filter_results,
         'best_map50': best_map,
@@ -633,11 +731,13 @@ def main():
             'image': r['image'],
             'n_det': len(r['detections']),
             'n_gt': len(r['gts']),
-            'ap50': r['ap50'],
+            'ap50_bbox': r['ap50_bbox'],
+            'ap50_mask': r['ap50_mask'],
             'ap5095': r['ap5095'],
-            'tp': r['tp'], 'fp': r['fp'], 'fn': r['fn'],
+            'tp_bbox': r['tp_bbox'], 'fp_bbox': r['fp_bbox'], 'fn_bbox': r['fn_bbox'],
+            'tp_mask': r['tp_mask'], 'fp_mask': r['fp_mask'], 'fn_mask': r['fn_mask'],
             'time_s': r['time_s'],
-            'detections': r['detections'],  # 完整 per-detection data
+            'detections': r['detections'],
         } for r in all_image_results],
     }
 

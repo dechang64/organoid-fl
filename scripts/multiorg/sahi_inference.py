@@ -361,7 +361,7 @@ def inference_image(model, model_type, img_path, window_sizes=(640,),
 
 
 def load_ground_truth(json_path, img_w, img_h):
-    """加载 ground truth (napari [row,col] format)"""
+    """加载 ground truth (napari [row,col] format) → bbox list"""
     import json as json_mod
     with open(json_path, 'r') as f:
         data = json_mod.load(f)
@@ -377,6 +377,35 @@ def load_ground_truth(json_path, img_w, img_h):
         gts.append((x_min, y_min, x_max, y_max))
 
     return gts
+
+
+def load_ground_truth_masks(json_path, img_w, img_h):
+    """加载 ground truth (napari [row,col] format) → mask list (保留轮廓)
+    
+    返回 [(bbox, mask), ...]，mask 是 bool ndarray (img_h, img_w)
+    """
+    import json as json_mod
+    import cv2
+    with open(json_path, 'r') as f:
+        data = json_mod.load(f)
+
+    results = []
+    for key, polygon in data.items():
+        if not isinstance(polygon, list) or len(polygon) < 3:
+            continue
+        xs = [p[1] for p in polygon]  # col = x
+        ys = [p[0] for p in polygon]  # row = y
+        x_min, x_max = min(xs), max(xs)
+        y_min, y_max = min(ys), max(ys)
+        bbox = (x_min, y_min, x_max, y_max)
+        
+        # 生成 mask (保留轮廓形状)
+        pts = np.array([[int(p[1]), int(p[0])] for p in polygon], dtype=np.int32)
+        mask = np.zeros((img_h, img_w), dtype=bool)
+        cv2.fillPoly(mask, [pts], True)
+        results.append((bbox, mask))
+
+    return results
 
 
 def compute_ap_full(detections, ground_truths, iou_threshold=0.5):
