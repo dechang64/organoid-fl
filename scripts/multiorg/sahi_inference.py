@@ -35,8 +35,7 @@ def convert_tiff_to_rgb(tiff_path):
     """16-bit TIFF → 8-bit RGB"""
     im = Image.open(tiff_path)
     if im.mode == 'I;16' or im.mode == 'I':
-        # float32 节省内存（6940×6240: 173MB vs float64 347MB）
-        arr = np.array(im, dtype=np.float32)
+        arr = np.array(im, dtype=np.float64)
         if arr.ndim == 3:
             arr = arr[:, :, 0]
         vmin, vmax = float(arr.min()), float(arr.max())
