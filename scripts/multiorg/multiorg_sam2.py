@@ -180,6 +180,7 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
     img_pil = convert_tiff_to_rgb(img_path)
     img_w, img_h = img_pil.size
     img_np = np.array(img_pil)
+    print(f"    [sahi] Image loaded: {img_w}x{img_h}, np={img_np.shape}", flush=True)
 
     if downsample_factors is None:
         downsample_factors = [1] * len(window_sizes)
@@ -192,6 +193,7 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
             continue
 
         windows = sliding_windows(img_w, img_h, ws, overlap)
+        print(f"    [sahi] Window {ws}: {len(windows)} tiles", flush=True)
 
         for (x, y, x_end, y_end) in windows:
             tile = img_pil.crop((x, y, x_end, y_end))
