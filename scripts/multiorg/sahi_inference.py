@@ -382,7 +382,8 @@ def load_ground_truth(json_path, img_w, img_h):
 def load_ground_truth_masks(json_path, img_w, img_h):
     """加载 ground truth (napari [row,col] format) → mask list (保留轮廓)
     
-    返回 [(bbox, mask), ...]，mask 是 bool ndarray (img_h, img_w)
+    返回 [(bbox, mask, offset), ...]
+    mask 是裁剪到 bbox 区域的 bool ndarray，offset 是 (x, y) 偏移
     """
     import json as json_mod
     import cv2
@@ -399,12 +400,16 @@ def load_ground_truth_masks(json_path, img_w, img_h):
         y_min, y_max = min(ys), max(ys)
         bbox = (x_min, y_min, x_max, y_max)
         
-        # 生成 mask (保留轮廓形状)
-        pts = np.array([[int(p[1]), int(p[0])] for p in polygon], dtype=np.int32)
-        mask = np.zeros((img_h, img_w), dtype=np.uint8)
+        # 裁剪到 bbox 区域生成 mask（节省内存）
+        x0, y0 = int(x_min), int(y_min)
+        x1, y1 = int(x_max), int(y_max)
+        w = max(1, x1 - x0)
+        h = max(1, y1 - y0)
+        pts = np.array([[int(p[1]) - x0, int(p[0]) - y0] for p in polygon], dtype=np.int32)
+        mask = np.zeros((h, w), dtype=np.uint8)
         cv2.fillPoly(mask, [pts], 255)
         mask = mask.astype(bool)
-        results.append((bbox, mask))
+        results.append((bbox, mask, (x0, y0)))
 
     return results
 

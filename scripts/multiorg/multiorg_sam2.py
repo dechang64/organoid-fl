@@ -359,11 +359,12 @@ def evaluate_detections_mask(detections, gt_masks, iou_threshold=0.5):
             continue
 
         best_iou, best_gt = 0, -1
-        for i, (gt_bbox, gt_mask) in enumerate(gt_masks):
+        for i, gt_item in enumerate(gt_masks):
             if matched_gt[i]:
                 continue
-            # GT mask 是全图的，offset = (0, 0)
-            iou = mask_iou_cropped(det_mask, det_offset, gt_mask, (0, 0))
+            # gt_item = (bbox, mask, offset)
+            gt_bbox, gt_mask, gt_offset = gt_item
+            iou = mask_iou_cropped(det_mask, det_offset, gt_mask, gt_offset)
             if iou > best_iou:
                 best_iou, best_gt = iou, i
 
