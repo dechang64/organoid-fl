@@ -401,8 +401,9 @@ def load_ground_truth_masks(json_path, img_w, img_h):
         
         # 生成 mask (保留轮廓形状)
         pts = np.array([[int(p[1]), int(p[0])] for p in polygon], dtype=np.int32)
-        mask = np.zeros((img_h, img_w), dtype=bool)
-        cv2.fillPoly(mask, [pts], True)
+        mask = np.zeros((img_h, img_w), dtype=np.uint8)
+        cv2.fillPoly(mask, [pts], 255)
+        mask = mask.astype(bool)
         results.append((bbox, mask))
 
     return results
