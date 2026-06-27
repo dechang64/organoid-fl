@@ -37,23 +37,30 @@ def extract_yolo_labels(annot_path, img_w, img_h):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--annot', required=True, help='Annotated images directory')
+    parser.add_argument('--orig', required=True, help='Original images directory (for naming)')
     parser.add_argument('--dst', required=True, help='Output YOLO labels directory')
     args = parser.parse_args()
 
     os.makedirs(args.dst, exist_ok=True)
     annot_files = sorted(f for f in os.listdir(args.annot) if f.lower().endswith(('.jpg', '.png', '.jpeg')))
+    orig_files = sorted(f for f in os.listdir(args.orig) if f.lower().endswith(('.jpg', '.png', '.jpeg')))
 
+    if len(annot_files) != len(orig_files):
+        print(f"[WARN] annot={len(annot_files)} vs orig={len(orig_files)} mismatch!")
+
+    n = min(len(annot_files), len(orig_files))
     total = 0
-    for i, fname in enumerate(annot_files):
-        annot_path = os.path.join(args.annot, fname)
+    for i in range(n):
+        annot_path = os.path.join(args.annot, annot_files[i])
         labels = extract_yolo_labels(annot_path, 0, 0)
-        out_name = Path(fname).stem + '.txt'
+        # Use ORIGINAL image name for the label file
+        out_name = Path(orig_files[i]).stem + '.txt'
         with open(os.path.join(args.dst, out_name), 'w') as f:
             f.write('\n'.join(labels))
         total += len(labels)
-        print(f"  [{i}] {fname}: {len(labels)} organoids")
+        print(f"  [{i}] {orig_files[i]} ↔ {annot_files[i]}: {len(labels)} organoids")
 
-    print(f"\nDone: {len(annot_files)} images, {total} organoids total")
+    print(f"\nDone: {n} pairs, {total} organoids total")
     print(f"Labels saved to: {args.dst}")
 
 
