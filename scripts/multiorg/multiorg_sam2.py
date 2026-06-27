@@ -253,7 +253,10 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
             morph = compute_morphology(mask, [x1, y1, x2, y2])
             morph['confidence'] = float(score)
             morph['window'] = int(det[5]) if len(det) > 5 else 0
-            morph['mask'] = mask  # 保留 mask 用于 mask IoU 评估
+            # 裁剪 mask 到 bbox 区域（节省内存，全图 mask 太大）
+            cx1, cy1, cx2, cy2 = int(x1), int(y1), int(x2), int(y2)
+            morph['mask'] = mask[cy1:cy2, cx1:cx2]
+            morph['mask_offset'] = (cx1, cy1)  # 记录 mask 在全图的位置
             detections.append(morph)
     else:
         # 不用 SAM2，只用 bbox
@@ -263,7 +266,9 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
             morph = compute_morphology(mask, [x1, y1, x2, y2])
             morph['confidence'] = float(score)
             morph['window'] = int(det[5]) if len(det) > 5 else 0
-            morph['mask'] = mask
+            cx1, cy1, cx2, cy2 = int(x1), int(y1), int(x2), int(y2)
+            morph['mask'] = mask[cy1:cy2, cx1:cx2]
+            morph['mask_offset'] = (cx1, cy1)
             detections.append(morph)
 
     return detections, (img_w, img_h)
@@ -297,8 +302,34 @@ def mask_iou(mask1, mask2):
     return inter / union if union > 0 else 0
 
 
+def mask_iou_cropped(mask1, offset1, mask2, offset2):
+    """两个带 offset 的裁剪 mask 的 IoU"""
+    # 还原到全图坐标的 bbox
+    y1_1, x1_1 = offset1
+    h1, w1 = mask1.shape
+    y2_1, x2_1 = y1_1 + h1, x1_1 + w1
+
+    y1_2, x1_2 = offset2
+    h2, w2 = mask2.shape
+    y2_2, x2_2 = y1_2 + h2, x1_2 + w2
+
+    # 交集区域
+    iy1, ix1 = max(y1_1, y1_2), max(x1_1, x1_2)
+    iy2, ix2 = min(y2_1, y2_2), min(x2_1, x2_2)
+    if iy2 <= iy1 or ix2 <= ix1:
+        return 0.0
+
+    # 提取交集区域的两个 mask
+    sub1 = mask1[iy1-y1_1:iy2-y1_1, ix1-x1_1:ix2-x1_1]
+    sub2 = mask2[iy1-y1_2:iy2-y1_2, ix1-x1_2:ix2-x1_2]
+
+    inter = np.logical_and(sub1, sub2).sum()
+    union = mask1.sum() + mask2.sum() - inter
+    return inter / union if union > 0 else 0.0
+
+
 def evaluate_detections_mask(detections, gt_masks, iou_threshold=0.5):
-    """用 mask IoU 评估检测结果（detections 带 mask，gt_masks 是 [(bbox, mask), ...]）
+    """用 mask IoU 评估检测结果（detections 带裁剪 mask，gt_masks 是 [(bbox, mask), ...]）
     
     返回 (ap50, tp, fp, fn)
     """
@@ -314,17 +345,19 @@ def evaluate_detections_mask(detections, gt_masks, iou_threshold=0.5):
 
     for det in det_sorted:
         det_mask = det.get('mask')
+        det_offset = det.get('mask_offset', (0, 0))
         if det_mask is None:
-            # 没有 mask，用 bbox 近似
-            x1, y1, x2, y2 = det['bbox']
-            det_mask = np.zeros_like(gt_masks[0][1])
-            det_mask[int(y1):int(y2), int(x1):int(x2)] = True
+            # 没有 mask，跳过（不应该发生）
+            tp_list.append(0)
+            fp_list.append(1)
+            continue
 
         best_iou, best_gt = 0, -1
         for i, (gt_bbox, gt_mask) in enumerate(gt_masks):
             if matched_gt[i]:
                 continue
-            iou = mask_iou(det_mask, gt_mask)
+            # GT mask 是全图的，offset = (0, 0)
+            iou = mask_iou_cropped(det_mask, det_offset, gt_mask, (0, 0))
             if iou > best_iou:
                 best_iou, best_gt = iou, i
 
