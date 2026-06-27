@@ -70,6 +70,20 @@ def load_sam2(checkpoint='sam2_hiera_small.pt', device='cuda'):
     """加载 SAM2 模型"""
     from sam2.build_sam import build_sam2
     from sam2.sam2_image_predictor import SAM2ImagePredictor
+    import torch as _torch
+
+    # 我们的 finetune checkpoint 格式: {'trainable_state_dict':..., 'model_state_dict':..., 'epoch':..., 'val_iou':...}
+    # build_sam2 期望的格式: {'model': state_dict, ...} 或直接 state_dict
+    # 需要先提取 model_state_dict，存成临时 checkpoint 给 build_sam2 加载
+    ckpt_data = _torch.load(checkpoint, map_location='cpu', weights_only=False)
+    if isinstance(ckpt_data, dict) and 'model_state_dict' in ckpt_data:
+        # finetuned checkpoint — 转换成 build_sam2 能读的格式
+        import tempfile, os
+        tmp_dir = tempfile.mkdtemp()
+        tmp_ckpt = os.path.join(tmp_dir, 'model_finetuned.pt')
+        _torch.save({'model': ckpt_data['model_state_dict']}, tmp_ckpt)
+        checkpoint = tmp_ckpt
+
     last_err = None
     for cfg in ['sam2_hiera_s', 'sam2_hiera_small']:
         try:
