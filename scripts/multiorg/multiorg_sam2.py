@@ -109,20 +109,15 @@ def compute_morphology(mask, bbox):
     - aspect_ratio: 宽/高, 1=等轴。TP 0.85-1.0, FP < 0.7
     - confidence: RF-DETR 分数。TP > 0.65, FP < 0.65
     """
-    # 裁剪 mask 到 bbox 区域（节省内存，全图 mask 太大）
-    x1, y1, x2, y2 = [int(v) for v in bbox]
-    x1, y1 = max(0, x1), max(0, y1)
-    x2, y2 = max(x1+1, x2), max(y1+1, y2)
-    mask_crop = mask[y1:y2, x1:x2]
-    
-    area = int(mask_crop.sum())
+    # mask 应该已经是裁剪到 bbox 区域的（由调用方裁剪）
+    area = int(mask.sum())
     if area == 0:
         return {
             "area": 0, "perimeter": 0, "circularity": 0, "solidity": 0,
             "aspect_ratio": 0, "bbox": bbox, "has_mask": False
         }
 
-    mask_uint8 = mask_crop.astype(np.uint8)
+    mask_uint8 = mask.astype(np.uint8)
     contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
@@ -156,12 +151,13 @@ def compute_morphology(mask, bbox):
 
 
 def bbox_to_mask(bbox, img_h, img_w):
-    """bbox → 矩形 mask（不用 SAM2 时的 fallback）"""
+    """bbox → 矩形 mask（裁剪到 bbox 区域，节省内存）"""
     x1, y1, x2, y2 = [int(v) for v in bbox]
     x1, y1 = max(0, x1), max(0, y1)
     x2, y2 = min(img_w, x2), min(img_h, y2)
-    mask = np.zeros((img_h, img_w), dtype=bool)
-    mask[y1:y2, x1:x2] = True
+    w = max(1, x2 - x1)
+    h = max(1, y2 - y1)
+    mask = np.ones((h, w), dtype=bool)
     return mask
 
 
@@ -248,32 +244,33 @@ def sahi_detect_with_sam2(model, model_type, img_path, sam2_predictor,
         sam2_predictor.set_image(img_np)
         for det in fused:
             x1, y1, x2, y2, score = det[:5]
+            cx1, cy1, cx2, cy2 = int(x1), int(y1), int(x2), int(y2)
             box = np.array([x1, y1, x2, y2], dtype=np.float32)
             try:
                 masks, scores, _ = sam2_predictor.predict(box=box, multimask_output=False)
-                mask = masks[0]
+                mask_full = masks[0]
+                # 裁剪到 bbox 区域（节省内存）
+                mask = mask_full[cy1:cy2, cx1:cx2]
+                del mask_full
             except Exception as e:
-                # SAM2 失败时用 bbox mask
                 mask = bbox_to_mask([x1, y1, x2, y2], img_h, img_w)
 
             morph = compute_morphology(mask, [x1, y1, x2, y2])
             morph['confidence'] = float(score)
             morph['window'] = int(det[5]) if len(det) > 5 else 0
-            # 裁剪 mask 到 bbox 区域（节省内存，全图 mask 太大）
-            cx1, cy1, cx2, cy2 = int(x1), int(y1), int(x2), int(y2)
-            morph['mask'] = mask[cy1:cy2, cx1:cx2]
-            morph['mask_offset'] = (cx1, cy1)  # 记录 mask 在全图的位置
+            morph['mask'] = mask
+            morph['mask_offset'] = (cx1, cy1)
             detections.append(morph)
     else:
         # 不用 SAM2，只用 bbox
         for det in fused:
             x1, y1, x2, y2, score = det[:5]
+            cx1, cy1, cx2, cy2 = int(x1), int(y1), int(x2), int(y2)
             mask = bbox_to_mask([x1, y1, x2, y2], img_h, img_w)
             morph = compute_morphology(mask, [x1, y1, x2, y2])
             morph['confidence'] = float(score)
             morph['window'] = int(det[5]) if len(det) > 5 else 0
-            cx1, cy1, cx2, cy2 = int(x1), int(y1), int(x2), int(y2)
-            morph['mask'] = mask[cy1:cy2, cx1:cx2]
+            morph['mask'] = mask
             morph['mask_offset'] = (cx1, cy1)
             detections.append(morph)
 
