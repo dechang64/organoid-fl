@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-MultiOrg Tiling v3 — 单类 organoid + 512 patch + 丢弃边界 bbox + 多标注者支持
+MultiOrg Tiling v3 — 单类 organoid + 丢弃边界 bbox + 多标注者支持
 
 关键修正（vs v2 tiling）:
 1. 单类 organoid（class 0），不是 Normal/Macros 两类
-2. 512×512 patch（不是 640）
+2. 默认 640×640 patch（可通过 --tile 修改）
 3. 丢弃跨 patch 边界的 bbox（只保留中心在 patch 内的）
 4. 支持选择标注者（Annotator_A/B/C）用于多标注者实验
 5. 输出 YOLO 格式（RF-DETR 兼容）
@@ -104,20 +104,38 @@ def bbox_to_yolo(ann, tile_x, tile_y, tile_size, drop_boundary=True):
 
 
 def convert_tiff_to_rgb(tiff_path):
-    """Convert 16-bit TIFF → 8-bit RGB PIL Image."""
-    im = Image.open(tiff_path)
-    if im.mode == 'I;16' or im.mode == 'I':
-        arr = np.array(im, dtype=np.float64)
+    """Convert 16-bit TIFF → 8-bit RGB PIL Image.
+    用 tifffile 避免 PIL I;16 → numpy 在 Windows 上 segfault（Macros 类触发）
+    """
+    try:
+        import tifffile
+        arr = tifffile.imread(tiff_path)
         if arr.ndim == 3:
             arr = arr[:, :, 0]
+        arr = arr.astype(np.float32)
         vmin, vmax = float(arr.min()), float(arr.max())
         if vmax > vmin:
             arr8 = ((arr - vmin) / (vmax - vmin) * 255.0).astype(np.uint8)
         else:
             arr8 = np.zeros_like(arr, dtype=np.uint8)
+        del arr
         rgb = np.stack([arr8, arr8, arr8], axis=-1)
+        del arr8
         return Image.fromarray(rgb, mode='RGB')
-    return im.convert('RGB')
+    except ImportError:
+        im = Image.open(tiff_path)
+        if im.mode == 'I;16' or im.mode == 'I':
+            arr = np.array(im, dtype=np.float64)
+            if arr.ndim == 3:
+                arr = arr[:, :, 0]
+            vmin, vmax = float(arr.min()), float(arr.max())
+            if vmax > vmin:
+                arr8 = ((arr - vmin) / (vmax - vmin) * 255.0).astype(np.uint8)
+            else:
+                arr8 = np.zeros_like(arr, dtype=np.uint8)
+            rgb = np.stack([arr8, arr8, arr8], axis=-1)
+            return Image.fromarray(rgb, mode='RGB')
+        return im.convert('RGB')
 
 
 def find_annotation_files(img_dir):

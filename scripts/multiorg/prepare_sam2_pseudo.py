@@ -118,13 +118,8 @@ def process_split(src_dir, dst_dir, predictor, annotator='Annotator_A', split_na
         mask_out = dst_path / 'masks' / f'{out_name}.png'
 
         if img_out.exists() and mask_out.exists():
-            # 加载已有 manifest
-            manifest_path = dst_path / 'manifest.json'
-            if manifest_path.exists():
-                with open(manifest_path) as f:
-                    manifest = json.load(f)
-                print(f"  [{i+1}/{len(tiff_files)}] cached, loading manifest")
-                return manifest
+            print(f"  [{i+1}/{len(tiff_files)}] cached, skip")
+            continue
 
         if i % 10 == 0:
             print(f"  [{i+1}/{len(tiff_files)}] {img_path.name} ...", end='', flush=True)
@@ -162,20 +157,23 @@ def process_split(src_dir, dst_dir, predictor, annotator='Annotator_A', split_na
             box = np.array(bbox, dtype=np.float32)
             try:
                 masks, scores, _ = predictor.predict(box=box, multimask_output=False)
-                mask = masks[0].astype(np.uint16)
+                mask_full = masks[0].astype(np.uint16)  # full image size
             except Exception:
-                # fallback: 用 bbox 矩形
-                mask = np.zeros((h, w), dtype=np.uint16)
+                # fallback: bbox 矩形（全图尺寸，只填 bbox 区域）
+                mask_full = np.zeros((h, w), dtype=np.uint16)
                 x1, y1, x2, y2 = bbox
-                mask[y1:y2, x1:x2] = 1
+                x1, y1 = max(0, int(x1)), max(0, int(y1))
+                x2, y2 = min(w, int(x2)), min(h, int(y2))
+                mask_full[y1:y2, x1:x2] = 1
 
-            instance_map[mask > 0] = inst_idx + 1
-            ys, xs = np.where(mask > 0)
+            instance_map[mask_full > 0] = inst_idx + 1
+            ys, xs = np.where(mask_full > 0)
             if len(ys) > 0:
                 instances.append({
                     'bbox': bbox,
                     'area': int(len(ys)),
                 })
+            del mask_full
 
         if not instances:
             if i % 10 == 0:
