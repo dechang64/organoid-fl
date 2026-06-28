@@ -153,7 +153,9 @@ def process_split(src_dir, dst_dir, predictor, annotator='Annotator_A', split_na
         predictor.set_image(img_rgb)
         instance_map = np.zeros((h, w), dtype=np.uint16)
         instances = []
-        for inst_idx, bbox in enumerate(bboxes):
+        inst_id = 0  # 连续编号，跳过空 mask 的 instance
+        for bbox in bboxes:
+            inst_id += 1
             box = np.array(bbox, dtype=np.float32)
             try:
                 masks, scores, _ = predictor.predict(box=box, multimask_output=False)
@@ -166,13 +168,15 @@ def process_split(src_dir, dst_dir, predictor, annotator='Annotator_A', split_na
                 x2, y2 = min(w, int(x2)), min(h, int(y2))
                 mask_full[y1:y2, x1:x2] = 1
 
-            instance_map[mask_full > 0] = inst_idx + 1
             ys, xs = np.where(mask_full > 0)
             if len(ys) > 0:
+                instance_map[mask_full > 0] = inst_id
                 instances.append({
                     'bbox': bbox,
                     'area': int(len(ys)),
                 })
+            else:
+                inst_id -= 1  # 回退编号，保持连续
             del mask_full
 
         if not instances:
