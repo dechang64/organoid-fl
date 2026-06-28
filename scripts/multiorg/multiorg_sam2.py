@@ -13,7 +13,7 @@ Usage (冬生本地):
 
     # 先跑 5 张测试（约 2-3 分钟）
     python scripts\multiorg\multiorg_sam2.py ^
-        --weights output\small_512\checkpoint_best_regular.pth ^
+        --weights output\checkpoint_best_regular.pth ^
         --model-variant small ^
         --src D:\datasets\mutliorg\MultiOrg_v2\test ^
         --dst results\multiorg_sam2 ^
@@ -23,7 +23,7 @@ Usage (冬生本地):
 
     # 全量跑（55 张，约 20-30 分钟）
     python scripts\multiorg\multiorg_sam2.py ^
-        --weights output\small_512\checkpoint_best_regular.pth ^
+        --weights output\checkpoint_best_regular.pth ^
         --model-variant small ^
         --src D:\datasets\mutliorg\MultiOrg_v2\test ^
         --dst results\multiorg_sam2 ^
@@ -32,7 +32,7 @@ Usage (冬生本地):
 
     # 不用 SAM2（只用 bbox morphology 做对照）
     python scripts\multiorg\multiorg_sam2.py ^
-        --weights output\small_512\checkpoint_best_regular.pth ^
+        --weights output\checkpoint_best_regular.pth ^
         --model-variant small ^
         --src D:\datasets\mutliorg\MultiOrg_v2\test ^
         --dst results\multiorg_sam2_nosam2 ^
