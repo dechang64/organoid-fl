@@ -78,11 +78,14 @@ def load_sam2(checkpoint='sam2_hiera_small.pt', device='cuda'):
     ckpt_data = _torch.load(checkpoint, map_location='cpu', weights_only=False)
     if isinstance(ckpt_data, dict) and 'model_state_dict' in ckpt_data:
         # finetuned checkpoint — 转换成 build_sam2 能读的格式
-        import tempfile, os
+        import tempfile, os, shutil
         tmp_dir = tempfile.mkdtemp()
         tmp_ckpt = os.path.join(tmp_dir, 'model_finetuned.pt')
         _torch.save({'model': ckpt_data['model_state_dict']}, tmp_ckpt)
         checkpoint = tmp_ckpt
+        # 加载后清理临时目录
+        import atexit
+        atexit.register(lambda: shutil.rmtree(tmp_dir, ignore_errors=True))
 
     last_err = None
     for cfg in ['sam2_hiera_s', 'sam2_hiera_small']:
@@ -303,25 +306,20 @@ def filter_by_morphology(detections, min_circularity=0.0, min_solidity=0.0,
     return filtered
 
 
-def mask_iou(mask1, mask2):
-    """两个 mask 的 IoU"""
-    inter = np.logical_and(mask1, mask2).sum()
-    union = np.logical_or(mask1, mask2).sum()
-    return inter / union if union > 0 else 0
-
-
 def mask_iou_cropped(mask1, offset1, mask2, offset2):
-    """两个带 offset 的裁剪 mask 的 IoU"""
+    """两个带 offset 的裁剪 mask 的 IoU
+    offset format: (x, y) = (col, row)，和 load_ground_truth_masks 一致
+    """
     # 还原到全图坐标的 bbox
-    y1_1, x1_1 = offset1
-    h1, w1 = mask1.shape
-    y2_1, x2_1 = y1_1 + h1, x1_1 + w1
+    x1_1, y1_1 = offset1  # (x=col, y=row)
+    h1, w1 = mask1.shape   # h=rows, w=cols
+    x2_1, y2_1 = x1_1 + w1, y1_1 + h1  # col_end, row_end
 
-    y1_2, x1_2 = offset2
+    x1_2, y1_2 = offset2
     h2, w2 = mask2.shape
-    y2_2, x2_2 = y1_2 + h2, x1_2 + w2
+    x2_2, y2_2 = x1_2 + w2, y1_2 + h2
 
-    # 交集区域
+    # 交集区域 (row, col)
     iy1, ix1 = max(y1_1, y1_2), max(x1_1, x1_2)
     iy2, ix2 = min(y2_1, y2_2), min(x2_1, x2_2)
     if iy2 <= iy1 or ix2 <= ix1:
