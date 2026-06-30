@@ -274,13 +274,13 @@ def ensemble_wbf(dets_a, dets_b, img_w, img_h, iou_thr=0.55, weights=None):
         skip_box_thr=0.0  # 保留所有框（WBF 通过 score 调节，不删框）
     )
 
-    # 反归一化回像素坐标
+    # 反归一化回像素坐标（转 Python float 避免 JSON 序列化问题）
     result = []
     for box, score in zip(fused_boxes, fused_scores):
-        x1 = box[0] * img_w
-        y1 = box[1] * img_h
-        x2 = box[2] * img_w
-        y2 = box[3] * img_h
+        x1 = float(box[0] * img_w)
+        y1 = float(box[1] * img_h)
+        x2 = float(box[2] * img_w)
+        y2 = float(box[3] * img_h)
         result.append((x1, y1, x2, y2, float(score)))
 
     result.sort(key=lambda d: -d[4])
