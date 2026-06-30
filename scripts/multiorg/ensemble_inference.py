@@ -4,16 +4,17 @@ Ensemble Inference for MultiOrg — RF-DETR + YOLOv12 双模型融合
 策略：
   1. 两个模型分别跑 SAHI 滑动窗口推理（各自独立）
   2. 对每张图的两组检测结果做融合：
-     - intersection: 只有当两个模型都检测到（IoU > match_threshold）才保留，score 取平均
+     - wbf: Weighted Boxes Fusion (SOTA, Solovyev et al. 2021)，cluster + T/N 评分
+     - intersection: 只有当两个模型都检测到（IoU > match_iou）才保留，score 取平均
      - union: 两个模型的检测全部保留，匹配上的 score 取平均，未匹配的按 score × penalty 保留
   3. 评估 ensemble 结果 vs 单模型 baseline
 
-用法（Windows，单行命令）：
+用法（Windows）：
 cd C:\Users\decha\organoid-fl
-python scripts\multiorg\ensemble_inference.py --rfdetr-weights output\checkpoint_best_regular.pth --rfdetr-variant small --yolo-weights D:\datasets\MultiOrg_v4_640\runs\multiorg_v5_12s_freebies-2\best.pt --src D:\datasets\mutliorg\MultiOrg_v2\test --dst results\ensemble --strategy intersection --match-iou 0.5
+python scripts\multiorg\ensemble_inference.py --rfdetr-weights output\checkpoint_best_regular.pth --rfdetr-variant small --yolo-weights "D:\datasets\MultiOrg_v4_640\runs\multiorg_v5_12s_freebies-2\weights\best.pt" --src D:\datasets\mutliorg\MultiOrg_v2\test --dst results\ensemble --strategy wbf --match-iou 0.55
 
 依赖：
-    pip install rfdetr ultralytics supervision tifffile
+    pip install rfdetr ultralytics supervision tifffile ensemble-boxes
 """
 
 import os
@@ -517,9 +518,6 @@ def main():
     # 加载模型
     print("Loading RF-DETR model...")
     rfdetr_model = load_rfdetr_model(args.rfdetr_weights, args.rfdetr_variant)
-    # 显式设置 num_classes=1（避免从 checkpoint 推断的 warning）
-    if hasattr(rfdetr_model, 'num_classes'):
-        rfdetr_model.num_classes = 1
     print("Loading YOLO model...")
     yolo_model = load_yolo_model(args.yolo_weights)
     print("Models loaded.\n")
