@@ -414,6 +414,79 @@ class MPCA(nn.Module):
 
 
 # ============================================================================
+# 4. BiFPNHead — BiFPN + Detect 包装层
+# ============================================================================
+
+class BiFPNHead(nn.Module):
+    """BiFPN + Detect 包装层
+    
+    Ultralytics 的 Detect head 期望接收多个特征图，
+    但 parse_model 只能给它一个 "from" 列表。
+    BiFPNHead 作为一个整体模块，内部先跑 BiFPN 再跑 Detect。
+    
+    YAML 用法:
+        - [[4, 6, 11], 1, BiFPNHead, [256, nc]]  # 替换 FPN+PAN+Detect
+    """
+    
+    def __init__(self, out_channels: int, nc: int = 1, reg_max: int = 16,
+                 in_channels: list = None):
+        """BiFPNHead 构造函数
+        
+        Args:
+            out_channels: BiFPN 输出通道数
+            nc: 类别数
+            reg_max: Detect head 的 reg_max
+            in_channels: [C3, C4, C5] 输入通道数（lazy init if None）
+        """
+        super().__init__()
+        self.nc = nc
+        self.out_channels = out_channels
+        self._in_channels = in_channels
+        self._initialized = False
+        
+        # Detect head 延迟构建（需要 in_channels）
+        self._detect = None
+    
+    def _build_layers(self, in_channels: list, device=None):
+        """Lazy init: 根据实际输入通道构建 BiFPN + Detect"""
+        from ultralytics.nn.modules import Detect
+        
+        self.bifpn = BiFPN(in_channels, self.out_channels, repeats=2)
+        
+        # Detect head 接收 3 个特征图，通道都是 out_channels
+        self._detect = Detect(
+            nc=self.nc,
+            ch=[self.out_channels, self.out_channels, self.out_channels]
+        )
+        
+        if device:
+            self.bifpn.to(device)
+            self._detect.to(device)
+        
+        self._initialized = True
+    
+    def forward(self, x):
+        """前向传播
+        
+        Args:
+            x: list [P3, P4, P5] from backbone
+            
+        Returns:
+            Detect head 输出
+        """
+        if not self._initialized:
+            # 从输入推断通道数
+            in_chs = [xi.shape[1] for xi in x]
+            self._build_layers(in_chs, device=x[0].device)
+        
+        # BiFPN 融合
+        features = self.bifpn(x)  # [P3', P4', P5']
+        
+        # Detect head
+        return self._detect(features)
+
+
+# ============================================================================
 # 测试
 # ============================================================================
 

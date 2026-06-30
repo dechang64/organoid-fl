@@ -1,0 +1,26 @@
+# Orga-Dete YOLO11n Phase 2 — MPCA + BiFPN
+# BiFPN replaces FPN+PAN, MPCA after C2PSA
+# Ref: Huang et al., Applied Sciences 2025
+
+nc: 1  # organoid (single class)
+
+scales:
+  n: [0.50, 0.25, 1024]
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]]   # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]]  # 1-P2/4
+  - [-1, 2, C3k2, [256, False]]
+  - [-1, 1, Conv, [256, 3, 2]]  # 3-P3/8
+  - [-1, 2, C3k2, [256, False]] # 4 — P3 output → BiFPNHead
+  - [-1, 1, Conv, [512, 3, 2]]  # 5-P4/16
+  - [-1, 2, C3k2, [512, True]]  # 6 — P4 output → BiFPNHead
+  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+  - [-1, 2, C3k2, [1024, True]]
+  - [-1, 1, SPPF, [1024, 5]]    # 9
+  - [-1, 2, C2PSA, [1024]]      # 10
+  - [-1, 1, MPCA, [1024]]       # 11 — Orga-Dete MPCA, P5 output → BiFPNHead
+
+head:
+  # BiFPN + Detect as single module (replaces FPN+PAN+Detect)
+  - [[4, 6, 11], 1, BiFPNHead, [256, nc]]  # 12 — BiFPN(P3,P4,P5) → Detect
