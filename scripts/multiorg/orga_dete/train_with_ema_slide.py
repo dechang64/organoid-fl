@@ -27,7 +27,7 @@ import ultralytics.utils.loss as ul_loss
 from ultralytics.nn.tasks import v8DetectionLoss
 from ultralytics.models.yolo.detect import DetectionTrainer
 from ultralytics import YOLO
-from ultralytics.utils import DEFAULT_CFG
+from ultralytics.utils import DEFAULT_CFG, RANK
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -53,13 +53,17 @@ class EMASlideDetectionLoss(v8DetectionLoss):
     
     def __init__(self, model, tal_topk=10, tal_topk2=None):
         super().__init__(model, tal_topk, tal_topk2)
+        self.tal_topk = tal_topk
+        self.tal_topk2 = tal_topk2
         self.ema_slide_loss = EMASlideLoss(alpha=0.9, reduction='none')
     
     def get_assigned_targets_and_loss(self, preds, batch):
-        """重写 loss 计算，用 EMASlideLoss 替换 BCE cls loss"""
-        from ultralytics.utils.tal import TaskAlignedAssigner
-        from ultralytics.utils.loss import BboxLoss
-        from ultralytics.utils.torch_utils import make_anchors, dist2bbox
+        """重写 loss 计算，用 EMASlideLoss 替换 BCE cls loss
+        
+        复用 v8DetectionLoss 的原始逻辑，只替换 cls loss 部分。
+        """
+        from ultralytics.utils.tal import make_anchors, dist2bbox
+        from ultralytics.utils.metrics import bbox_iou
         
         loss = torch.zeros(3, device=self.device)  # box, cls, dfl
         
@@ -77,25 +81,13 @@ class EMASlideDetectionLoss(v8DetectionLoss):
         targets = torch.cat((batch["batch_idx"].view(-1, 1), batch["cls"].view(-1, 1), batch["bboxes"]), 1)
         targets = self.preprocess(targets.to(self.device), batch_size, scale_tensor=imgsz[[1, 0, 1, 0]])
         gt_labels, gt_bboxes = targets.split((1, 4), 2)  # cls, xyxy
-        mask_gt = gt_bboxes.sum(2, keepdim=True).gt_(0)
+        mask_gt = gt_bboxes.sum(2, keepdim=True).gt_(0.0)
         
-        # Assigner
-        assigner = TaskAlignedAssigner(
-            topk=self.tal_topk if self.tal_topk2 is None else (self.tal_topk, self.tal_topk2),
-            num_classes=self.nc,
-            alpha=self.args.box.get("alpha", 0.5),
-            beta=self.args.box.get("beta", 6.0),
-        )
-        assigner.out = {
-            "num_gt": mask_gt.sum().item(),
-            "imgsz": imgsz,
-            "anchor_points": anchor_points,
-            "stride_tensor": stride_tensor,
-        }
+        # Pboxes
+        pred_bboxes = self.bbox_decode(anchor_points, pred_distri)  # xyxy, (b, h*w, 4)
         
-        # Assign targets
-        pred_bboxes = self.bbox_decode(pred_distri, anchor_points)  # xyxy, (b, h*w, 4)
-        target_labels, target_bboxes, target_scores, fg_mask, target_gt_idx = assigner(
+        # Assigner (复用 self.assigner)
+        _, target_bboxes, target_scores, fg_mask, target_gt_idx = self.assigner(
             pred_scores.detach().sigmoid(),
             (pred_bboxes.detach() * stride_tensor).type(gt_bboxes.dtype),
             anchor_points * stride_tensor,
@@ -107,20 +99,17 @@ class EMASlideDetectionLoss(v8DetectionLoss):
         target_scores_sum = max(target_scores.sum(), 1)
         
         # === EMASlideLoss 替换 BCE ===
-        # 计算 IoU 用于 EMASlideLoss
-        if fg_mask.sum() > 0:
-            # 获取前景 anchor 的预测框和 GT 框
-            fg_pred_bboxes = pred_bboxes[fg_mask]  # (N_fg, 4)
-            fg_target_bboxes = target_bboxes[fg_mask] / stride_tensor[fg_mask]  # (N_fg, 4)
-            
-            # 计算 IoU
-            from ultralytics.utils.metrics import bbox_iou
-            iou_per_anchor = torch.zeros_like(target_scores[:, :, 0])  # (B, A)
-            if fg_pred_bboxes.numel() > 0:
-                ious = bbox_iou(fg_pred_bboxes, fg_target_bboxes, xywh=False, CIoU=False).squeeze(-1)
+        # 计算每个 anchor 的 IoU（用于 EMASlideLoss 权重）
+        iou_per_anchor = torch.zeros(batch_size, pred_scores.shape[1], device=self.device)
+        if fg_mask.sum():
+            fg_pred = pred_bboxes[fg_mask]  # (N_fg, 4) — normalized
+            # stride_tensor (A,1) → broadcast to (B,A) → index by fg_mask (B,A)
+            stride_broadcast = stride_tensor.squeeze(-1).unsqueeze(0).expand_as(fg_mask)
+            fg_stride = stride_broadcast[fg_mask]  # (N_fg,)
+            fg_target = target_bboxes[fg_mask] / fg_stride.unsqueeze(-1)  # (N_fg, 4)
+            if fg_pred.numel() > 0:
+                ious = bbox_iou(fg_pred, fg_target, xywh=False, CIoU=False).squeeze(-1)
                 iou_per_anchor[fg_mask] = ious
-        else:
-            iou_per_anchor = torch.zeros_like(target_scores[:, :, 0])
         
         # EMASlideLoss
         cls_loss = self.ema_slide_loss(
@@ -137,9 +126,9 @@ class EMASlideDetectionLoss(v8DetectionLoss):
                 fg_mask, imgsz, stride_tensor
             )
         
-        loss[0] *= self.hyp.box
-        loss[1] *= self.hyp.cls
-        loss[2] *= self.hyp.dfl
+        loss[0] *= self.hyp.box  # box gain
+        loss[1] *= self.hyp.cls  # cls gain
+        loss[2] *= self.hyp.dfl  # dfl gain
         
         return (
             (fg_mask, target_gt_idx, target_bboxes, anchor_points, stride_tensor),
@@ -171,7 +160,7 @@ class OrgaDeteTrainer(DetectionTrainer):
             cfg or self.args.model,
             ch=3,
             nc=self.data.get("nc", 1),
-            verbose=verbose and RANK == -1,
+            verbose=verbose and RANK in {-1, 0},
         )
         if weights:
             model.load(weights)
