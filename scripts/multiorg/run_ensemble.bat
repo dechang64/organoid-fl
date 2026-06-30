@@ -1,19 +1,16 @@
 @echo off
 REM Ensemble Inference: RF-DETR + YOLOv12
-REM Usage: scripts\multiorg\run_ensemble.bat <yolo_weights_path>
-REM Example: scripts\multiorg\run_ensemble.bat "D:\datasets\MultiOrg_v4_640\runs\multiorg_v5_12s_freebies-2\weights\best.pt"
+REM Usage: scripts\multiorg\run_ensemble.bat [yolo_weights_path]
+REM If no argument given, uses default path from TOOLS.md:
+REM   D:\datasets\MultiOrg_v4_640\runs\multiorg_v5_12s_freebies-2\weights\best.pt
 
 cd /d C:\Users\decha\organoid-fl
 call .\.venv\Scripts\activate
 
-REM === 接收 YOLO checkpoint 路径作为参数 ===
+REM === YOLO checkpoint 路径（Ultralytics 标准: <run_dir>/weights/best.pt） ===
 set YOLO_CKPT=%1
 if "%YOLO_CKPT%"=="" (
-    echo ERROR: Please provide YOLO checkpoint path
-    echo Usage: scripts\multiorg\run_ensemble.bat ^<yolo_weights_path^>
-    echo Example: scripts\multiorg\run_ensemble.bat "D:\path\to\best.pt"
-    pause
-    exit /b 1
+    set YOLO_CKPT=D:\datasets\MultiOrg_v4_640\runs\multiorg_v5_12s_freebies-2\weights\best.pt
 )
 
 REM === 验证文件存在 ===
