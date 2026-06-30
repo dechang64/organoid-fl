@@ -1,0 +1,635 @@
+\documentclass[aspectratio=169, 10pt]{beamer}
+\usepackage[fontset=fandol]{ctex}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+
+% -- Theme ---------------------------------------------------------------
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+\usefonttheme{professionalfonts}
+\setbeamertemplate{navigation symbols}{}
+
+% -- Compact spacing ------------------------------------------------------
+\setbeamersize{text margin left=6mm, text margin right=6mm}
+\renewcommand{\baselinestretch}{0.92}
+\setlength{\parskip}{0pt}
+\setbeamertemplate{itemize items}[circle]
+\setbeamerfont{block title}{size=\small,series=\bfseries}
+\setbeamerfont{block body}{size=\small}
+\setbeamerfont{block title alerted}{size=\small,series=\bfseries}
+\setbeamerfont{block body alerted}{size=\small}
+
+% -- Colors --------------------------------------------------------------
+\definecolor{myblue}{HTML}{2B5EA7}
+\definecolor{accentgreen}{HTML}{2E8B57}
+\definecolor{accentred}{HTML}{C0392B}
+\definecolor{accentorange}{HTML}{D35400}
+\definecolor{lightbg}{HTML}{F5F7FA}
+\setbeamercolor{frametitle}{bg=myblue, fg=white}
+\setbeamercolor{structure}{fg=myblue}
+\setbeamercolor{block title}{bg=myblue!85, fg=white}
+\setbeamercolor{block body}{bg=myblue!8}
+\setbeamercolor{alerted text}{fg=accentred}
+\setbeamercolor{block title alerted}{bg=accentred, fg=white}
+\setbeamercolor{block body alerted}{bg=accentred!10}
+
+% -- Auto section title page ---------------------------------------------
+\AtBeginSection[]{
+  \begin{frame}
+    \vfill\centering
+    \usebeamerfont{title}\textcolor{myblue}{\insertsectionhead}\par
+    \vfill
+  \end{frame}
+}
+
+% -- Footer with GitHub URL ----------------------------------------------
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.55\paperwidth,ht=2.5ex,dp=1ex,leftskip=2ex]{author in head/foot}%
+    \tiny\texttt{github.com/dechang64/organoid-fl}%
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.35\paperwidth,ht=2.5ex,dp=1ex,center]{author in head/foot}%
+    \tiny\insertshorttitle%
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.10\paperwidth,ht=2.5ex,dp=1ex,center]{author in head/foot}%
+    \tiny\insertframenumber{} / \inserttotalframenumber%
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+% -- Metadata ------------------------------------------------------------
+\title[Organoid-FL]{Organoid-FL: 类器官检测联邦学习平台}
+\subtitle{项目进展汇报 v4}
+\date{2026年6月}
+
+\begin{document}
+
+% ========================================================================
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{目录}
+  \tableofcontents
+\end{frame}
+
+% ========================================================================
+\section{问题与背景}
+
+\begin{frame}{什么是类器官？}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \begin{block}{类器官（Organoid）}
+      \begin{itemize}
+        \item 体外培养的微型器官（肺、肠、脑等）
+        \item 用于药物筛选、个性化医疗、疾病建模
+        \item 显微镜下成像后需\textbf{人工计数和形态分析}
+        \item 通量低、主观性强、跨实验室一致性差
+      \end{itemize}
+    \end{block}
+    \vspace{0em}
+    \begin{alertblock}{核心痛点}
+      类器官图像分析依赖人工，成为药物研发管线的瓶颈。
+      自动化检测是解决方案，但面临多个技术挑战。
+    \end{alertblock}
+    \column{0.40\textwidth}
+    \begin{block}{技术挑战}
+      \begin{itemize}
+        \item \alert{超大图}：6K$\times$5.7K 像素
+        \item \alert{密集小目标}：单图数百个 organoid
+        \item \alert{标注噪声}：多标注者不一致
+        \item \alert{数据分散}：多中心数据无法共享
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{为什么需要联邦学习？}
+  \begin{block}{数据隐私与数据分散的矛盾}
+    \begin{itemize}
+      \item 多家医院/实验室各自有类器官图像数据
+      \item 涉及患者来源 → \alert{无法集中共享}
+      \item 单中心数据量不足 → 模型泛化性差
+      \item 各中心培养条件/成像设备不同 → 数据分布异构（non-IID）
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{联邦学习（Federated Learning）}
+    \begin{itemize}
+      \item \textbf{数据不动，模型动}：各中心本地训练，只上传模型参数
+      \item \textbf{数据不动，知识动}：聚合后的全局模型吸收所有中心的知识
+      \item \textbf{数据不动，推理动}：全局模型下发给各中心本地推理
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \centering\alert{FL + Organoid 是未被探索的交叉方向}
+\end{frame}
+
+% ========================================================================
+\section{踩坑总结}
+
+\begin{frame}{踩坑总结：数据集层面}
+  \begin{alertblock}{铁律：使用任何新数据集前，必须先查官方文档}
+    \begin{itemize}
+      \item MultiOrg 标注 JSON 使用 napari 的 \textbf{(row, col) = (y, x)} 坐标系，不是常规 (x, y)
+      \item 论文用\textbf{单类} organoid（Normal/Macros 只是培养条件，不是检测类别）
+      \item 论文用 \textbf{512 patch + 丢弃边界 bbox + 全图滑动窗口推理}，不是 640 patch 上直接评估
+    \end{itemize}
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{三个根本性错误 → 100 epoch mAP=0}
+    \begin{tabular}{p{3.5cm}p{4cm}p{4cm}}
+      \toprule
+      & \textbf{错误做法} & \textbf{正确做法（论文方法）} \\
+      \midrule
+      类别 & 2类（Normal/Macros） & \textbf{单类} organoid \\
+      边界 bbox & 裁剪到 patch 边缘 & \textbf{丢弃}边界 bbox \\
+      评估 & patch 上直接评估 & 全图滑动窗口推理 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{坐标系错误 → 标注越界}
+    napari [y,x] 格式被当 [x,y] 读 → 标注 y 最大 5845 $>$ 图片高 5720，交换后 x 最大 5845 $<$ 宽 6385 ✓
+  \end{block}
+\end{frame}
+
+\begin{frame}{踩坑总结：代码层面}
+  \begin{block}{2026-06-28 系统审计发现 7 个 bug}
+    \begin{tabular}{p{3.2cm}p{2.5cm}p{4.5cm}p{1.2cm}}
+      \toprule
+      \textbf{文件} & \textbf{Bug} & \textbf{影响} & \textbf{严重性} \\
+      \midrule
+      multiorg\_sam2.py & mask\_iou\_cropped offset x/y 交换 & 所有 mask mAP 数值错误 & \alert{Critical} \\
+      multiorg\_sam2.py & mask\_iou() 死代码 & 无 & Minor \\
+      multiorg\_sam2.py & load\_sam2 临时文件不清理 & 磁盘泄漏 & Medium \\
+      multiorg\_tiling\_v3.py & PIL I;16→numpy segfault & Macros 类崩溃 & \alert{Critical} \\
+      prepare\_sam2\_pseudo.py & cache return 跳过所有后续图 & 数据缺失 & \alert{Critical} \\
+      prepare\_sam2\_pseudo.py & fallback mask 全图分配 & OOM 风险 & Medium \\
+      prepare\_sam2\_pseudo.py & instance 编号错位 & 训练读错 mask & \alert{Critical} \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{教训}
+    \begin{itemize}
+      \item 写完脚本必须端到端验证，不能只过 py\_compile
+      \item offset/坐标格式必须统一标注 (x,y) 还是 (y,x)
+      \item docstring 里的路径不能编造，必须从训练日志确认
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{踩坑总结：实验设计层面}
+  \begin{block}{val 集 drop\_boundary 导致 mAP 暴跌 15pp}
+    \begin{itemize}
+      \item train 用 drop\_boundary=True（干净信号）✓
+      \item val 也用 drop\_boundary=True → \alert{把模型正确检测变 false positive}
+      \item 正确做法：val 必须 clip 到 patch 边缘（保留所有 GT）
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{GT 标注质量决定微调策略}
+    \begin{tabular}{p{2.5cm}p{4cm}p{4cm}}
+      \toprule
+      & \textbf{鼠肝} & \textbf{MultiOrg} \\
+      \midrule
+      标注类型 & 红色折线（精确轮廓） & 4点多边形（位置标注） \\
+      SAM2 微调 & \textbf{有效}（F1=93.9\%） & \textbf{有害}（mask mAP -4pp） \\
+      正确做法 & mask supervision & 位置 prompt only \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{核心教训}
+    用粗糙 GT 微调精确 SAM2 = 负优化。GT 质量决定 supervision 方式。
+  \end{alertblock}
+\end{frame}
+
+% ========================================================================
+\section{MultiOrg 实验结果}
+
+\begin{frame}{标注者选择对评估的影响}
+  \begin{block}{同一模型，不同标注者评估}
+    \begin{tabular}{lcccc}
+      \toprule
+      标注者 & Instances & mAP@0.5 & mAP@0.5:0.95 & Recall \\
+      \midrule
+      t0（初始） & 6465 & 66.9\% & 32.6\% & 60.2\% \\
+      t1\_A（二次） & 3950 & 70.5\% & 38.7\% & 64.8\% \\
+      \textbf{t1\_B（最精准）} & 4112 & \textbf{78.9\%} & \textbf{53.9\%} & \textbf{72.3\%} \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{关键发现}
+    \begin{itemize}
+      \item 标注者选择可造成 \textbf{12pp mAP@0.5 差异}（66.9\% vs 78.9\%）
+      \item t0 噪声最大（6465 instances，含误标）；t1\_B 最精简（4112 instances）
+      \item \textbf{评估方法论和模型本身一样重要}——噪声标注会严重低估模型能力
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{MultiOrg 检测精度 vs SOTA}
+  \begin{block}{mAP@0.5 对比（t1\_b 标注）}
+    \begin{tabular}{lcc}
+      \toprule
+      配置 & mAP@0.5 & vs SOTA \\
+      \midrule
+      Faster R-CNN（论文） & 68.4\% & $-$5.5pp \\
+      YOLOv3（论文） & 70.3\% & $-$3.6pp \\
+      RTMDet（论文） & 63.2\% & $-$10.7pp \\
+      \textbf{SSD（论文 SOTA）} & \textbf{73.9\%} & — \\
+      \midrule
+      YOLOv12s patch 级 & 78.1\% & +4.2pp \\
+      RF-DETR SAHI+Soft-NMS & 77.15\% & +3.3pp \\
+      \textbf{RF-DETR ensemble baseline} & \textbf{77.8\%} & \textbf{+3.9pp} \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{结论}
+    \begin{itemize}
+      \item \textbf{我们已是 MultiOrg SOTA}，超论文最优 SSD +3.9pp
+      \item 论文 2024.10 发表，无后续工作超过我们
+      \item 距 80\% 门槛差 2.2pp，瓶颈是数据量（356张 vs Orga-Dete 4008张）
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{SAM2 分割实验：自蒸馏方案}
+  \begin{block}{问题：4点多边形 GT 太粗糙}
+    MultiOrg 标注只标 4 个点（位置），不是精确轮廓。直接用 4点多边形微调 SAM2 = 负优化（mask mAP -4pp）。
+  \end{block}
+  \vspace{0em}
+  \begin{block}{方案 A：自蒸馏（Self-Distillation）}
+    \begin{enumerate}
+      \item GT 4点多边形 → bbox（位置 prompt）
+      \item SAM2 zero-shot 用 bbox 做 prompt → 伪 mask（精确轮廓）
+      \item 伪 mask 作为微调 supervision（替代粗糙的 4点多边形）
+    \end{enumerate}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{训练结果（5 epoch, 3060 12GB）}
+    \begin{tabular}{ccccc}
+      \toprule
+      Epoch & Train IoU & Val IoU & Val Dice & 耗时 \\
+      \midrule
+      1 & 0.8437 & 0.8419 & 0.9074 & 70min \\
+      3 & 0.8646 & 0.8594 & 0.9181 & 70min \\
+      \textbf{5} & \textbf{0.8814} & \textbf{0.8720} & \textbf{0.9255} & 70min \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+\end{frame}
+
+\begin{frame}{SAM2 对照实验结果}
+  \begin{block}{全量 55 张测试，mask IoU bug 修复后}
+    \begin{tabular}{lcccc}
+      \toprule
+      \textbf{配置} & \textbf{bbox mAP50} & \textbf{mask mAP50} & \textbf{F1} & \textbf{FP} \\
+      \midrule
+      Zero-shot SAM2 & 待跑 & 待跑 & — & — \\
+      Finetuned v2 (4点GT) & 待跑 & 待跑 & — & — \\
+      \textbf{Finetuned pseudo} & \textbf{77.13\%} & \textbf{75.89\%} & \textbf{43.9\%} & 11553 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{形态学过滤无效（复现鼠肝结论）}
+    \begin{tabular}{lcccc}
+      \toprule
+      Filter & mAP50 & Prec & Rec & F1 \\
+      \midrule
+      baseline & 77.1\% & 28.6\% & 93.6\% & 43.9\% \\
+      conf$\geq$0.4 & 75.1\% & 43.8\% & 88.2\% & 58.5\% \\
+      conf$\geq$0.5 & 70.5\% & 60.2\% & 79.0\% & 68.4\% \\
+      circ/solid/ar & \multicolumn{4}{c}{砍 FP $<$ 2\%，无效} \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{结论}
+    形态学过滤对 MultiOrg 无效。conf 是唯一有效维度，但阈值高了砍 recall。瓶颈在检测器，不在后处理。
+  \end{alertblock}
+\end{frame}
+
+% ========================================================================
+\section{鼠肝实验规划}
+
+\begin{frame}{鼠肝实验：已有基础}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{数据}
+      \begin{itemize}
+        \item Batch 1: 10对图（2592$\times$1944, 4X），23个类器官
+        \item Batch 2: 10对图（4000$\times$3000, 不同相机），41个类器官
+        \item \textbf{红色折线轮廓标注}（精确轮廓，非4点）
+        \item OpenCV 提取轮廓 → YOLO 格式 bbox
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Batch 1 结果}
+      \begin{itemize}
+        \item RF-DETR few-shot（8张, 1ep）
+        \item + zero-shot SAM2 分割
+        \item \textbf{F1 = 93.9\%}
+        \item SAM2 mask 和人工红线格式一致
+      \end{itemize}
+    \end{block}
+  \end{columns}
+  \vspace{0em}
+  \begin{alertblock}{Batch 2 域偏移测试}
+    Batch 1 模型 → Batch 2 推理 → F1=0\%（完全失败）。根因：不同相机/光照/对比度，不是分辨率问题。
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{鼠肝实验：为什么值得做？}
+  \begin{block}{鼠肝 vs MultiOrg 对比}
+    \begin{tabular}{p{3.5cm}p{4.5cm}p{4cm}}
+      \toprule
+      & \textbf{鼠肝} & \textbf{MultiOrg} \\
+      \midrule
+      标注质量 & 红色折线（精确轮廓） & 4点多边形（位置） \\
+      SAM2 微调 & \textbf{有效}（F1=93.9\%） & 有害（-4pp） \\
+      形态学过滤 & 有效（conf+circ） & 无效 \\
+      数据量 & 20张（few-shot） & 411张 \\
+      域偏移 & \alert{有}（batch 1→2 F1=0） & 无 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{鼠肝实验的独特价值}
+    \begin{itemize}
+      \item \textbf{精确 GT}：折线轮廓 → SAM2 微调有效 → 可以做 mask 级评估
+      \item \textbf{域偏移}：不同实验室/相机/光照 → FL 的天然场景
+      \item \textbf{Few-shot}：数据少 → FL 价值更大（单中心不够训）
+      \item \textbf{已有 pipeline}：RF-DETR + SAM2 + 形态学过滤已验证
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{鼠肝实验：三阶段计划}
+  \begin{block}{Phase 1：单中心精度验证（1-2周）}
+    \begin{enumerate}
+      \item Batch 1（10张）训练 RF-DETR few-shot + SAM2 微调（已有 F1=93.9\%）
+      \item Batch 2（10张）作为独立 test set → 模拟跨域泛化
+      \item 对比 zero-shot SAM2 vs finetuned SAM2 的 mask 质量
+      \item \textbf{关键验证}：精确 GT 微调 SAM2 是否真有增益（vs MultiOrg 的负优化）
+    \end{enumerate}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{Phase 2：跨域泛化 + 图像预处理标准化（2-3周）}
+    \begin{enumerate}
+      \item Batch 1 → Batch 2 域偏移量化（当前 F1=0\%）
+      \item 图像预处理标准化模块：
+        \begin{itemize}
+          \item 分辨率归一化（到固定 μm/px）
+          \item 对比度归一化（CLAHE）
+          \item 背景扣除
+          \item 位深统一（16bit→8bit）
+        \end{itemize}
+      \item 验证预处理后跨域 F1 是否提升
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+\begin{frame}{鼠肝实验：FL 场景设计}
+  \begin{block}{Phase 3：联邦学习实验（3-4周）}
+    \begin{enumerate}
+      \item \textbf{Client 划分}：
+        \begin{itemize}
+          \item Client A: Batch 1（2592$\times$1944, 4X 相机）
+          \item Client B: Batch 2（4000$\times$3000, 不同相机）
+          \item Client C: 数据增强生成（模拟第三中心）
+        \end{itemize}
+      \item \textbf{Non-IID 设计}：
+        \begin{itemize}
+          \item 分辨率异质（不同 μm/px）
+          \item 光照异质（不同对比度/亮度）
+          \item 标注密度异质（不同 organoid 数量/图）
+        \end{itemize}
+      \item \textbf{聚合策略对比}：FedAvg vs EWA vs FedProx
+      \item \textbf{评估}：mask mAP50 + bbox mAP50 + 跨域 F1
+    \end{enumerate}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{预期贡献}
+    \begin{itemize}
+      \item 首个 FL + 类器官检测的跨域泛化研究
+      \item 图像预处理标准化模块（多实验室平台的刚需）
+      \item EWA Effective Interval 在跨模态场景的验证
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{鼠肝实验：技术路线图}
+  \centering
+  \begin{tikzpicture}[
+    node distance=0.6cm and 1.0cm,
+    box/.style={draw, rounded corners, minimum width=3.2cm, minimum height=0.8cm,
+                font=\small, align=center, fill=myblue!10},
+    phase/.style={draw, rounded corners, minimum width=3.5cm, minimum height=0.7cm,
+                  font=\small\bfseries, align=center, fill=myblue!85, text=white},
+    arrow/.style={-Stealth, thick, myblue}
+  ]
+    \node[phase] (p1) {Phase 1: 单中心精度};
+    \node[phase, right=of p1] (p2) {Phase 2: 跨域泛化};
+    \node[phase, right=of p2] (p3) {Phase 3: 联邦学习};
+
+    \node[box, below=of p1] (b1) {RF-DETR few-shot\\+ SAM2 微调};
+    \node[box, below=of p2] (b2) {预处理标准化\\CLAHE + 分辨率归一};
+    \node[box, below=of p3] (b3) {3-client FL\\FedAvg vs EWA};
+
+    \node[box, below=of b1, fill=accentgreen!15] (r1) {F1=93.9\% ✓};
+    \node[box, below=of b2, fill=accentorange!15] (r2) {目标: F1>80\%};
+    \node[box, below=of b3, fill=accentorange!15] (r3) {目标: 超单中心};
+
+    \draw[arrow] (p1) -- (p2);
+    \draw[arrow] (p2) -- (p3);
+    \draw[arrow] (b1) -- (r1);
+    \draw[arrow] (b2) -- (r2);
+    \draw[arrow] (b3) -- (r3);
+  \end{tikzpicture}
+  \vspace{0.5em}
+  \begin{itemize}
+    \item Phase 1 已有基础（F1=93.9\%），重点验证 SAM2 微调增益
+    \item Phase 2 解决域偏移（batch 1→2 F1=0\%），预处理标准化是关键
+    \item Phase 3 FL 实验，鼠肝的精确 GT 让 mask 级评估有意义
+  \end{itemize}
+\end{frame}
+
+% ========================================================================
+\section{联邦学习}
+
+\begin{frame}{EWA 熵加权聚合策略}
+  \begin{block}{核心思想}
+    传统 FedAvg 按样本量均匀加权，忽略客户端模型质量差异。\\
+    EWA 用验证集熵作为信号，\textbf{给更好的客户端更高权重}：
+    \[
+      w_c = \frac{\exp(-H_c / \alpha)}{\sum_{c'} \exp(-H_{c'} / \alpha)}
+    \]
+    其中 $H_c$ 是客户端 $c$ 在验证集上的预测熵，$\alpha$ 是温度参数。
+  \end{block}
+  \vspace{0em}
+  \begin{block}{EWA Effective Interval 理论}
+    \begin{itemize}
+      \item \textbf{IID}：质量差异小 → EWA 退化 → \alert{无优势}
+      \item \textbf{适度异质}：差异可区分 → EWA 最优 → \alert{+1.4\textasciitilde 1.5pp}
+      \item \textbf{极端异质}：信号噪声大 → \alert{+1.1pp}
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+% ========================================================================
+\section{总结}
+
+\begin{frame}{Ensemble 实验：RF-DETR + YOLOv12}
+  \begin{block}{三种融合策略结果}
+    \begin{tabular}{lccc}
+      \toprule
+      策略 & mAP50 & mAP50-95 & vs RF-DETR \\
+      \midrule
+      RF-DETR 单模型 & 77.8\% & 48.8\% & — \\
+      YOLOv12s 单模型 & 62.3\% & 37.2\% & $-$15.5pp \\
+      \midrule
+      WBF（SOTA 融合） & 63.2\% & 38.3\% & $-$14.5pp \\
+      Intersection & 63.1\% & 39.7\% & $-$14.7pp \\
+      Union & 70.0\% & 42.8\% & $-$7.8pp \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \begin{alertblock}{失败原因：YOLOv12s 是严格劣势模型}
+    \begin{itemize}
+      \item YOLO recall 80.4\% $\ll$ RF-DETR 96.2\%，无独有 TP
+      \item Ensemble TP=4745 $<$ RF-DETR TP=4767 → YOLO 未补充任何 recall
+      \item WBF 的 T/N 机制反而拉低 RF-DETR 高分 TP 的 score
+      \item \textbf{结论：ensemble 需要两个精度接近的模型才能受益}
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{全面文献调研：MultiOrg SOTA}
+  \begin{block}{MultiOrg 数据集 SOTA（mAP@0.5, t1\_b）}
+    \begin{tabular}{llc}
+      \toprule
+      方法 & 来源 & mAP50 \\
+      \midrule
+      SSD & MultiOrg 论文 SOTA & 73.9\% \\
+      YOLOv3 & MultiOrg 论文 & 70.3\% \\
+      Faster R-CNN & MultiOrg 论文 & 68.4\% \\
+      \textbf{RF-DETR（我们）} & \textbf{本研究} & \textbf{77.8\%} \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \begin{block}{其他 organoid 数据集 SOTA}
+    \begin{tabular}{llcl}
+      \toprule
+      方法 & mAP50 & 数据集 & 数据量 \\
+      \midrule
+      Deliod & 87.5\% & Intestinal & — \\
+      Orga-Dete & 81.4\% & Lung & 4008 张 \\
+      Orga-Dete & 92.5\% & Duodenal & — \\
+      Orga-Dete & 84.4\% & Murine intestinal & — \\
+      OrgLine & N/A (PQ) & Multi-source & — \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+\end{frame}
+
+\begin{frame}{突破 80\% 的方向：Orga-Dete 迁移}
+  \begin{block}{Orga-Dete 三模块（Huang et al., Applied Sciences 2025）}
+    \begin{tabular}{lll}
+      \toprule
+      模块 & 作用 & 消融贡献 \\
+      \midrule
+      BiFPN & 双向特征金字塔 & small +3.7\% \\
+      MPCA & 多路径坐标注意力 & small +4.0\% \\
+      EMASlideLoss & 动态阈值 loss & 零成本提升 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{MultiOrg 匹配度}
+      \begin{itemize}
+        \item[\checkmark] 小目标多 → BiFPN/MPCA 对症
+        \item[\checkmark] 类别不平衡 → EMASlideLoss
+        \item[\checkmark] 密集场景 → BiFPN 抑制噪声
+        \item[\checkmark] 3 个数据集验证跨域泛化
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{alertblock}{预期收益}
+      \begin{itemize}
+        \item YOLOv11n baseline $\sim$77.9\%
+        \item +三模块 $\sim$+3-4pp
+        \item 预期：\textbf{80-82\%}
+        \item 实现：3-5 天
+        \item 代码未开源，需自实现
+      \end{itemize}
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{总结}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{已完成}
+      \begin{itemize}
+        \item[\checkmark] SOTA 全面调研（MultiOrg + Orga-Dete + OrgLine）
+        \item[\checkmark] 数据预处理管线（tiling + 多标注者）
+        \item[\checkmark] 标注 bug 修复（mAP +26pp）
+        \item[\checkmark] \textbf{MultiOrg SOTA: 77.8\%（超论文 +3.9pp）}
+        \item[\checkmark] SAM2 自蒸馏微调（val IoU 0.87）
+        \item[\checkmark] Ensemble 实验（WBF/Union/Intersection）
+        \item[\checkmark] Ensemble 失败分析（YOLO 严格劣势）
+        \item[\checkmark] 鼠肝 batch 1 验证（F1=93.9\%）
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{下一步}
+      \begin{itemize}
+        \item[$\rightarrow$] \textbf{Orga-Dete 迁移：EMASlideLoss（零成本）}
+        \item[$\rightarrow$] BiFPN + MPCA 模块实现
+        \item[$\circ$] 鼠肝 Phase 1-3 实验
+        \item[$\circ$] 图像预处理标准化模块
+        \item[$\circ$] FL + Organoid 系统实验
+        \item[$\circ$] 论文撰写 + 专利申请
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{参考文献}
+  \footnotesize
+  \begin{thebibliography}{99}
+    \bibitem{bukas2024} Bukas et al. \textit{MultiOrg: A Multi-rater Organoid-detection Dataset}. NeurIPS, 2024.
+    \bibitem{tian2025} Tian et al. \textit{YOLOv12: Attention-Centric Real-Time Object Detectors}. arXiv:2502.12524, 2025.
+    \bibitem{solawetz2025} Solawetz et al. \textit{RF-DETR: Real-Time DEtection TRansformer}. ICLR, 2026.
+    \bibitem{bodla2017} Bodla et al. \textit{Soft-NMS -- Improving Object Detection with One Line of Code}. ICCV, 2017.
+    \bibitem{akyon2022} Akyon et al. \textit{Slicing Aided Hyper Inference (SAHI)}. CVPRW, 2022.
+    \bibitem{bulten2021} Bulten et al. \textit{Overcoming the Limitations of Patch-based Learning to Detect Cancer in Whole Slide Images}. PMC, 2021.
+    \bibitem{lu2025} Lu et al. \textit{Thinking with Visual Primitives}. DeepSeek-AI, 2025.
+    \bibitem{kirillov2023} Kirillov et al. \textit{Segment Anything (SAM)}. ICCV, 2023.
+    \bibitem{solovyev2021} Solovyev et al. \textit{Weighted Boxes Fusion: Ensembling boxes from different object detection models}. IVC, 2021.
+    \bibitem{huang2025} Huang et al. \textit{Orga-Dete: An Improved Lightweight Deep Learning Model for Lung Organoid Detection}. Applied Sciences, 2025.
+    \bibitem{deng2026} Deng et al. \textit{OrgLine: A versatile pipeline for organoid morphometry using detector-guided prompts}. Cell Reports Methods, 2026.
+  \end{thebibliography}
+\end{frame}
+
+\begin{frame}[plain]
+  \centering
+  \vfill
+  \Large\textcolor{myblue}{Thank You!}\\[0.8em]
+  \normalsize Questions \& Discussion\\[1.5em]
+  \footnotesize\texttt{github.com/dechang64/organoid-fl}
+  \vfill
+\end{frame}
+\end{document}
