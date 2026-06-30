@@ -219,6 +219,73 @@ def ensemble_union(dets_a, dets_b, match_iou=0.5, unmatched_penalty=0.7,
     return fused
 
 
+def ensemble_wbf(dets_a, dets_b, img_w, img_h, iou_thr=0.55, weights=None):
+    """Weighted Boxes Fusion (WBF) — Solovyev et al., IVC 2021
+
+    SOTA ensemble 方法。所有 box 按 score 聚类，fused box = score 加权平均坐标，
+    fused score = sum(scores) * T / N (T=cluster中box数, N=模型数)。
+
+    比 intersection/union 优势：
+    - 单模型检测到的框也保留（score × 1/N），不丢弃 → 保 recall
+    - 坐标用 score 加权平均（非简单平均）→ 高置信度框贡献更大
+    - cluster 机制天然去重，不需要后置 NMS
+
+    Args:
+        dets_a, dets_b: [(x1,y1,x2,y2,score), ...] 像素坐标
+        img_w, img_h: 图像尺寸（用于归一化到 [0,1]）
+        iou_thr: cluster 匹配的 IoU 阈值（WBF 论文推荐 0.55）
+        weights: 每个模型的权重，None=[1,1] 等权
+
+    Returns:
+        fused: [(x1,y1,x2,y2,score), ...] 像素坐标
+    """
+    try:
+        from ensemble_boxes import weighted_boxes_fusion
+    except ImportError:
+        raise ImportError(
+            "WBF requires ensemble-boxes: pip install ensemble-boxes"
+        )
+
+    if not dets_a and not dets_b:
+        return []
+
+    # 归一化到 [0,1]
+    def normalize(dets):
+        boxes = [[d[0]/img_w, d[1]/img_h, d[2]/img_w, d[3]/img_h] for d in dets]
+        scores = [d[4] for d in dets]
+        labels = [0] * len(dets)
+        return boxes, scores, labels
+
+    boxes_a, scores_a, labels_a = normalize(dets_a)
+    boxes_b, scores_b, labels_b = normalize(dets_b)
+
+    boxes_list = [boxes_a, boxes_b]
+    scores_list = [scores_a, scores_b]
+    labels_list = [labels_a, labels_b]
+
+    if weights is None:
+        weights = [1, 1]
+
+    fused_boxes, fused_scores, fused_labels = weighted_boxes_fusion(
+        boxes_list, scores_list, labels_list,
+        weights=weights,
+        iou_thr=iou_thr,
+        skip_box_thr=0.0  # 保留所有框（WBF 通过 score 调节，不删框）
+    )
+
+    # 反归一化回像素坐标
+    result = []
+    for box, score in zip(fused_boxes, fused_scores):
+        x1 = box[0] * img_w
+        y1 = box[1] * img_h
+        x2 = box[2] * img_w
+        y2 = box[3] * img_h
+        result.append((x1, y1, x2, y2, float(score)))
+
+    result.sort(key=lambda d: -d[4])
+    return result
+
+
 def process_ensemble(rfdetr_model, yolo_model, src_dir, dst_dir,
                      rfdetr_config, yolo_config,
                      strategy='intersection', match_iou=0.5,
@@ -281,8 +348,13 @@ def process_ensemble(rfdetr_model, yolo_model, src_dir, dst_dir,
                 # Ensemble 融合
                 if strategy == 'intersection':
                     ensemble_dets = ensemble_intersection(rfdetr_dets, yolo_dets, match_iou)
-                else:
+                elif strategy == 'union':
                     ensemble_dets = ensemble_union(rfdetr_dets, yolo_dets, match_iou, unmatched_penalty)
+                elif strategy == 'wbf':
+                    ensemble_dets = ensemble_wbf(rfdetr_dets, yolo_dets, img_w, img_h,
+                                                 iou_thr=match_iou)
+                else:
+                    raise ValueError(f"Unknown strategy: {strategy}")
 
                 elapsed = time.time() - start
 
@@ -379,9 +451,9 @@ def main():
     parser.add_argument('--yolo-weights', required=True, help='YOLOv12 checkpoint path')
     parser.add_argument('--src', required=True, help='Test set dir (MultiOrg_v2/test)')
     parser.add_argument('--dst', default='./results/ensemble', help='Output directory')
-    parser.add_argument('--strategy', default='intersection',
-                        choices=['intersection', 'union'],
-                        help='Ensemble strategy: intersection (strict) or union (loose)')
+    parser.add_argument('--strategy', default='wbf',
+                        choices=['intersection', 'union', 'wbf'],
+                        help='Ensemble strategy: wbf (SOTA, default) / intersection (strict) / union (loose)')
     parser.add_argument('--match-iou', type=float, default=0.3,
                         help='IoU threshold for matching detections between models (0.3 for cross-model)')
     parser.add_argument('--unmatched-penalty', type=float, default=0.7,
