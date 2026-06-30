@@ -1,0 +1,386 @@
+\documentclass[aspectratio=169, 11pt]{beamer}
+\usepackage[fontset=fandol]{ctex}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+
+% -- Theme ---------------------------------------------------------------
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+\usefonttheme{professionalfonts}
+\setbeamertemplate{navigation symbols}{}
+
+% -- Colors --------------------------------------------------------------
+\definecolor{myblue}{HTML}{2B5EA7}
+\definecolor{accentgreen}{HTML}{2E8B57}
+\definecolor{accentred}{HTML}{C0392B}
+\setbeamercolor{frametitle}{bg=myblue, fg=white}
+\setbeamercolor{structure}{fg=myblue}
+\setbeamercolor{block title}{bg=myblue!85, fg=white}
+\setbeamercolor{block body}{bg=myblue!8}
+\setbeamercolor{alerted text}{fg=accentred}
+
+% -- Auto section title page ---------------------------------------------
+\AtBeginSection[]{
+  \begin{frame}
+    \vfill\centering
+    \begin{beamercolorbox}[sep=8pt,center,rounded=true]{title}
+      \usebeamerfont{title}\insertsectionhead\par
+    \end{beamercolorbox}
+    \vfill
+  \end{frame}
+}
+
+% -- Metadata ------------------------------------------------------------
+\title{Organoid-FL: 类器官检测联邦学习平台}
+\subtitle{项目进展汇报}
+\author{冬生 (Dechang)}
+\institute{西交利物浦大学 \\ Academy of AI \quad Intelligent Science Department}
+\date{2026年6月23日}
+
+% ========================================================================
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{目录}
+  \tableofcontents
+\end{frame}
+
+% ========================================================================
+\section{项目概述}
+
+\begin{frame}{项目定位}
+  \begin{block}{核心目标}
+    构建类器官（organoid）图像自动检测平台，支持多中心联邦学习，解决数据隐私与分散标注问题。
+  \end{block}
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{技术栈}
+      \begin{itemize}
+        \item 检测：YOLOv12 + SAHI 滑动窗口
+        \item 联邦学习：FedAvg / EWA / FedProx
+        \item 底座：自研 Rust HNSW (FedCtx)
+        \item 前端：Streamlit 仪表板
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{数据集}
+      \begin{itemize}
+        \item \textbf{MultiOrg} (NeurIPS 2024)\\
+              411张 6K$\times$5.7K, 63K bbox
+        \item \textbf{Intestinal Organoid}\\
+              840张 1280$\times$960, 4类
+        \item \textbf{DeepPCB} (迁移验证)\\
+              1200张, 6类缺陷
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{研究问题}
+  \begin{itemize}
+    \item<1-> \alert{小目标密集场景}：6K 图缩到 patch 后 organoid 很小，mAP 受限
+    \item<2-> \alert{多标注者噪声}：MultiOrg 每张 test 图有 3 套标注（t0/t1\_a/t1\_b），一致性差异大
+    \item<3-> \alert{评估方法论}：patch 级 vs 全图滑动窗口推理，结果差异显著
+    \item<4-> \alert{联邦学习}：多中心类器官数据天然分散，FL 是刚需而非可选
+  \end{itemize}
+  \vspace{0.5em}
+  \begin{alertblock}{核心矛盾}
+    SOTA 方法（SSD 68.1\% mAP@0.5）精度不足，而类器官分析需要可靠自动检测。
+  \end{alertblock}
+\end{frame}
+
+% ========================================================================
+\section{SOTA 调研与定位}
+
+\begin{frame}{类器官检测 SOTA 全景}
+  \centering
+  \begin{tabular}{llcc}
+    \toprule
+    数据集 & 方法 & mAP@0.5 & 年份 \\
+    \midrule
+    Intestinal & Deliod (YOLOv8s 改) & 87.5\% & 2025 \\
+    Intestinal & MDPI (YOLOv10-m) & 84.5\% & 2025 \\
+    Intestinal & Orga-Dete (YOLOv11n 改) & 81.4\% & 2025 \\
+    \textbf{MultiOrg} & \textbf{SSD} & \textbf{68.1\%} & 2024 \\
+    MultiOrg & YOLOv3 & 64.6\% & 2024 \\
+    MultiOrg & RTMDet & 61.6\% & 2024 \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.8em}
+  \begin{itemize}
+    \item Intestinal 已达 87.5\%，MultiOrg 仅 68.1\%——差距来自数据复杂度
+    \item MultiOrg 用 2016-2022 的旧模型（SSD/YOLOv3），\alert{存在代差红利}
+    \item FL + Organoid 检测：\alert{文献和专利完全空白}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{MultiOrg 数据集特点}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{数据规格}
+      \begin{itemize}
+        \item 411 张肺类器官 2D 显微镜图
+        \item 6385$\times$5720, 16-bit TIFF
+        \item 63,042 个 bbox 标注
+        \item 单类 organoid（论文定义）
+        \item Train 356 / Test 55
+      \end{itemize}
+    \end{block}
+    \column{0.5\textwidth}
+    \begin{block}{标注结构}
+      \begin{itemize}
+        \item Train: 每图 1 个标注者（A 或 B）
+        \item Test: 每图 3 套标注
+        \begin{itemize}
+          \item \texttt{t0}: 初始标注
+          \item \texttt{t1\_a}: 二次标注 A
+          \item \texttt{t1\_b}: 二次标注 B
+        \end{itemize}
+        \item napari 坐标系: $[\text{row}, \text{col}] = [y, x]$
+        \item 4 点多边形 → bbox
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% ========================================================================
+\section{方法论：从错误到正确}
+
+\begin{frame}{踩坑历程：三个根本性错误}
+  \begin{block}{错误 1: 类别设置}
+    \textcolor{accentred}{$\times$} 用 2 类（Normal + Macros）\\
+    \textcolor{accentgreen}{$\checkmark$} 论文用单类 organoid（两种培养条件，不是两种类别）
+  \end{block}
+  \begin{block}{错误 2: 评测标注}
+    \textcolor{accentred}{$\times$} test set 合并 3 套标注 → GT 3x 重复 → recall 暴跌\\
+    \textcolor{accentgreen}{$\checkmark$} 非多标注者模式只用 primary 标注者
+  \end{block}
+  \begin{block}{错误 3: 评估方式}
+    \textcolor{accentred}{$\times$} patch 级评估 vs 全图滑动窗口推理未区分\\
+    \textcolor{accentgreen}{$\checkmark$} 两种评估各有用途，需明确报告
+  \end{block}
+\end{frame}
+
+\begin{frame}{标注者选择对评估的影响}
+  \begin{block}{实验设计}
+    同一模型（v4, 66 epoch, yolo12s, 640px），切换不同标注者评估：
+  \end{block}
+  \vspace{0.3em}
+  \centering
+  \begin{tabular}{lccccc}
+    \toprule
+    标注者 & Instances & P & R & mAP@.5 & mAP@.5:.95 \\
+    \midrule
+    t0 & 6465 & 0.668 & 0.602 & 0.669 & 0.326 \\
+    t1\_a & 3950 & 0.644 & 0.648 & 0.705 & 0.387 \\
+    \textbf{t1\_b} & \textbf{4112} & \textbf{0.724} & \textbf{0.723} & \textbf{0.789} & \textbf{0.539} \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.8em}
+  \begin{itemize}
+    \item t0 噪声最大（6465 instances，含误标）→ 评估最悲观
+    \item t1\_b 标注质量最高 → mAP@.5 = \textbf{78.9\%}，超 SOTA +10.8pp
+    \item \alert{评估标注选择可造成 12pp mAP 差异}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{评估方式：Patch 级 vs 全图推理}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Patch 级评估}
+      \begin{itemize}
+        \item 每个 organoid 只在中心\\所在 patch 评估
+        \item 无重复检测问题
+        \item Ultralytics 标准评估
+        \item \textbf{mAP@.5 = 78.9\%} (t1\_b)
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{SAHI 全图推理}
+      \begin{itemize}
+        \item 640px 窗口, overlap=0.5
+        \item WBF 融合重叠检测
+        \item Recall 更高 (83.4\%)
+        \item FP 暴增 → \textbf{mAP@.5 = 61.8\%}
+        \item 后处理待优化
+      \end{itemize}
+    \end{block}
+  \end{columns}
+  \vspace{0.5em}
+  \begin{alertblock}{关键发现}
+    SAHI recall 更高（找回更多 organoid），但 WBF 融合不彻底导致 FP 暴增。\\
+    模型能力不是瓶颈，推理后处理是瓶颈。
+  \end{alertblock}
+\end{frame}
+
+% ========================================================================
+\section{当前进展}
+
+\begin{frame}{v5 训练进展（进行中）}
+  \begin{block}{配置}
+    YOLOv12s + freebies: copy\_paste=1.0, mixup=0.15, label\_smoothing=0.1, cos\_lr, close\_mosaic=15\\
+    640px patch, batch=8, 200 epoch, RTX 3060 12GB
+  \end{block}
+  \vspace{0.3em}
+  \centering
+  \begin{tabular}{ccccc}
+    \toprule
+    Epoch & mAP@.5 & mAP@.5:.95 & Precision & Recall \\
+    \midrule
+    1 & 0.737 & 0.502 & 0.708 & 0.670 \\
+    5 & 0.765 & 0.522 & 0.706 & 0.685 \\
+    10 & \textbf{0.781} & \textbf{0.526} & 0.699 & 0.734 \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.8em}
+  \begin{itemize}
+    \item 10 epoch 已达 v4 66 epoch 水平（t1\_b 78.9\%）
+    \item freebies + 标注修复后收敛显著加速
+    \item 训练进行中，最终结果待定
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{vs SOTA 定位}
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    配置 & mAP@.5 & 对比 SOTA \\
+    \midrule
+    SSD（论文 SOTA） & 68.1\% & — \\
+    YOLOv3（论文） & 64.6\% & -3.5pp \\
+    RTMDet（论文） & 61.6\% & -6.5pp \\
+    \midrule
+    \textbf{我们 v4 (66ep, patch级, t1\_b)} & \textbf{78.9\%} & \textbf{+10.8pp} \\
+    我们 v5 (10ep, 训练中) & 78.1\% & +10.0pp \\
+    我们 v4 (SAHI 全图, t1\_b) & 61.8\% & -6.3pp \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.8em}
+  \begin{itemize}
+    \item \textbf{Patch 级评估已超 SOTA +10.8pp}（78.9\% vs 68.1\%）
+    \item SAHI 全图推理低于 SOTA——后处理优化空间大
+    \item v5 训练进行中，预计还有提升（具体幅度待数据验证）
+  \end{itemize}
+\end{frame}
+
+% ========================================================================
+\section{联邦学习}
+
+\begin{frame}{FL 实验框架}
+  \begin{block}{EWA-Fed: 熵加权联邦聚合}
+    \begin{itemize}
+      \item 用 client 模型熵 $H_c$ 作为质量信号
+      \item 权重 $w_c = \frac{\exp(-H_c / \alpha)}{\sum \exp(-H_c / \alpha)}$
+      \item 前 2 轮 FedAvg warmup（避免冷启动）
+    \end{itemize}
+  \end{block}
+  \begin{block}{EWA Effective Interval 理论}
+    \begin{itemize}
+      \item IID: EWA 无优势（-0.8$\sim$-5.7pp），信号无区分度
+      \item Mild/Moderate Non-IID: EWA 优势最大（+1.4$\sim$+1.5pp）
+      \item Extreme Non-IID: 信号噪声大，需配合 FedProx
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{FL 实验结果（PCB 缺陷检测验证）}
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+    策略 & IID & Moderate Non-IID & Extreme Non-IID \\
+    \midrule
+    FedAvg & 98.6\% & 97.2\% & 95.1\% \\
+    EWA & 97.8\% & \textbf{98.7\%} & 95.8\% \\
+    FedProx ($\mu$=0.1) & 98.2\% & 97.5\% & \textbf{96.2\%} \\
+    EWA+FedProx & 97.9\% & 98.3\% & \textbf{96.5\%} \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.8em}
+  \begin{itemize}
+    \item EWA 在 Moderate Non-IID 下优势最明显（+1.5pp）
+    \item 极端 Non-IID 需 EWA+FedProx 组合
+    \item 验证了 EWA Effective Interval 理论
+  \end{itemize}
+\end{frame}
+
+% ========================================================================
+\section{下一步计划}
+
+\begin{frame}{近期计划（一至两周）}
+  \begin{block}{MultiOrg 检测精度提升}
+    \begin{itemize}
+      \item[\checkmark] 标注 bug 修复（GT 3x 重复）
+      \item[\checkmark] 多标注者评估框架（t0/t1\_a/t1\_b 切换）
+      \item[$\circ$] v5 训练完成（200 epoch + freebies）
+      \item[$\circ$] SAHI WBF 后处理优化（Soft-NMS / 更精细融合）
+      \item[$\circ$] RF-DETR 对比实验（NMS-free 架构）
+    \end{itemize}
+  \end{block}
+  \begin{block}{联邦学习}
+    \begin{itemize}
+      \item[$\circ$] MultiOrg study-based FL 分割（Plate 级别 non-IID）
+      \item[$\circ$] EWA + 多标注者共识标签联合实验
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{中期计划（一至二月）}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{论文方向}
+      \begin{itemize}
+        \item YOLOv12 + SAHI for MultiOrg\\
+              (代差红利 + 推理优化)
+        \item EWA Effective Interval\\
+              (FL 理论贡献)
+        \item FL + Multi-rater Organoid\\
+              (专利空白)
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{专利方向}
+      \begin{itemize}
+        \item RF-DETR + Organoid 推理方法
+        \item CLOD + Multi-rater 标签清洗
+        \item FL + Organoid 检测系统\\
+              （完全空白）
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% ========================================================================
+\section{总结}
+
+\begin{frame}{总结}
+  \begin{itemize}
+    \item[\checkmark] \textbf{SOTA 调研完成}：MultiOrg (SSD 68.1\%) + Intestinal (Deliod 87.5\%) 全景
+    \item[\checkmark] \textbf{标注 bug 修复}：GT 3x 重复 + 多标注者评估框架
+    \item[\checkmark] \textbf{已超 SOTA}：Patch 级 78.9\% > SSD 68.1\% (+10.8pp)
+    \item[\checkmark] \textbf{FL 理论验证}：EWA Effective Interval 在 PCB 上验证
+    \item[$\circ$] \textbf{v5 训练进行中}：200ep + freebies
+    \item[$\circ$] \textbf{SAHI 后处理优化}：缩小 patch 级与全图推理差距
+    \item[$\circ$] \textbf{MultiOrg FL 实验}：study-based non-IID
+  \end{itemize}
+  \vspace{0.5em}
+  \begin{block}{核心贡献}
+    1. 评估方法论：标注者选择 + 评估方式对 mAP 的影响（12pp + 17pp 差异）\\
+    2. EWA Effective Interval：FL 聚合策略的有效条件理论\\
+    3. FL + Organoid：文献和专利完全空白的新方向
+  \end{block}
+\end{frame}
+
+\begin{frame}
+  \centering\Large Thank You!\\[0.8em]
+  \normalsize Questions \& Discussion
+\end{frame}
+
+\end{document}

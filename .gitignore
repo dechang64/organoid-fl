@@ -61,3 +61,17 @@ baseline_test/
 **/F1_curve.png
 **/P_curve.png
 **/R_curve.png
+
+# Presentation intermediate files
+*.aux
+*.nav
+*.out
+*.toc
+*.snm
+*.vrb
+
+# OrgLine data (too large)
+data/orgline/
+
+# Downsample script (temporary)
+downsample_balance.py
