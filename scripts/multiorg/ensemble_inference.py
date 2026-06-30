@@ -44,18 +44,19 @@ from sahi_inference import (
 )
 
 
-def inference_single_model(model, model_type, img_path,
+def inference_single_model(model, model_type, img_pil, img_w, img_h,
                            window_sizes=(512,), downsample_factors=None,
                            overlap=0.3, conf=0.25, merge='soft_nms',
                            nms_threshold=0.5, min_size=10, score_filter=0.0):
     """单模型 SAHI 推理（复用 sahi_inference.inference_image 逻辑）
 
+    Args:
+        img_pil: 已转换好的 PIL Image（避免重复读取 16-bit TIFF）
+        img_w, img_h: 图像尺寸
+
     Returns:
         detections: list of (x1, y1, x2, y2, score)
     """
-    img_pil = convert_tiff_to_rgb(img_path)
-    img_w, img_h = img_pil.size
-
     if downsample_factors is None:
         downsample_factors = [1] * len(window_sizes)
 
@@ -104,7 +105,7 @@ def inference_single_model(model, model_type, img_path,
         fused = nms(all_detections, iou_threshold=nms_threshold)
 
     # 只返回 (x1,y1,x2,y2,score)
-    return [(d[0], d[1], d[2], d[3], d[4]) for d in fused], (img_w, img_h)
+    return [(d[0], d[1], d[2], d[3], d[4]) for d in fused]
 
 
 def ensemble_intersection(dets_a, dets_b, match_iou=0.5):
@@ -152,13 +153,16 @@ def ensemble_intersection(dets_a, dets_b, match_iou=0.5):
     return fused
 
 
-def ensemble_union(dets_a, dets_b, match_iou=0.5, unmatched_penalty=0.7):
+def ensemble_union(dets_a, dets_b, match_iou=0.5, unmatched_penalty=0.7,
+                   post_nms_iou=0.5):
     """Union 融合：所有检测保留，匹配上的 score 取平均，未匹配的 score × penalty
 
     这个策略比 intersection 宽松，保留 recall 但降低未匹配检测的置信度
 
     Args:
         unmatched_penalty: 未匹配检测的 score 乘数（0.7 = 降 30%）
+        post_nms_iou: 后置 NMS 的 IoU 阈值，合并未匹配的重叠框
+                      （两个模型对同一目标 IoU<match_iou 时会产生重复框）
     """
     if not dets_a and not dets_b:
         return []
@@ -205,6 +209,10 @@ def ensemble_union(dets_a, dets_b, match_iou=0.5, unmatched_penalty=0.7):
     for j, det_b in enumerate(dets_b_sorted):
         if not matched_b[j]:
             fused.append((det_b[0], det_b[1], det_b[2], det_b[3], det_b[4] * unmatched_penalty))
+
+    # 后置 NMS：合并未匹配的重叠框
+    # （两个模型对同一目标 IoU<match_iou 时会各自保留一个框）
+    fused = nms(fused, iou_threshold=post_nms_iou)
 
     # 按 score 降序
     fused.sort(key=lambda d: -d[4])
@@ -256,14 +264,18 @@ def process_ensemble(rfdetr_model, yolo_model, src_dir, dst_dir,
 
                 start = time.time()
 
+                # 只读一次 16-bit TIFF（避免重复读取大文件）
+                img_pil = convert_tiff_to_rgb(tiff_file)
+                img_w, img_h = img_pil.size
+
                 # RF-DETR 推理
-                rfdetr_dets, (img_w, img_h) = inference_single_model(
-                    rfdetr_model, 'rfdetr', tiff_file, **rfdetr_config
+                rfdetr_dets = inference_single_model(
+                    rfdetr_model, 'rfdetr', img_pil, img_w, img_h, **rfdetr_config
                 )
 
                 # YOLO 推理
-                yolo_dets, _ = inference_single_model(
-                    yolo_model, 'yolo', tiff_file, **yolo_config
+                yolo_dets = inference_single_model(
+                    yolo_model, 'yolo', img_pil, img_w, img_h, **yolo_config
                 )
 
                 # Ensemble 融合
@@ -370,8 +382,8 @@ def main():
     parser.add_argument('--strategy', default='intersection',
                         choices=['intersection', 'union'],
                         help='Ensemble strategy: intersection (strict) or union (loose)')
-    parser.add_argument('--match-iou', type=float, default=0.5,
-                        help='IoU threshold for matching detections between models')
+    parser.add_argument('--match-iou', type=float, default=0.3,
+                        help='IoU threshold for matching detections between models (0.3 for cross-model)')
     parser.add_argument('--unmatched-penalty', type=float, default=0.7,
                         help='Score multiplier for unmatched detections (union strategy only)')
     parser.add_argument('--annotator', default='t1_b',
@@ -433,6 +445,9 @@ def main():
     # 加载模型
     print("Loading RF-DETR model...")
     rfdetr_model = load_rfdetr_model(args.rfdetr_weights, args.rfdetr_variant)
+    # 显式设置 num_classes=1（避免从 checkpoint 推断的 warning）
+    if hasattr(rfdetr_model, 'num_classes'):
+        rfdetr_model.num_classes = 1
     print("Loading YOLO model...")
     yolo_model = load_yolo_model(args.yolo_weights)
     print("Models loaded.\n")
