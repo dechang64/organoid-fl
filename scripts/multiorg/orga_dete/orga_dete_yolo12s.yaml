@@ -1,0 +1,41 @@
+# Orga-Dete YOLO12s — MPCA + EMASlideLoss
+# Based on yolo12.yaml, MPCA added after backbone (P5)
+# yolo12s: 9.4M params (vs yolo11n 2.6M)
+# Scale s: [0.50, 0.50, 1024] — 3.6x more channels than n
+# Ref: Huang et al., Applied Sciences 2025
+
+nc: 1  # organoid (single class)
+
+scales:
+  s: [0.50, 0.50, 1024]  # yolo12s scale
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]]           # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]]          # 1-P2/4
+  - [-1, 2, C3k2, [256, False, 0.25]]   # 2
+  - [-1, 1, Conv, [256, 3, 2]]          # 3-P3/8
+  - [-1, 2, C3k2, [512, False, 0.25]]   # 4 — P3 output
+  - [-1, 1, Conv, [512, 3, 2]]          # 5-P4/16
+  - [-1, 4, A2C2f, [512, True, 4]]      # 6
+  - [-1, 1, Conv, [1024, 3, 2]]         # 7-P5/32
+  - [-1, 4, A2C2f, [1024, True, 1]]     # 8
+  - [-1, 1, MPCA, [1024]]               # 9 — Orga-Dete MPCA, P5 output
+
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]   # 10
+  - [[-1, 6], 1, Concat, [1]]                     # 11 — cat backbone P4
+  - [-1, 2, A2C2f, [512, False, -1]]              # 12
+
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]   # 13
+  - [[-1, 4], 1, Concat, [1]]                     # 14 — cat backbone P3
+  - [-1, 2, A2C2f, [256, False, -1]]              # 15 (P3/8-small)
+
+  - [-1, 1, Conv, [256, 3, 2]]                     # 16
+  - [[-1, 12], 1, Concat, [1]]                    # 17 — cat head P4
+  - [-1, 2, A2C2f, [512, False, -1]]              # 18 (P4/16-medium)
+
+  - [-1, 1, Conv, [512, 3, 2]]                     # 19
+  - [[-1, 9], 1, Concat, [1]]                     # 20 — cat head P5 (with MPCA)
+  - [-1, 2, C3k2, [1024, True]]                   # 21 (P5/32-large)
+
+  - [[15, 18, 21], 1, Detect, [nc]]               # 22 — Detect(P3, P4, P5)

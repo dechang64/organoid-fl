@@ -176,7 +176,7 @@ def train_with_ema_slide(
     data_yaml='D:\\datasets\\MultiOrg_v4_640\\data.yaml',
     epochs=300, imgsz=640, batch=8, device='0',
     project='runs/orga_dete', name='phase3_ema_slide',
-    pretrained='yolo11n.pt'
+    pretrained='yolo11n.pt', workers=8
 ):
     """用 EMASlideLoss 训练 Orga-Dete 模型
     
@@ -190,6 +190,7 @@ def train_with_ema_slide(
         project: 输出项目目录
         name: 实验名
         pretrained: 预训练权重
+        workers: 数据加载进程数
     """
     overrides = {
         'model': model_yaml,
@@ -207,6 +208,7 @@ def train_with_ema_slide(
         'label_smoothing': 0.1,
         'copy_paste': 0.1,
         'mixup': 0.1,
+        'workers': workers,
     }
     
     trainer = OrgaDeteTrainer(overrides=overrides)
@@ -225,6 +227,7 @@ if __name__ == '__main__':
     parser.add_argument('--project', default='runs/orga_dete')
     parser.add_argument('--name', default='phase3_ema_slide')
     parser.add_argument('--pretrained', default='yolo11n.pt')
+    parser.add_argument('--workers', type=int, default=8)
     
     args = parser.parse_args()
     train_with_ema_slide(
@@ -237,4 +240,5 @@ if __name__ == '__main__':
         project=args.project,
         name=args.name,
         pretrained=args.pretrained,
+        workers=args.workers,
     )
