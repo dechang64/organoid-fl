@@ -351,13 +351,19 @@ class MPCA(nn.Module):
         self.bn = nn.BatchNorm2d(channels)
         self.act = nn.SiLU()
         
-        # MLP
+        # MLP — 最后一层 conv 带 bias，初始化为 identity
+        # sigmoid(5) ≈ 0.993 ≈ 1.0 → output ≈ x（不破坏预训练特征）
+        mid_mlp = max(channels // 4, 8)
         self.mlp = nn.Sequential(
-            nn.Conv2d(channels, max(channels // 4, 8), 1, bias=False),
+            nn.Conv2d(channels, mid_mlp, 1, bias=False),
             nn.SiLU(),
-            nn.Conv2d(max(channels // 4, 8), channels, 1, bias=False),
+            nn.Conv2d(mid_mlp, channels, 1, bias=True),  # bias=True for identity init
             nn.Sigmoid(),
         )
+        # Identity init: weight=0, bias=5 → sigmoid(5)≈1 → output≈x
+        _last_conv = self.mlp[-2]
+        nn.init.zeros_(_last_conv.weight)
+        nn.init.constant_(_last_conv.bias, 5.0)
         
         # 移到和输入相同的 device
         self._initialized = True
