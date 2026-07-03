@@ -75,3 +75,8 @@ data/orgline/
 
 # Downsample script (temporary)
 downsample_balance.py
+
+# Mouse liver images (local only, too large for git)
+scripts/mouse_liver/batch2/images/
+scripts/mouse_liver/batch3/images/
+scripts/mouse_liver/yolo_format/images/
