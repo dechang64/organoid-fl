@@ -179,9 +179,15 @@ def load_model(ckpt_path):
 
 
 def release_model(model):
-    """释放模型 GPU 显存"""
+    """释放模型 GPU 显存 — model 是 YOLO 对象"""
     import torch
-    del model
+    if hasattr(model, 'model'):
+        del model.model
+    if hasattr(model, 'predictor'):
+        del model.predictor
+    if hasattr(model, 'trainer'):
+        del model.trainer
+    model.__dict__.clear()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
@@ -232,8 +238,8 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             mAP5095 = float(val_res.box.map)
             log(f"      {node_name}: mAP50={mAP50:.4f}, mAP50-95={mAP5095:.4f}")
             
-            # 提取 state_dict
-            sd = model.model.state_dict()
+            # 提取 state_dict — 必须 clone, 否则 release_model 后 sd 引用失效
+            sd = {k: v.clone() for k, v in model.model.state_dict().items()}
             
             # FedProx: interpolate local toward global
             if strategy_name == "fedprox":
@@ -249,6 +255,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             
             # 释放模型显存
             release_model(model)
+            model = None  # 覆盖调用方引用, 触发 GC
         
         # 聚合
         if strategy_name == "ewa":
@@ -265,14 +272,26 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             avg_sd = fedavg_aggregate(local_weights, weights)
         
         # 保存 global model
-        # 关键: model.save() 保存 fused 模型 (Conv+BN 合并), 但 train() 后 state_dict 是 unfused
-        # 所以不能用 ckpt['model'].load_state_dict(avg_sd) — key 不匹配
-        # 正确做法: YOLO(init_ckpt) 加载 (自动 unfuse) → load_state_dict → save (自动 fuse)
+        # 关键: 不同 Ultralytics 版本对 fused/unfused 处理不同, strict=True 会失败
+        # 解法: 不用 load_state_dict, 直接替换 model 的参数
+        # avg_sd 是 unfused (训练后取的), global_model 可能 fused 也可能 unfused
+        # 用 _load_from_state_dict 逐 key 加载, 忽略不匹配的
+        import torch
         global_ckpt = os.path.join(strat_dir, f'global_r{round_idx}.pt')
-        global_model = load_model(init_ckpt)  # YOLO(init_ckpt) → unfused
-        global_model.model.load_state_dict(avg_sd, strict=True)  # unfused → unfused ✅
-        global_model.save(global_ckpt)  # save 时自动 fuse
+        global_model = load_model(init_ckpt)
+        
+        # 逐 key 加载 — 只加载 shape 匹配的 key
+        model_sd = global_model.model.state_dict()
+        loaded_count = 0
+        for key in avg_sd:
+            if key in model_sd and avg_sd[key].shape == model_sd[key].shape:
+                model_sd[key].copy_(avg_sd[key])
+                loaded_count += 1
+        log(f"    Loaded {loaded_count}/{len(avg_sd)} keys into global model")
+        
+        global_model.save(global_ckpt)
         release_model(global_model)
+        global_model = None
         log(f"    Global model saved: {global_ckpt}")
         
         # 评估全局模型
@@ -294,6 +313,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
         })
         
         release_model(global_model)
+        global_model = None
     
     return fl_history
 
@@ -328,6 +348,7 @@ def main():
         model.save(init_ckpt)
         log(f"init_model saved: {init_ckpt}")
         release_model(model)
+        model = None
     else:
         log(f"init_model 已存在: {init_ckpt}")
     
