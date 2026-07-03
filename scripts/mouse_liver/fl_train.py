@@ -238,8 +238,17 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             mAP5095 = float(val_res.box.map)
             log(f"      {node_name}: mAP50={mAP50:.4f}, mAP50-95={mAP5095:.4f}")
             
-            # 提取 state_dict — 必须 clone, 否则 release_model 后 sd 引用失效
-            sd = {k: v.clone() for k, v in model.model.state_dict().items()}
+            # 提取 state_dict — 不直接用 model.model.state_dict()
+            # 因为训练后模型可能被 fuse (有 conv.bias, 无 bn.weight)
+            # 而 init_ckpt 的 model 是 unfused (有 bn.weight, 无 conv.bias)
+            # 两者 key 不匹配会导致 load_state_dict 失败
+            # 解法: model.save() 保存 ckpt → torch.load 取 state_dict
+            # save 的 ckpt 格式和 init_ckpt 一致, 保证 key 匹配
+            import torch
+            local_ckpt_path = os.path.join(strat_dir, f'r{round_idx}_{node_name}_local.pt')
+            model.save(local_ckpt_path)
+            local_ckpt = torch.load(local_ckpt_path, map_location='cpu', weights_only=False)
+            sd = local_ckpt['model'].state_dict()
             
             # FedProx: interpolate local toward global
             if strategy_name == "fedprox":
@@ -272,23 +281,12 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             avg_sd = fedavg_aggregate(local_weights, weights)
         
         # 保存 global model
-        # 关键: 不同 Ultralytics 版本对 fused/unfused 处理不同, strict=True 会失败
-        # 解法: 不用 load_state_dict, 直接替换 model 的参数
-        # avg_sd 是 unfused (训练后取的), global_model 可能 fused 也可能 unfused
-        # 用 _load_from_state_dict 逐 key 加载, 忽略不匹配的
+        # avg_sd 来自 save+load 的 ckpt (格式和 init_ckpt 一致)
+        # 用 YOLO(init_ckpt) 创建模型, load_state_dict (key 匹配), 再 save
         import torch
         global_ckpt = os.path.join(strat_dir, f'global_r{round_idx}.pt')
         global_model = load_model(init_ckpt)
-        
-        # 逐 key 加载 — 只加载 shape 匹配的 key
-        model_sd = global_model.model.state_dict()
-        loaded_count = 0
-        for key in avg_sd:
-            if key in model_sd and avg_sd[key].shape == model_sd[key].shape:
-                model_sd[key].copy_(avg_sd[key])
-                loaded_count += 1
-        log(f"    Loaded {loaded_count}/{len(avg_sd)} keys into global model")
-        
+        global_model.model.load_state_dict(avg_sd, strict=True)
         global_model.save(global_ckpt)
         release_model(global_model)
         global_model = None
