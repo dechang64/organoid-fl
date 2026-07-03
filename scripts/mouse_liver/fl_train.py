@@ -177,6 +177,27 @@ def load_model(ckpt_path):
     from ultralytics import YOLO
     return YOLO(ckpt_path)
 
+def save_model_yolo(model, path):
+    """保存模型 — 用 torch.save 保存 model 对象, 保持训练后 unfused 状态
+    
+    model.save() 在某些 Ultralytics 版本会 fuse (Conv+BN 合并),
+    导致 load_state_dict 时 key 不匹配 (fused 有 conv.bias, unfused 有 bn.weight)
+    直接保存 model.model 对象保持当前状态
+    """
+    import torch
+    from copy import deepcopy
+    from datetime import datetime
+    from ultralytics import __version__
+    ckpt = {
+        'model': deepcopy(model.model).float(),
+        'date': datetime.now().isoformat(),
+        'version': __version__,
+        'license': 'AGPL-3.0 License',
+        'docs': 'https://docs.ultralytics.com',
+        'train_args': dict(model.overrides) if hasattr(model, 'overrides') and hasattr(model.overrides, '__dict__') else {},
+    }
+    torch.save(ckpt, path)
+
 
 def release_model(model):
     """释放模型 GPU 显存 — model 是 YOLO 对象"""
@@ -238,17 +259,9 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             mAP5095 = float(val_res.box.map)
             log(f"      {node_name}: mAP50={mAP50:.4f}, mAP50-95={mAP5095:.4f}")
             
-            # 提取 state_dict — 不直接用 model.model.state_dict()
-            # 因为训练后模型可能被 fuse (有 conv.bias, 无 bn.weight)
-            # 而 init_ckpt 的 model 是 unfused (有 bn.weight, 无 conv.bias)
-            # 两者 key 不匹配会导致 load_state_dict 失败
-            # 解法: model.save() 保存 ckpt → torch.load 取 state_dict
-            # save 的 ckpt 格式和 init_ckpt 一致, 保证 key 匹配
-            import torch
-            local_ckpt_path = os.path.join(strat_dir, f'r{round_idx}_{node_name}_local.pt')
-            model.save(local_ckpt_path)
-            local_ckpt = torch.load(local_ckpt_path, map_location='cpu', weights_only=False)
-            sd = local_ckpt['model'].state_dict()
+            # 提取 state_dict — 直接从 model.model 取 (unfused)
+            # 不用 model.save() — 它会 fuse (不可逆)
+            sd = {k: v.clone() for k, v in model.model.state_dict().items()}
             
             # FedProx: interpolate local toward global
             if strategy_name == "fedprox":
@@ -280,14 +293,26 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             weights = [s / sum(local_sizes) for s in local_sizes]
             avg_sd = fedavg_aggregate(local_weights, weights)
         
-        # 保存 global model
-        # avg_sd 来自 save+load 的 ckpt (格式和 init_ckpt 一致)
-        # 用 YOLO(init_ckpt) 创建模型, load_state_dict (key 匹配), 再 save
+        # 保存 global model — 用 torch.save 保存 model 对象 (不用 model.save 避免 fuse)
+        # init_ckpt 也是用 torch.save 保存的 (unfused), 所以 YOLO(init_ckpt) 是 unfused
+        # avg_sd 从 model.model.state_dict() 取 (unfused), key 匹配
         import torch
+        from copy import deepcopy
+        from datetime import datetime
+        from ultralytics import __version__
         global_ckpt = os.path.join(strat_dir, f'global_r{round_idx}.pt')
-        global_model = load_model(init_ckpt)
-        global_model.model.load_state_dict(avg_sd, strict=True)
-        global_model.save(global_ckpt)
+        global_model = load_model(init_ckpt)  # YOLO(init_ckpt) → unfused
+        global_model.model.load_state_dict(avg_sd, strict=True)  # unfused → unfused ✅
+        # 用 torch.save 保存 (不用 model.save 避免 fuse)
+        gckpt = {
+            'model': deepcopy(global_model.model).float(),
+            'date': datetime.now().isoformat(),
+            'version': __version__,
+            'license': 'AGPL-3.0 License',
+            'docs': 'https://docs.ultralytics.com',
+            'train_args': dict(global_model.overrides) if hasattr(global_model, 'overrides') and hasattr(global_model.overrides, '__dict__') else {},
+        }
+        torch.save(gckpt, global_ckpt)
         release_model(global_model)
         global_model = None
         log(f"    Global model saved: {global_ckpt}")
@@ -343,7 +368,21 @@ def main():
                     device=DEVICE, workers=WORKERS, cache=False,
                     project=OUTPUT_DIR, name='init', exist_ok=True,
                     cos_lr=True, verbose=False)
-        model.save(init_ckpt)
+        # 不用 model.save() — 它保存 fused 模型 (Conv+BN 合并, 不可逆)
+        # 用 torch.save 保存 model.model 对象 (unfused), 保持和训练后 state_dict 一致
+        import torch
+        from copy import deepcopy
+        from datetime import datetime
+        from ultralytics import __version__
+        ckpt = {
+            'model': deepcopy(model.model).float(),
+            'date': datetime.now().isoformat(),
+            'version': __version__,
+            'license': 'AGPL-3.0 License',
+            'docs': 'https://docs.ultralytics.com',
+            'train_args': dict(model.overrides) if hasattr(model, 'overrides') and hasattr(model.overrides, '__dict__') else {},
+        }
+        torch.save(ckpt, init_ckpt)
         log(f"init_model saved: {init_ckpt}")
         release_model(model)
         model = None
