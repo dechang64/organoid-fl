@@ -74,7 +74,8 @@ def fedavg_aggregate(state_dicts, weights=None):
         if state_dicts[0][key].dtype in (torch.int32, torch.int64):
             avg[key] = state_dicts[0][key].clone()
             continue
-        avg[key] = sum(w * sd[key].float() for sd, w in zip(state_dicts, weights))
+        # 统一到 CPU 避免设备不一致
+        avg[key] = sum(w * sd[key].cpu().float() for sd, w in zip(state_dicts, weights))
     return avg
 
 
@@ -240,9 +241,9 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             # 从 global_ckpt 加载模型
             model = load_model(global_ckpt)
             
-            # FedProx: 保存训练前的 global state_dict
+            # FedProx: 保存训练前的 global state_dict (统一到 CPU)
             if strategy_name == "fedprox":
-                global_sd_for_fedprox = {k: v.clone() for k, v in model.model.state_dict().items()}
+                global_sd_for_fedprox = {k: v.detach().cpu().clone() for k, v in model.model.state_dict().items()}
             
             t0 = time.time()
             model.train(data=node_yaml, epochs=LOCAL_EPOCHS, imgsz=IMGSZ, batch=BATCH_SIZE,
@@ -259,9 +260,8 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             mAP5095 = float(val_res.box.map)
             log(f"      {node_name}: mAP50={mAP50:.4f}, mAP50-95={mAP5095:.4f}")
             
-            # 提取 state_dict — 直接从 model.model 取 (unfused)
-            # 不用 model.save() — 它会 fuse (不可逆)
-            sd = {k: v.clone() for k, v in model.model.state_dict().items()}
+            # 提取 state_dict — 直接从 model.model 取 (统一到 CPU)
+            sd = {k: v.detach().cpu().clone() for k, v in model.model.state_dict().items()}
             
             # FedProx: interpolate local toward global
             if strategy_name == "fedprox":
