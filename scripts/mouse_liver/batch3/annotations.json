@@ -1,0 +1,462 @@
+[
+  {
+    "image": "image_00.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114657_113_2.jpg",
+    "n_organoids": 1,
+    "bboxes": [
+      {
+        "x": 2446,
+        "y": 1532,
+        "w": 293,
+        "h": 299
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_01.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114658_114_2.jpg",
+    "n_organoids": 1,
+    "bboxes": [
+      {
+        "x": 2743,
+        "y": 1753,
+        "w": 207,
+        "h": 186
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_02.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114659_115_2.jpg",
+    "n_organoids": 1,
+    "bboxes": [
+      {
+        "x": 2522,
+        "y": 1507,
+        "w": 253,
+        "h": 247
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_03.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114700_116_2.jpg",
+    "n_organoids": 2,
+    "bboxes": [
+      {
+        "x": 2737,
+        "y": 1555,
+        "w": 273,
+        "h": 300
+      },
+      {
+        "x": 2412,
+        "y": 1764,
+        "w": 199,
+        "h": 217
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_04.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114702_117_2.jpg",
+    "n_organoids": 2,
+    "bboxes": [
+      {
+        "x": 2019,
+        "y": 843,
+        "w": 193,
+        "h": 189
+      },
+      {
+        "x": 1963,
+        "y": 1028,
+        "w": 99,
+        "h": 100
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_05.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114703_118_2.jpg",
+    "n_organoids": 2,
+    "bboxes": [
+      {
+        "x": 1587,
+        "y": 1633,
+        "w": 150,
+        "h": 141
+      },
+      {
+        "x": 2215,
+        "y": 1663,
+        "w": 271,
+        "h": 276
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_06.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114704_119_2.jpg",
+    "n_organoids": 1,
+    "bboxes": [
+      {
+        "x": 2431,
+        "y": 1386,
+        "w": 413,
+        "h": 408
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_07.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114705_120_2.jpg",
+    "n_organoids": 3,
+    "bboxes": [
+      {
+        "x": 2730,
+        "y": 1317,
+        "w": 191,
+        "h": 251
+      },
+      {
+        "x": 1744,
+        "y": 1373,
+        "w": 128,
+        "h": 117
+      },
+      {
+        "x": 2130,
+        "y": 1465,
+        "w": 348,
+        "h": 403
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_08.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114706_121_2.jpg",
+    "n_organoids": 2,
+    "bboxes": [
+      {
+        "x": 1575,
+        "y": 1473,
+        "w": 214,
+        "h": 183
+      },
+      {
+        "x": 2306,
+        "y": 1541,
+        "w": 454,
+        "h": 471
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_09.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114707_122_2.jpg",
+    "n_organoids": 3,
+    "bboxes": [
+      {
+        "x": 1976,
+        "y": 1584,
+        "w": 122,
+        "h": 130
+      },
+      {
+        "x": 1904,
+        "y": 2145,
+        "w": 85,
+        "h": 82
+      },
+      {
+        "x": 2335,
+        "y": 2211,
+        "w": 184,
+        "h": 192
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_10.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114708_123_2.jpg",
+    "n_organoids": 3,
+    "bboxes": [
+      {
+        "x": 1969,
+        "y": 393,
+        "w": 118,
+        "h": 148
+      },
+      {
+        "x": 2246,
+        "y": 1360,
+        "w": 293,
+        "h": 262
+      },
+      {
+        "x": 2013,
+        "y": 1529,
+        "w": 101,
+        "h": 110
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_11.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114710_124_2.jpg",
+    "n_organoids": 3,
+    "bboxes": [
+      {
+        "x": 2545,
+        "y": 608,
+        "w": 157,
+        "h": 152
+      },
+      {
+        "x": 1466,
+        "y": 904,
+        "w": 128,
+        "h": 129
+      },
+      {
+        "x": 2460,
+        "y": 1330,
+        "w": 237,
+        "h": 244
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_12.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114711_125_2.jpg",
+    "n_organoids": 2,
+    "bboxes": [
+      {
+        "x": 2359,
+        "y": 1351,
+        "w": 224,
+        "h": 238
+      },
+      {
+        "x": 3168,
+        "y": 1444,
+        "w": 202,
+        "h": 145
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_13.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114712_126_2.jpg",
+    "n_organoids": 3,
+    "bboxes": [
+      {
+        "x": 2450,
+        "y": 1192,
+        "w": 65,
+        "h": 59
+      },
+      {
+        "x": 2319,
+        "y": 1336,
+        "w": 269,
+        "h": 283
+      },
+      {
+        "x": 1631,
+        "y": 1803,
+        "w": 155,
+        "h": 178
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_14.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114713_127_2.jpg",
+    "n_organoids": 3,
+    "bboxes": [
+      {
+        "x": 2402,
+        "y": 953,
+        "w": 252,
+        "h": 303
+      },
+      {
+        "x": 1217,
+        "y": 1438,
+        "w": 126,
+        "h": 156
+      },
+      {
+        "x": 2442,
+        "y": 2103,
+        "w": 138,
+        "h": 144
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_15.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114714_128_2.jpg",
+    "n_organoids": 3,
+    "bboxes": [
+      {
+        "x": 1637,
+        "y": 1650,
+        "w": 112,
+        "h": 111
+      },
+      {
+        "x": 2141,
+        "y": 1707,
+        "w": 186,
+        "h": 195
+      },
+      {
+        "x": 977,
+        "y": 1882,
+        "w": 515,
+        "h": 369
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_16.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114715_129_2.jpg",
+    "n_organoids": 1,
+    "bboxes": [
+      {
+        "x": 2050,
+        "y": 1720,
+        "w": 517,
+        "h": 342
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_17.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114716_130_2.jpg",
+    "n_organoids": 1,
+    "bboxes": [
+      {
+        "x": 2414,
+        "y": 1462,
+        "w": 347,
+        "h": 280
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_18.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114717_131_2.jpg",
+    "n_organoids": 1,
+    "bboxes": [
+      {
+        "x": 2290,
+        "y": 1334,
+        "w": 230,
+        "h": 158
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  },
+  {
+    "image": "image_19.jpg",
+    "source_annotated": "\u5fae\u4fe1\u56fe\u7247_20260702114718_132_2.jpg",
+    "n_organoids": 2,
+    "bboxes": [
+      {
+        "x": 2075,
+        "y": 722,
+        "w": 209,
+        "h": 229
+      },
+      {
+        "x": 2347,
+        "y": 1410,
+        "w": 259,
+        "h": 371
+      }
+    ],
+    "image_size": [
+      4000,
+      3000
+    ]
+  }
+]

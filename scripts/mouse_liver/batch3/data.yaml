@@ -1,0 +1,6 @@
+path: ./batch3
+train: images
+val: images
+test: images
+nc: 1
+names: ['organoid']
