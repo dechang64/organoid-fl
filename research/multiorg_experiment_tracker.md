@@ -1,8 +1,8 @@
 # MultiOrg 实验追踪表
 
-> 最后更新：2026-06-26（SAM2 zero-shot 形态学过滤实验 + SAM2 微调进行中）
+> 最后更新：2026-07-03（Orga-Dete 三模块 yolo11n/yolo12s 训练全部完成，全面失败）
 > 目标：突破 SOTA SSD 68.1% mAP@0.5 → 达到 80%+
-> 数据集：MultiOrg_v2 (411张 6K×5.7K, 单类 organoid, **肺类器官**) / MultiOrg_v3_512 (512px tiling)
+> 数据集：MultiOrg_v2 (411张 6K×5.7K, 单类 organoid, **肺类器官**) / MultiOrg_v4_640 (640px tiling)
 
 ---
 
@@ -144,7 +144,11 @@ checkpoint 来源（06-24 daily notes 确认）：S6 系列用的是 **R1 (small
 | ✅ | T3 | small+640 SAHI 评估 | S6d 已有 | 完成（75.84%） |
 | ✅ | T4 | 核实全部 SAHI 数据 | 12个JSON | 完成，8个RF-DETR+4个YOLOv12 |
 | ✅ | T9 | SAM2 zero-shot 形态学过滤 | upload/6a3dd648 | 完成，**无效**（见 §2.4） |
-| 🟡 | T10 | SAM2 mask_decoder 微调 | 数据准备中 | Step 1 跑ing，Step 2 待跑 |
+| ✅ | T10 | SAM2 mask_decoder 微调 | upload JSON | 完成，**微调有害**（见 §2.4） |
+| ✅ | T11 | Orga-Dete yolo11n Phase 1+3 | results.csv | 完成，**模型容量瓶颈**（见 §4） |
+| ✅ | T12 | Orga-Dete yolo12s MPCA (random init) | results.csv | 完成，**破坏预训练 -19pp** |
+| ✅ | T13 | MPCA Identity Init 修复 | coco8 E2E | 完成，std ratio 0.50→0.99 |
+| ✅ | T14 | Orga-Dete yolo12s Phase 1+3 (identity init) | results.csv ✅ | 完成，**MPCA 仍 -18pp，EMASlideLoss 噪声级** |
 | 🟡 | T3b | 确认 S7b vs S8b 差异 | 需查看脚本调用历史 | 参数相同结果不同 |
 | 🟢 | T5 | 双尺度 SAHI (512+2048) | — | — |
 | 🟢 | T6 | t1_A 标签训练 | — | 阶段3 |
@@ -190,6 +194,104 @@ checkpoint 来源（06-24 daily notes 确认）：S6 系列用的是 **R1 (small
 **假设**：微调后 SAM2 对 organoid 形态有判别力 → 形态学特征能区分 TP/FP
 
 **数据**：upload/6a3dd6487422736f6269f8f0_multiorg_sam2_results.json ✅
+
+### SAM2 三轮最终结果（2026-06-29，全量 55 张测试, annotator=t1_b）
+
+| 配置 | bbox mAP50 | mask mAP50 | 备注 |
+|------|-----------|-----------|------|
+| Zero-shot SAM2 | 77.15% | 76.39% | 基线 |
+| Finetuned v2 (4点GT) | 77.15% | 75.98% | 微调有害 -0.41pp |
+| Finetuned pseudo (自蒸馏) | 77.13% | 75.89% | 自蒸馏天花板=zero-shot |
+
+**结论**：微调=负优化确认。4 点粗糙 GT 是根因——用粗糙 GT 微调精确 SAM2 = 负优化。
+
+### FP 抑制全面调研（2026-06-29）
+
+| 方案 | PR-AUC | 结论 |
+|------|--------|------|
+| DINOv2+DPMM 二级验证 | 0.29 (<随机0.5) | TP/FP 在 768 维空间完全重叠 |
+| 形态学过滤 (circ/solid/ar) | — | 砍 FP <2%，无效 |
+| HNM (Hard Negative Mining) | — | FP 空标签+默认LR → 灾难性遗忘，mAP 暴跌 40pp |
+
+**结论**：所有基于视觉特征的后置过滤方案均无效。FP 和 TP 在所有可观测特征上不可分。
+
+---
+
+## 四、Orga-Dete 三模块迁移实验（2026-06-30 ~ 07-03）
+
+### 4.1 实验目标
+
+突破 MultiOrg 80% 门槛（当前 RF-DETR SOTA 77.8%）。迁移 Orga-Dete (Huang et al., Applied Sciences 2025) 三模块：
+- **MPCA**：4 路径坐标注意力，加在 backbone 末尾
+- **BiFPN**：双向特征金字塔（YAML 不兼容，未验证）
+- **EMASlideLoss**：动态阈值 loss（μ_t = α·μ_{t-1} + (1-α)·mean(IoU)）
+
+### 4.2 yolo11n 系列结果（MultiOrg_v4_640, 16612 patches, 2.6M params）
+
+| # | 配置 | Best mAP50 | Best ep | 总 epochs | 训练时间 | s/epoch | 来源 |
+|---|------|-----------|---------|-----------|---------|---------|------|
+| O1 | Phase 1 (MPCA) | 44.24% | ep24 | 74 (早停) | 4.9h | 237s | upload/6a4471a4...d2 ✅ |
+| O2 | Phase 3 (MPCA+EMASlideLoss) | 44.04% | ep16 | 74 (早停) | 4.9h | 245s | upload/6a4471a4...d3 ✅ |
+
+**EMASlideLoss 增益**：-0.20pp（噪声级别）
+
+### 4.3 yolo12s 系列结果（MultiOrg_v4_640, 16612 patches, 9.4M params）
+
+| # | 配置 | Best mAP50 | Best ep | 总 epochs | 训练时间 | s/epoch | 来源 |
+|---|------|-----------|---------|-----------|---------|---------|------|
+| O3 | yolo12s baseline (无MPCA) | 62.3% | — | — | — | — | TOOLS.md ⚠️ |
+| O4 | Phase 1 (MPCA random init) | 43.5% | ep16 | 74 (早停) | — | — | daily 2026-07-02 |
+| O5 | Phase 1 (MPCA identity init) | **43.88%** | ep20 | 70 | 8.6h | 438s | upload/6a46fee1... ✅ |
+| O6 | Phase 3 (MPCA identity + EMASlideLoss) | **44.47%** | ep20 | 70 | 8.7h | 444s | upload/6a46fee2... ✅ |
+
+**关键发现**：
+- MPCA random init → mAP 43.5%（比 baseline 62.3% 低 **18.8pp**）
+- MPCA identity init → mAP 43.88%（修复了 std ratio 0.50→0.99，但 mAP 仅 +0.38pp）
+- EMASlideLoss → +0.59pp（噪声级别，和 yolo11n 上一致）
+- ep20 见顶后 50 个 epoch 无提升，不是"还没收敛"
+
+### 4.4 MPCA Identity Init 修复详情（2026-07-02, commit 0cd3169）
+
+**问题**：MPCA 的 mlp 最后一层 Sigmoid，随机初始化时 sigmoid≈0.5 → output=x*0.5 → 特征方差减半 → 破坏预训练
+
+**修复**：mlp 最后一层 conv 改 bias=True, weight=0, bias=5 → sigmoid(5)≈0.993≈1.0 → output≈x（identity）
+
+**验证**：
+- output/input std ratio：0.50 → 0.99 ✅
+- 预训练权重匹配：48.6% → 99.2%（699/705 items）✅
+- coco8 1 epoch E2E 通过 ✅
+
+**铁律**：任何加在预训练模型上的乘性 attention 模块（SE、CBAM、CA、MPCA 等），初始状态必须是 identity
+
+### 4.5 模型容量 vs mAP 强相关
+
+| 模型 | 参数量 | mAP50 | 来源 |
+|------|--------|-------|------|
+| RF-DETR small | 32M | 77.8% | S9 SAHI ✅ |
+| YOLOv12s | 9.4M | 62.3% | baseline ⚠️ |
+| YOLOv11n+MPCA | 2.6M | 44.2% | O1 ✅ |
+| YOLOv12s+MPCA(identity) | 9.6M | 43.9% | O5 ✅ |
+
+**每 3.5x 参数 ≈ +18pp mAP**。MPCA 在 yolo12s 上反而比 yolo11n 差（43.9% vs 44.2%），说明 MPCA 本身在 MultiOrg 上不 work，不是 init 问题。
+
+### 4.6 Orga-Dete 失败根因分析
+
+1. **模型容量瓶颈**：Orga-Dete 论文用 yolo11n 在 4008 张 lung organoid 上达 81.4%，MultiOrg 只有 411 张（tiling 后 16612 patches），但原图只有 411 张
+2. **MPCA 架构不兼容**：MPCA 设计给 YOLOv11n (C3k2 backbone)，yolo12s 用 A2C2f，attention 插入位置和特征维度不同
+3. **单类检测无增益**：MPCA 的坐标注意力对多类区分有用，MultiOrg 单类 organoid 场景增益有限
+4. **数据集差异**：Orga-Dete 在 lung/duodenal/murine intestinal 三个数据集验证，但 MultiOrg 是肺类器官，形态分布不同
+5. **BiFPN 未验证**：Ultralytics YAML parse_model 对 list 类型的 `[4,6,11]` 报错，需要 Python 代码直接构建模型，未完成
+
+### 4.7 Orga-Dete 最终判决
+
+| 模块 | yolo11n | yolo12s | 结论 |
+|------|---------|---------|------|
+| MPCA (random init) | 未跑 | 43.5% (-18.8pp) | 破坏预训练 |
+| MPCA (identity init) | 44.2% | 43.9% (-18.4pp) | 仍破坏，init 不是根因 |
+| EMASlideLoss | -0.20pp | +0.59pp | 噪声级，无效 |
+| BiFPN | 未跑 | 未跑 | YAML 不兼容 |
+
+**停止 Orga-Dete 方向。** 三模块在 MultiOrg 上全面失败，继续投入没有意义。
 
 ---
 
@@ -260,3 +362,7 @@ checkpoint 来源（06-24 daily notes 确认）：S6 系列用的是 **R1 (small
 | 2026-06-25 | 从 12 个 SAHI JSON 核实全部 SAHI 数据，发现 S6 sf=0.0=77.15%（比之前记录的 76.47% 高），新增 S6c/S6d/S7b/S9-S12 |
 | 2026-06-26 | SAM2 zero-shot 形态学过滤实验（5张测试），结论：无效。新增 §2.4 |
 | 2026-06-26 | 新增 T9（完成）/ T10（进行中）SAM2 mask_decoder 微调实验 |
+| 2026-06-29 | SAM2 三轮最终结果：微调=负优化确认。FP 抑制全面调研：DINOv2/形态学/HNM 均无效 |
+| 2026-07-01 | Orga-Dete yolo11n Phase 1+3 结果：44.2%/44.0%，模型容量瓶颈 |
+| 2026-07-02 | yolo12s+MPCA random init 43.5%（-19pp），MPCA Identity Init 修复（commit 0cd3169） |
+| 2026-07-03 | yolo12s+MPCA identity init 43.88%/44.47%，Orga-Dete 三模块全面失败，停止该方向 |
