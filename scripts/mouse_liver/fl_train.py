@@ -94,18 +94,18 @@ def compute_ewa_weights(client_metrics, signal="mAP"):
 
 
 def fedprox_interpolate(local_sd, global_sd, mu=0.01):
-    """FedProx 近似: (1-μ)·w_local + μ·w_global
-    
-    FedProx 在 loss 中加 μ/2·||w - w_global||², 拉近本地和全局。
-    Ultralytics 不支持自定义 loss, 用权重插值近似。
-    """
+    """FedProx 近似: (1-μ)·w_local + μ·w_global — 只插值匹配的 key"""
     import torch
     result = {}
     for key in local_sd:
-        if local_sd[key].dtype in (torch.int32, torch.int64):
+        if key in global_sd and local_sd[key].shape == global_sd[key].shape:
+            if local_sd[key].dtype in (torch.int32, torch.int64):
+                result[key] = local_sd[key].clone()
+                continue
+            result[key] = (1 - mu) * local_sd[key].float() + mu * global_sd[key].float()
+        else:
+            # key 不匹配 (fused/unfused 差异), 保留 local
             result[key] = local_sd[key].clone()
-            continue
-        result[key] = (1 - mu) * local_sd[key].float() + mu * global_sd[key].float()
     return result
 
 
