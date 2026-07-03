@@ -174,30 +174,9 @@ def prepare_val_set():
 # ============ 模型加载 ============
 
 def load_model(ckpt_path):
-    """从 checkpoint 加载模型 — YOLO(ckpt) 会读取 checkpoint 里的 nc, 不会重建 80 类"""
+    """从 checkpoint 加载模型"""
     from ultralytics import YOLO
     return YOLO(ckpt_path)
-
-def save_model_yolo(model, path):
-    """保存模型 — 用 torch.save 保存 model 对象, 保持训练后 unfused 状态
-    
-    model.save() 在某些 Ultralytics 版本会 fuse (Conv+BN 合并),
-    导致 load_state_dict 时 key 不匹配 (fused 有 conv.bias, unfused 有 bn.weight)
-    直接保存 model.model 对象保持当前状态
-    """
-    import torch
-    from copy import deepcopy
-    from datetime import datetime
-    from ultralytics import __version__
-    ckpt = {
-        'model': deepcopy(model.model).float(),
-        'date': datetime.now().isoformat(),
-        'version': __version__,
-        'license': 'AGPL-3.0 License',
-        'docs': 'https://docs.ultralytics.com',
-        'train_args': dict(model.overrides) if hasattr(model, 'overrides') and hasattr(model.overrides, '__dict__') else {},
-    }
-    torch.save(ckpt, path)
 
 
 def release_model(model):
