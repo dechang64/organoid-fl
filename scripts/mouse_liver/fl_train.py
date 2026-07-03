@@ -265,11 +265,14 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             avg_sd = fedavg_aggregate(local_weights, weights)
         
         # 保存 global model
-        import torch
+        # 关键: model.save() 保存 fused 模型 (Conv+BN 合并), 但 train() 后 state_dict 是 unfused
+        # 所以不能用 ckpt['model'].load_state_dict(avg_sd) — key 不匹配
+        # 正确做法: YOLO(init_ckpt) 加载 (自动 unfuse) → load_state_dict → save (自动 fuse)
         global_ckpt = os.path.join(strat_dir, f'global_r{round_idx}.pt')
-        init_full_ckpt = torch.load(init_ckpt, map_location='cpu', weights_only=False)
-        init_full_ckpt['model'].load_state_dict(avg_sd, strict=True)
-        torch.save(init_full_ckpt, global_ckpt)
+        global_model = load_model(init_ckpt)  # YOLO(init_ckpt) → unfused
+        global_model.model.load_state_dict(avg_sd, strict=True)  # unfused → unfused ✅
+        global_model.save(global_ckpt)  # save 时自动 fuse
+        release_model(global_model)
         log(f"    Global model saved: {global_ckpt}")
         
         # 评估全局模型
