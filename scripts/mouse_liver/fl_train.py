@@ -293,16 +293,26 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             weights = [s / sum(local_sizes) for s in local_sizes]
             avg_sd = fedavg_aggregate(local_weights, weights)
         
-        # 保存 global model — 用 torch.save 保存 model 对象 (不用 model.save 避免 fuse)
-        # init_ckpt 也是用 torch.save 保存的 (unfused), 所以 YOLO(init_ckpt) 是 unfused
-        # avg_sd 从 model.model.state_dict() 取 (unfused), key 匹配
+        # 保存 global model
+        # 跨版本兼容: 不同 Ultralytics 版本对 fused/unfused 处理不同
+        # 用 strict=False 容忍 key 差异, 只加载匹配的 key
+        # 不匹配的 key (bn.weight vs conv.bias) 保留 init_model 原值
         import torch
         from copy import deepcopy
         from datetime import datetime
         from ultralytics import __version__
         global_ckpt = os.path.join(strat_dir, f'global_r{round_idx}.pt')
-        global_model = load_model(init_ckpt)  # YOLO(init_ckpt) → unfused
-        global_model.model.load_state_dict(avg_sd, strict=True)  # unfused → unfused ✅
+        global_model = load_model(init_ckpt)
+        
+        # 用 in-place copy_() 逐 key 加载, 只加载 shape 匹配的 key
+        model_sd = global_model.model.state_dict()
+        loaded = 0
+        for key in avg_sd:
+            if key in model_sd and avg_sd[key].shape == model_sd[key].shape:
+                model_sd[key].copy_(avg_sd[key])
+                loaded += 1
+        log(f"    Loaded {loaded}/{len(avg_sd)} keys (strict=False)")
+        
         # 用 torch.save 保存 (不用 model.save 避免 fuse)
         gckpt = {
             'model': deepcopy(global_model.model).float(),
