@@ -64,12 +64,20 @@ def main():
             shutil.copy2(os.path.join(lbl_src, f'{fname}.txt'),
                         os.path.join(val_dir, 'labels', f'{node}_{fname}.txt'))
     
+    # 清除 val labels.cache
+    val_cache = os.path.join(val_dir, 'labels.cache')
+    if os.path.exists(val_cache):
+        os.remove(val_cache)
+    
     val_yaml = os.path.join(OUTPUT_DIR, 'val.yaml')
     with open(val_yaml, 'w') as f:
         f.write(f'path: {os.path.abspath(val_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     
-    # 初始全局模型
+    # 初始全局模型 — 自动下载 yolo12n.pt
     global_model_path = 'yolo12n.pt'
+    if not os.path.exists(global_model_path):
+        log("下载 yolo12n.pt ...")
+        YOLO('yolo12n.pt')
     fl_history = []
     
     for round_idx in range(NUM_ROUNDS):
@@ -84,13 +92,22 @@ def main():
         for node_name, data_dir in BATCH_DIRS.items():
             log(f"\n  训练节点 {node_name} ({data_dir})...")
             
-            # data.yaml for this node
+            # data.yaml for this node — always overwrite with absolute path
             node_yaml = os.path.join(data_dir, 'data.yaml')
-            if not os.path.exists(node_yaml):
-                with open(node_yaml, 'w') as f:
-                    f.write(f'path: {data_dir}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
+            with open(node_yaml, 'w') as f:
+                f.write(f'path: {data_dir}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
+            # Remove stale cache
+            cache = os.path.join(data_dir, 'labels.cache')
+            if os.path.exists(cache):
+                os.remove(cache)
             
-            model = YOLO(global_model_path)
+            model = YOLO('yolo12n.pt')  # 基础架构 (避免 YOLO() 80类重建)
+            # 如果有上一轮的 global model, 加载聚合权重
+            if round_idx > 0:
+                prev_global = os.path.join(OUTPUT_DIR, f'global_r{round_idx-1}.pt')
+                if os.path.exists(prev_global):
+                    avg_sd_prev = torch.load(prev_global, map_location='cpu')
+                    model.model.load_state_dict(avg_sd_prev)
             t0 = time.time()
             model.train(data=node_yaml, epochs=LOCAL_EPOCHS, imgsz=IMGSZ, batch=BATCH_SIZE,
                         device=DEVICE, workers=8, cache=False,
@@ -120,13 +137,13 @@ def main():
         weights = [s / total_size for s in local_sizes]
         avg_sd = fed_avg(local_weights, weights)
         
-        # 保存全局模型
-        global_model = YOLO(global_model_path)
-        global_model.model.load_state_dict(avg_sd)
+        # 保存全局模型 — 用 torch.save 直接保存 state_dict 避免 YOLO() 80类重建问题
         global_model_path = os.path.join(OUTPUT_DIR, f'global_r{round_idx}.pt')
-        global_model.save(global_model_path)
+        torch.save(avg_sd, global_model_path)
         
-        # 评估全局模型
+        # 评估全局模型 — 加载 avg_sd 到新模型
+        global_model = YOLO('yolo12n.pt')  # 基础架构
+        global_model.model.load_state_dict(avg_sd)  # 加载聚合权重
         val_res = global_model.val(data=val_yaml, project=OUTPUT_DIR,
                                     name=f'r{round_idx}_global_val', exist_ok=True)
         log(f"\n  ★ Global val: mAP50={val_res.box.map50:.4f}, P={val_res.box.mp:.4f}, R={val_res.box.mr:.4f}")
