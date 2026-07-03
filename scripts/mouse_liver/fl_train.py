@@ -23,8 +23,12 @@ Usage (冬生本地):
     - YOLO('yolo12n.pt') 是 80 类 COCO, load_state_dict 会 shape mismatch
     - Round 0 先训练 init_model (1 epoch B1) 得到 1 类模型
     - 后续轮次用 YOLO(saved_ckpt) 加载, 跳过 80 类重建
-    - data.yaml 每次覆盖为绝对路径, 清除 labels.cache
+    - data.yaml path 用正斜杠 (Windows \b 会被 YAML 当转义)
+    - data.yaml 每次覆盖, 清除 labels.cache
     - EWA warmup: 前 2 轮用 FedAvg (首轮模型未收敛, EWA 信号不可靠)
+    - workers=0: Windows spawn 会导致 torch DLL 重复加载 (WinError 1455)
+    - torch 延迟导入: 避免顶层 import 在 worker 中重复加载 DLL
+    - 每轮 del model + torch.cuda.empty_cache(): 防止 GPU 显存泄漏
 """
 import os, sys, json, time, copy, shutil
 import numpy as np
@@ -54,6 +58,10 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 def log(msg):
     print(msg, flush=True)
 
+def safe_path(p):
+    """Windows 路径转 YAML 安全格式 (正斜杠)"""
+    return p.replace('\\', '/')
+
 # ============ 聚合策略 ============
 
 def fedavg_aggregate(state_dicts, weights=None):
@@ -77,7 +85,7 @@ def compute_ewa_weights(client_metrics, signal="mAP"):
     对于 YOLO 检测, 用 mAP50-95 作为质量信号 (比 mAP50 更有区分度)。
     """
     key = "mAP" if signal == "mAP" else "mAP50"
-    maps = [m[key] for m in client_metrics]
+    maps = [max(m[key], 1e-8) for m in client_metrics]  # 防 0
     total = sum(maps)
     if total == 0:
         return [1.0 / len(maps)] * len(maps)
@@ -103,13 +111,16 @@ def fedprox_interpolate(local_sd, global_sd, mu=0.01):
 # ============ 数据准备 ============
 
 def write_node_yaml(data_dir):
-    """为每个节点写 data.yaml (绝对路径) + 清 labels.cache"""
+    """为每个节点写 data.yaml (绝对路径, 正斜杠) + 清 labels.cache"""
     node_yaml = os.path.join(data_dir, 'data.yaml')
     with open(node_yaml, 'w') as f:
-        f.write(f'path: {data_dir}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
+        f.write(f'path: {safe_path(data_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     cache = os.path.join(data_dir, 'labels.cache')
     if os.path.exists(cache):
-        os.remove(cache)
+        try:
+            os.remove(cache)
+        except PermissionError:
+            pass  # Windows 文件锁, 下次训练会自动覆盖
     return node_yaml
 
 
@@ -117,7 +128,21 @@ def prepare_val_set():
     """统一 val set: 每批各取前 2 张 (共 6 张)"""
     val_dir = os.path.join(OUTPUT_DIR, 'val_set')
     if os.path.exists(val_dir):
-        shutil.rmtree(val_dir)
+        try:
+            shutil.rmtree(val_dir)
+        except PermissionError:
+            # Windows 文件锁, 尝试删除内容
+            for root, dirs, files in os.walk(val_dir, topdown=False):
+                for f in files:
+                    try:
+                        os.remove(os.path.join(root, f))
+                    except:
+                        pass
+                for d in dirs:
+                    try:
+                        os.rmdir(os.path.join(root, d))
+                    except:
+                        pass
     os.makedirs(os.path.join(val_dir, 'images'), exist_ok=True)
     os.makedirs(os.path.join(val_dir, 'labels'), exist_ok=True)
     
@@ -131,9 +156,17 @@ def prepare_val_set():
             shutil.copy2(os.path.join(lbl_src, f'{fname}.txt'),
                         os.path.join(val_dir, 'labels', f'{node}_{fname}.txt'))
     
+    # 清 val labels.cache
+    val_cache = os.path.join(val_dir, 'labels.cache')
+    if os.path.exists(val_cache):
+        try:
+            os.remove(val_cache)
+        except PermissionError:
+            pass
+    
     val_yaml = os.path.join(OUTPUT_DIR, 'val.yaml')
     with open(val_yaml, 'w') as f:
-        f.write(f'path: {os.path.abspath(val_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
+        f.write(f'path: {safe_path(os.path.abspath(val_dir))}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     return val_yaml
 
 
@@ -145,16 +178,18 @@ def load_model(ckpt_path):
     return YOLO(ckpt_path)
 
 
+def release_model(model):
+    """释放模型 GPU 显存"""
+    import torch
+    del model
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
 # ============ 单策略 FL 训练 ============
 
 def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
-    """运行一轮完整的 FL 训练 (指定聚合策略)
-    
-    Args:
-        strategy_name: "fedavg" / "ewa" / "fedprox"
-        init_ckpt: init_model.pt 路径 (1 类模型)
-        val_yaml: 统一 val set 的 data.yaml
-    """
+    """运行一轮完整的 FL 训练 (指定聚合策略)"""
     from ultralytics import YOLO
     
     strat_dir = os.path.join(OUTPUT_DIR, strategy_name)
@@ -169,6 +204,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
         local_weights = []
         local_sizes = []
         local_metrics = []
+        global_sd_for_fedprox = None
         
         for node_name, data_dir in BATCH_DIRS.items():
             log(f"    训练 {node_name}...")
@@ -177,10 +213,9 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             # 从 global_ckpt 加载模型
             model = load_model(global_ckpt)
             
-            # FedProx: 训练后做权重插值 (近似 proximal term)
-            # 先保存 global_sd 用于后续 interpolate
+            # FedProx: 保存训练前的 global state_dict
             if strategy_name == "fedprox":
-                global_sd = {k: v.clone() for k, v in model.model.state_dict().items()}
+                global_sd_for_fedprox = {k: v.clone() for k, v in model.model.state_dict().items()}
             
             t0 = time.time()
             model.train(data=node_yaml, epochs=LOCAL_EPOCHS, imgsz=IMGSZ, batch=BATCH_SIZE,
@@ -191,7 +226,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             log(f"      {dt/60:.1f} min")
             
             # 评估本地模型
-            val_res = model.val(data=val_yaml, project=strat_dir,
+            val_res = model.val(data=val_yaml, device=DEVICE, project=strat_dir,
                                 name=f'r{round_idx}_{node_name}_val', exist_ok=True)
             mAP50 = float(val_res.box.map50)
             mAP5095 = float(val_res.box.map)
@@ -202,7 +237,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             
             # FedProx: interpolate local toward global
             if strategy_name == "fedprox":
-                sd = fedprox_interpolate(sd, global_sd, mu=FedProx_MU)
+                sd = fedprox_interpolate(sd, global_sd_for_fedprox, mu=FedProx_MU)
             
             local_weights.append(sd)
             local_sizes.append(len(os.listdir(os.path.join(data_dir, 'images'))))
@@ -211,21 +246,21 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
                 'mAP50': round(mAP50, 4),
                 'mAP': round(mAP5095, 4),
             })
+            
+            # 释放模型显存
+            release_model(model)
         
         # 聚合
         if strategy_name == "ewa":
-            # EWA warmup: 前 EWA_WARMUP_ROUNDS 轮用 FedAvg
             if round_idx < EWA_WARMUP_ROUNDS:
                 log(f"    EWA warmup (round {round_idx+1}): using FedAvg")
                 weights = [s / sum(local_sizes) for s in local_sizes]
                 avg_sd = fedavg_aggregate(local_weights, weights)
             else:
-                # 用 mAP50-95 作为质量信号
                 weights = compute_ewa_weights(local_metrics, signal="mAP")
                 log(f"    EWA weights: {[round(w,3) for w in weights]}")
                 avg_sd = fedavg_aggregate(local_weights, weights)
         else:
-            # FedAvg / FedProx: 按数据量加权
             weights = [s / sum(local_sizes) for s in local_sizes]
             avg_sd = fedavg_aggregate(local_weights, weights)
         
@@ -235,10 +270,11 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
         init_full_ckpt = torch.load(init_ckpt, map_location='cpu', weights_only=False)
         init_full_ckpt['model'].load_state_dict(avg_sd, strict=True)
         torch.save(init_full_ckpt, global_ckpt)
+        log(f"    Global model saved: {global_ckpt}")
         
         # 评估全局模型
         global_model = load_model(global_ckpt)
-        val_res = global_model.val(data=val_yaml, project=strat_dir,
+        val_res = global_model.val(data=val_yaml, device=DEVICE, project=strat_dir,
                                     name=f'r{round_idx}_global_val', exist_ok=True)
         g_mAP50 = float(val_res.box.map50)
         g_mAP5095 = float(val_res.box.map)
@@ -253,6 +289,8 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             'local': local_metrics,
             'weights': [round(w, 4) for w in weights],
         })
+        
+        release_model(global_model)
     
     return fl_history
 
@@ -261,6 +299,15 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
 
 def main():
     from ultralytics import YOLO
+    
+    # 检查数据目录存在
+    for name, ddir in BATCH_DIRS.items():
+        if not os.path.exists(ddir):
+            log(f"❌ 数据目录不存在: {ddir}")
+            sys.exit(1)
+        n_imgs = len([f for f in os.listdir(os.path.join(ddir, 'images')) if f.endswith('.jpg')])
+        n_lbls = len([f for f in os.listdir(os.path.join(ddir, 'labels')) if f.endswith('.txt')])
+        log(f"  {name}: {n_imgs} images, {n_lbls} labels")
     
     val_yaml = prepare_val_set()
     log(f"Val set: {val_yaml}")
@@ -277,6 +324,7 @@ def main():
                     cos_lr=True, verbose=False)
         model.save(init_ckpt)
         log(f"init_model saved: {init_ckpt}")
+        release_model(model)
     else:
         log(f"init_model 已存在: {init_ckpt}")
     
