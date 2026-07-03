@@ -27,8 +27,10 @@ Usage (冬生本地):
     - EWA warmup: 前 2 轮用 FedAvg (首轮模型未收敛, EWA 信号不可靠)
 """
 import os, sys, json, time, copy, shutil
-import torch
 import numpy as np
+
+# 注意: torch 延迟导入 — Windows spawn 模式下每个 worker 都会重新 import 脚本,
+# 顶层 import torch 会导致 DLL 重复加载, 页面文件耗尽 (WinError 1455)
 
 # ============ 配置 ============
 DATA_BASE = r"D:\datasets\mouse_liver_data"
@@ -39,6 +41,7 @@ BATCH_DIRS = {
 }
 OUTPUT_DIR = r"runs\mouse_liver_fl"
 NUM_ROUNDS = 5
+WORKERS = 0  # Windows: 0=主进程加载, 避免 spawn 子进程重复加载 torch DLL (WinError 1455)
 LOCAL_EPOCHS = 10
 IMGSZ = 640
 BATCH_SIZE = 4
@@ -55,6 +58,7 @@ def log(msg):
 
 def fedavg_aggregate(state_dicts, weights=None):
     """FedAvg: 按数据量加权平均"""
+    import torch
     if weights is None:
         weights = [1.0 / len(state_dicts)] * len(state_dicts)
     avg = {}
@@ -86,6 +90,7 @@ def fedprox_interpolate(local_sd, global_sd, mu=0.01):
     FedProx 在 loss 中加 μ/2·||w - w_global||², 拉近本地和全局。
     Ultralytics 不支持自定义 loss, 用权重插值近似。
     """
+    import torch
     result = {}
     for key in local_sd:
         if local_sd[key].dtype in (torch.int32, torch.int64):
@@ -175,11 +180,11 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             # FedProx: 训练后做权重插值 (近似 proximal term)
             # 先保存 global_sd 用于后续 interpolate
             if strategy_name == "fedprox":
-                global_sd = model.model.state_dict().copy()
+                global_sd = {k: v.clone() for k, v in model.model.state_dict().items()}
             
             t0 = time.time()
             model.train(data=node_yaml, epochs=LOCAL_EPOCHS, imgsz=IMGSZ, batch=BATCH_SIZE,
-                        device=DEVICE, workers=8, cache=False,
+                        device=DEVICE, workers=WORKERS, cache=False,
                         project=strat_dir, name=f'r{round_idx}_{node_name}',
                         exist_ok=True, cos_lr=True, close_mosaic=5, verbose=False)
             dt = time.time() - t0
@@ -225,6 +230,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             avg_sd = fedavg_aggregate(local_weights, weights)
         
         # 保存 global model
+        import torch
         global_ckpt = os.path.join(strat_dir, f'global_r{round_idx}.pt')
         init_full_ckpt = torch.load(init_ckpt, map_location='cpu', weights_only=False)
         init_full_ckpt['model'].load_state_dict(avg_sd, strict=True)
@@ -266,7 +272,7 @@ def main():
         node_yaml = write_node_yaml(BATCH_DIRS['b1'])
         model = YOLO('yolo12n.pt')
         model.train(data=node_yaml, epochs=1, imgsz=IMGSZ, batch=BATCH_SIZE,
-                    device=DEVICE, workers=8, cache=False,
+                    device=DEVICE, workers=WORKERS, cache=False,
                     project=OUTPUT_DIR, name='init', exist_ok=True,
                     cos_lr=True, verbose=False)
         model.save(init_ckpt)
