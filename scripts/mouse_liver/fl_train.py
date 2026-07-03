@@ -360,6 +360,9 @@ def main():
     
     # === Step 1: 训练 init_model (1 epoch, 从 yolo12n.pt 开始) ===
     init_ckpt = os.path.join(OUTPUT_DIR, 'init_model.pt')
+    # 强制重新生成 init_model — 旧版脚本可能用 model.save() 保存了 fused 模型
+    if os.path.exists(init_ckpt):
+        os.remove(init_ckpt)
     if not os.path.exists(init_ckpt):
         log("\n=== Step 1: 训练 init_model (1 epoch, B1 数据) ===")
         node_yaml = write_node_yaml(BATCH_DIRS['b1'])
