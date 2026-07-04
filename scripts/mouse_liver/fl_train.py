@@ -455,6 +455,289 @@ def main():
     for s in ['fedavg', 'ewa', 'fedprox']:
         final = all_results[s][-1]
         log(f"  {s}: mAP50={final['global_mAP50']:.4f}, mAP50-95={final['global_mAP']:.4f}")
+    
+    # === Step 3: 可视化 ===
+    log(f"\n{'='*60}")
+    log("生成可视化...")
+    log(f"{'='*60}")
+    plot_fl_curves(all_results, OUTPUT_DIR)
+    
+    # 用每策略最终全局模型在 val_set 上推理, 画检测叠加图
+    log("\n生成检测可视化 (最终全局模型 → val_set)...")
+    for strategy in ['fedavg', 'ewa', 'fedprox']:
+        final_ckpt = os.path.join(OUTPUT_DIR, strategy, f'global_r{NUM_ROUNDS-1}.pt')
+        if os.path.exists(final_ckpt):
+            vis_dir = os.path.join(OUTPUT_DIR, 'visualization', strategy)
+            os.makedirs(vis_dir, exist_ok=True)
+            val_img_dir = os.path.join(OUTPUT_DIR, 'val_set', 'images')
+            val_lbl_dir = os.path.join(OUTPUT_DIR, 'val_set', 'labels')
+            n = visualize_detections(final_ckpt, val_img_dir, val_lbl_dir, vis_dir, DEVICE, IMGSZ)
+            log(f"  {strategy}: {n} 张检测叠加图 → {vis_dir}")
+        else:
+            log(f"  {strategy}: checkpoint 不存在, 跳过")
+    
+    # 轮廓可视化: YOLO检测 → SAM2分割 → 像素级轮廓 (和人工红线标注同格式)
+    log("\n生成轮廓可视化 (YOLO+SAM2 → 像素级mask轮廓)...")
+    try:
+        val_img_dir = os.path.join(OUTPUT_DIR, 'val_set', 'images')
+        val_lbl_dir = os.path.join(OUTPUT_DIR, 'val_set', 'labels')
+        for strategy in ['fedavg', 'ewa', 'fedprox']:
+            final_ckpt = os.path.join(OUTPUT_DIR, strategy, f'global_r{NUM_ROUNDS-1}.pt')
+            if not os.path.exists(final_ckpt):
+                continue
+            contour_dir = os.path.join(OUTPUT_DIR, 'visualization', strategy, 'contours')
+            os.makedirs(contour_dir, exist_ok=True)
+            n = visualize_contours_yolo_sam2(
+                final_ckpt, val_img_dir, val_lbl_dir, contour_dir, DEVICE, IMGSZ)
+            log(f"  {strategy}: {n} 张轮廓图 → {contour_dir}")
+    except Exception as e:
+        log(f"  轮廓可视化跳过 (SAM2 不可用): {e}")
+
+
+def visualize_contours_yolo_sam2(yolo_ckpt, img_dir, lbl_dir, dst_dir, device='cuda', imgsz=640):
+    """YOLO 检测 → SAM2 分割 → 像素级轮廓叠加图
+    
+    输出两种图:
+    - mask_*.jpg: SAM2 mask (绿色半透明) + GT bbox (红色)
+    - contour_*.jpg: SAM2 轮廓线 (绿色) + GT 轮廓线 (红色), 和人工标注同格式
+    """
+    import cv2
+    import numpy as np
+    from ultralytics import YOLO
+    
+    # 尝试加载 SAM2
+    try:
+        from sam2.sam2_image_predictor import SAM2ImagePredictor
+        import torch as _torch
+        sam2_predictor = SAM2ImagePredictor.from_pretrained("facebook/sam2-hiera-small")
+        if 'cuda' in device:
+            sam2_predictor.model.cuda()
+        sam2_ok = True
+    except Exception:
+        sam2_ok = False
+        sam2_predictor = None
+    
+    model = YOLO(yolo_ckpt)
+    images = sorted([f for f in os.listdir(img_dir) if f.endswith(('.jpg', '.png'))])
+    
+    for img_file in images:
+        img_path = os.path.join(img_dir, img_file)
+        orig = cv2.imread(img_path)
+        h, w = orig.shape[:2]
+        
+        # YOLO 检测
+        results = model.predict(img_path, device=device, imgsz=imgsz, verbose=False, conf=0.25)
+        boxes = []
+        if results and len(results[0].boxes) > 0:
+            for box in results[0].boxes:
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
+                boxes.append([x1, y1, x2, y2])
+        
+        # SAM2 分割
+        masks = []
+        if sam2_ok and boxes:
+            import torch as _torch
+            img_rgb = cv2.cvtColor(orig, cv2.COLOR_BGR2RGB)
+            sam2_predictor.set_image(img_rgb)
+            for box in boxes:
+                with _torch.no_grad():
+                    mask_preds, _, _ = sam2_predictor.predict(
+                        point_coords=None,
+                        point_labels=None,
+                        box=np.array(box),
+                        multimask_output=False,
+                    )
+                masks.append(mask_preds[0])
+        elif boxes:
+            # Fallback: 用 bbox 椭圆 mask
+            for x1, y1, x2, y2 in boxes:
+                mask = np.zeros((h, w), dtype=np.uint8)
+                cv2.ellipse(mask, ((x1+x2)//2, (y1+y2)//2), ((x2-x1)//2, (y2-y1)//2), 0, 0, 360, 255, -1)
+                masks.append(mask.astype(bool))
+        
+        # 图1: mask 叠加 (绿色半透明)
+        mask_vis = orig.copy()
+        overlay = mask_vis.copy()
+        for mask in masks:
+            colored = np.zeros_like(orig)
+            colored[mask] = (0, 255, 0)  # 绿色
+            overlay = cv2.addWeighted(overlay, 1.0, colored, 0.4, 0)
+        # 画 GT bbox (红色)
+        lbl_file = img_file.replace('.jpg', '.txt').replace('.png', '.txt')
+        lbl_path = os.path.join(lbl_dir, lbl_file)
+        if os.path.exists(lbl_path):
+            with open(lbl_path) as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) == 5:
+                        cls, xc, yc, bw, bh = map(float, parts)
+                        gx1 = int((xc - bw/2) * w)
+                        gy1 = int((yc - bh/2) * h)
+                        gx2 = int((xc + bw/2) * w)
+                        gy2 = int((yc + bh/2) * h)
+                        cv2.rectangle(overlay, (gx1, gy1), (gx2, gy2), (0, 0, 255), 2)
+        cv2.putText(overlay, 'Green=SAM2 mask  Red=GT bbox', (10, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        cv2.imwrite(os.path.join(dst_dir, f'mask_{img_file}'), overlay)
+        
+        # 图2: 轮廓线 (和人工红线标注同格式)
+        contour_vis = orig.copy()
+        # 检测轮廓 (绿色)
+        for mask in masks:
+            contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(contour_vis, contours, -1, (0, 255, 0), 3)
+        # GT 轮廓 (红色) — 从 bbox 画矩形轮廓
+        if os.path.exists(lbl_path):
+            with open(lbl_path) as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) == 5:
+                        cls, xc, yc, bw, bh = map(float, parts)
+                        gx1 = int((xc - bw/2) * w)
+                        gy1 = int((yc - bh/2) * h)
+                        gx2 = int((xc + bw/2) * w)
+                        gy2 = int((yc + bh/2) * h)
+                        cv2.rectangle(contour_vis, (gx1, gy1), (gx2, gy2), (0, 0, 255), 2)
+        cv2.putText(contour_vis, 'Green=SAM2 contour  Red=GT', (10, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        cv2.imwrite(os.path.join(dst_dir, f'contour_{img_file}'), contour_vis)
+    
+    release_model(model)
+    return len(images)
+
+
+def plot_fl_curves(all_results, output_dir):
+    """绘制三策略 FL 收敛曲线 + EWA 权重演化"""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    
+    rounds = list(range(1, NUM_ROUNDS + 1))
+    
+    # 图1: mAP50 收敛曲线
+    fig, ax = plt.subplots(figsize=(10, 6))
+    colors = {'fedavg': '#2196F3', 'ewa': '#FF5722', 'fedprox': '#4CAF50'}
+    labels = {'fedavg': 'FedAvg', 'ewa': 'EWA', 'fedprox': 'FedProx'}
+    for s in ['fedavg', 'ewa', 'fedprox']:
+        vals = [r['global_mAP50'] for r in all_results[s]]
+        ax.plot(rounds, vals, 'o-', color=colors[s], label=labels[s], linewidth=2, markersize=6)
+    ax.set_xlabel('FL Round', fontsize=13)
+    ax.set_ylabel('Global mAP50', fontsize=13)
+    ax.set_title('FL Convergence — Mouse Liver Organoid Detection', fontsize=14)
+    ax.legend(fontsize=12)
+    ax.grid(True, alpha=0.3)
+    ax.set_xticks(rounds)
+    fig.tight_layout()
+    fig.savefig(os.path.join(output_dir, 'fl_convergence_mAP50.png'), dpi=150)
+    plt.close(fig)
+    
+    # 图2: mAP50-95 收敛曲线
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for s in ['fedavg', 'ewa', 'fedprox']:
+        vals = [r['global_mAP'] for r in all_results[s]]
+        ax.plot(rounds, vals, 'o-', color=colors[s], label=labels[s], linewidth=2, markersize=6)
+    ax.set_xlabel('FL Round', fontsize=13)
+    ax.set_ylabel('Global mAP50-95', fontsize=13)
+    ax.set_title('FL Convergence (mAP50-95) — Mouse Liver', fontsize=14)
+    ax.legend(fontsize=12)
+    ax.grid(True, alpha=0.3)
+    ax.set_xticks(rounds)
+    fig.tight_layout()
+    fig.savefig(os.path.join(output_dir, 'fl_convergence_mAP5095.png'), dpi=150)
+    plt.close(fig)
+    
+    # 图3: EWA 权重演化
+    ewa_weights = [r['weights'] for r in all_results['ewa'] if r['weights']]
+    if ewa_weights:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ewa_rounds = list(range(1, len(ewa_weights) + 1))
+        for i, node in enumerate(['B1', 'B2', 'B3']):
+            w = [rw[i] for rw in ewa_weights]
+            ax.plot(ewa_rounds, w, 'o-', label=node, linewidth=2, markersize=6)
+        ax.set_xlabel('FL Round', fontsize=13)
+        ax.set_ylabel('EWA Weight', fontsize=13)
+        ax.set_title('EWA Weight Evolution', fontsize=14)
+        ax.legend(fontsize=12)
+        ax.grid(True, alpha=0.3)
+        ax.set_xticks(ewa_rounds)
+        fig.tight_layout()
+        fig.savefig(os.path.join(output_dir, 'ewa_weights_evolution.png'), dpi=150)
+        plt.close(fig)
+    
+    # 图4: 本地模型 mAP50 趋势 (每策略每节点)
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5), sharey=True)
+    for idx, s in enumerate(['fedavg', 'ewa', 'fedprox']):
+        ax = axes[idx]
+        for i, node in enumerate(['B1', 'B2', 'B3']):
+            vals = [r['local'][i]['mAP50'] for r in all_results[s]]
+            ax.plot(rounds, vals, 'o-', label=node, linewidth=2, markersize=5)
+        ax.set_title(f'{labels[s]} — Local mAP50', fontsize=13)
+        ax.set_xlabel('FL Round', fontsize=12)
+        if idx == 0:
+            ax.set_ylabel('Local mAP50', fontsize=12)
+        ax.legend(fontsize=11)
+        ax.grid(True, alpha=0.3)
+        ax.set_xticks(rounds)
+    fig.tight_layout()
+    fig.savefig(os.path.join(output_dir, 'local_mAP50_per_node.png'), dpi=150)
+    plt.close(fig)
+    
+    log(f"  收敛曲线 → {output_dir}/fl_convergence_mAP50.png")
+    log(f"  收敛曲线 → {output_dir}/fl_convergence_mAP5095.png")
+    log(f"  EWA权重演化 → {output_dir}/ewa_weights_evolution.png")
+    log(f"  本地模型趋势 → {output_dir}/local_mAP50_per_node.png")
+
+
+def visualize_detections(ckpt_path, img_dir, lbl_dir, dst_dir, device='cuda', imgsz=640):
+    """用模型推理, 画检测框(绿) + GT框(红) 叠加图"""
+    import cv2
+    from ultralytics import YOLO
+    
+    model = YOLO(ckpt_path)
+    images = sorted([f for f in os.listdir(img_dir) if f.endswith(('.jpg', '.png'))])
+    
+    for img_file in images:
+        img_path = os.path.join(img_dir, img_file)
+        orig = cv2.imread(img_path)
+        h, w = orig.shape[:2]
+        
+        # 推理
+        results = model.predict(img_path, device=device, imgsz=imgsz, verbose=False, conf=0.25)
+        
+        # 画检测框 (绿色)
+        vis = orig.copy()
+        if results and len(results[0].boxes) > 0:
+            for box in results[0].boxes:
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
+                conf = float(box.conf[0])
+                cv2.rectangle(vis, (x1, y1), (x2, y2), (0, 255, 0), 3)
+                cv2.putText(vis, f'{conf:.2f}', (x1, y1 - 8),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        
+        # 画 GT 框 (红色)
+        lbl_file = img_file.replace('.jpg', '.txt').replace('.png', '.txt')
+        lbl_path = os.path.join(lbl_dir, lbl_file)
+        if os.path.exists(lbl_path):
+            with open(lbl_path) as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) == 5:
+                        cls, xc, yc, bw, bh = map(float, parts)
+                        gx1 = int((xc - bw/2) * w)
+                        gy1 = int((yc - bh/2) * h)
+                        gx2 = int((xc + bw/2) * w)
+                        gy2 = int((yc + bh/2) * h)
+                        cv2.rectangle(vis, (gx1, gy1), (gx2, gy2), (0, 0, 255), 2)
+        
+        # 标注
+        cv2.putText(vis, 'Green=Detection  Red=GT', (10, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        
+        out_path = os.path.join(dst_dir, f'det_{img_file}')
+        cv2.imwrite(out_path, vis)
+    
+    release_model(model)
+    return len(images)
 
 if __name__ == '__main__':
     main()
