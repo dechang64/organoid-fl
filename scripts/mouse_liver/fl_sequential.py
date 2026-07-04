@@ -240,6 +240,8 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
 
     global_ckpt = init_ckpt
     global_sd = None  # 当前全局 state_dict (unfused)
+    global_signal_cache = None  # 缓存全局模型性能 (避免重复评估)
+    global_data_count = 0  # 全局已聚合的累积数据量 (用于 running average)
     fl_history = []
     local_metrics_history = []
 
@@ -290,39 +292,38 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                 'mAP': round(mAP5095, 4),
             })
 
+            n_local = len(os.listdir(os.path.join(data_dir, 'train_images')))
+            signal_local = mAP5095 if args.signal == 'mAP' else mAP50
+
             # === 更新全局参数 ===
             if args.gate == 'none':
-                # 无门控: FedAvg 聚合 local_sd 和 global_sd
+                # 无门控: running average (累积数据量加权)
                 if global_sd is None:
                     global_sd = local_sd
+                    global_data_count = n_local
                 else:
-                    # 按数据量加权
-                    n_local = len(os.listdir(os.path.join(data_dir, 'train_images')))
-                    w_local = n_local / (n_local + 100)  # 近似权重
+                    w_local = n_local / (n_local + global_data_count)
                     weights = [w_local, 1 - w_local]
                     global_sd = fedavg_aggregate([local_sd, global_sd], weights)
+                    global_data_count += n_local
                 round_weights.append(None)
 
             elif args.gate == 'hard':
                 # 硬门控: 本地性能 > 全局性能 + margin 才更新
                 if global_sd is None:
                     global_sd = local_sd
-                    global_mAP = mAP5095 if args.signal == 'mAP' else mAP50
-                    log(f"      [gate] 初始化全局模型 (mAP={global_mAP:.4f})")
+                    global_signal_cache = signal_local
+                    global_data_count = n_local
+                    log(f"      [gate] 初始化全局模型 ({args.signal}={signal_local:.4f})")
                 else:
-                    signal_local = mAP5095 if args.signal == 'mAP' else mAP50
-                    # 评估当前全局模型
-                    g_model = load_model(global_ckpt)
-                    g_val = g_model.val(data=val_yaml, device=DEVICE, project=strat_dir,
-                                        name=f'r{round_idx}_global_check', exist_ok=True)
-                    g_signal = float(g_val.box.map) if args.signal == 'mAP' else float(g_val.box.map50)
-                    release_model(g_model)
-
-                    if signal_local > g_signal + args.margin:
+                    if signal_local > global_signal_cache + args.margin:
+                        old_signal = global_signal_cache
                         global_sd = local_sd
-                        log(f"      [gate] 更新全局 ({signal_local:.4f} > {g_signal:.4f} + {args.margin})")
+                        global_signal_cache = signal_local
+                        global_data_count = n_local
+                        log(f"      [gate] 更新全局 ({signal_local:.4f} > {old_signal:.4f} + {args.margin})")
                     else:
-                        log(f"      [gate] 保留旧全局 ({signal_local:.4f} <= {g_signal:.4f} + {args.margin})")
+                        log(f"      [gate] 保留旧全局 ({signal_local:.4f} <= {global_signal_cache:.4f} + {args.margin})")
                 round_weights.append(None)
 
             elif args.gate == 'soft':
@@ -330,21 +331,15 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                 if global_sd is None or round_idx < EWA_WARMUP_ROUNDS:
                     if global_sd is None:
                         global_sd = local_sd
+                        global_data_count = n_local
                     else:
-                        n_local = len(os.listdir(os.path.join(data_dir, 'train_images')))
-                        w_local = n_local / (n_local + 100)
+                        w_local = n_local / (n_local + global_data_count)
                         global_sd = fedavg_aggregate([local_sd, global_sd], [w_local, 1 - w_local])
+                        global_data_count += n_local
                     round_weights.append(None)
                 else:
-                    signal_local = mAP5095 if args.signal == 'mAP' else mAP50
-                    # EWA 权重: 本地 vs 全局
-                    g_model = load_model(global_ckpt)
-                    g_val = g_model.val(data=val_yaml, device=DEVICE, project=strat_dir,
-                                        name=f'r{round_idx}_global_check', exist_ok=True)
-                    g_signal = float(g_val.box.map) if args.signal == 'mAP' else float(g_val.box.map50)
-                    release_model(g_model)
-
-                    maps = [max(signal_local, 1e-8), max(g_signal, 1e-8)]
+                    # EWA: 按性能信号加权
+                    maps = [max(signal_local, 1e-8), max(global_signal_cache or 0, 1e-8)]
                     total = sum(maps)
                     w_local, w_global = maps[0] / total, maps[1] / total
                     global_sd = fedavg_aggregate([local_sd, global_sd], [w_local, w_global])
@@ -352,8 +347,7 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                     log(f"      [soft] weights: local={w_local:.3f}, global={w_global:.3f}")
 
             elif args.gate == 'local':
-                # 本地门控: 各节点自己决定是否存储全局参数
-                signal_local = mAP5095 if args.signal == 'mAP' else mAP50
+                # 本地门控: 各节点自己决定是否存储
                 if node_name not in node_best_map or signal_local > node_best_map[node_name] + args.margin:
                     node_best_sd[node_name] = local_sd
                     node_best_map[node_name] = signal_local
@@ -385,6 +379,9 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
         g_mAP50 = float(val_res.box.map50)
         g_mAP5095 = float(val_res.box.map)
         log(f"    ★ Global: mAP50={g_mAP50:.4f}, mAP50-95={g_mAP5095:.4f}, P={val_res.box.mp:.4f}, R={val_res.box.mr:.4f}")
+
+        # 更新全局性能缓存 (round-end 评估后)
+        global_signal_cache = g_mAP5095 if args.signal == 'mAP' else g_mAP50
 
         fl_history.append({
             'round': round_idx + 1,
