@@ -263,6 +263,20 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             release_model(model)
             model = None
         
+        # 聚合
+        if strategy_name == "ewa":
+            if round_idx < EWA_WARMUP_ROUNDS:
+                log(f"    EWA warmup (round {round_idx+1}): using FedAvg")
+                weights = [s / sum(local_sizes) for s in local_sizes]
+                avg_sd = fedavg_aggregate(local_weights, weights)
+            else:
+                weights = compute_ewa_weights(local_metrics, signal="mAP")
+                log(f"    EWA weights: {[round(w,3) for w in weights]}")
+                avg_sd = fedavg_aggregate(local_weights, weights)
+        else:
+            weights = [s / sum(local_sizes) for s in local_sizes]
+            avg_sd = fedavg_aggregate(local_weights, weights)
+        
         # 保存 global model
         # 用 init_ckpt (unfused) 作为 template, 和 avg_sd (unfused) 同格式
         import torch
