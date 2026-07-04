@@ -214,6 +214,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
         global_sd_for_fedprox = None
         
         node_names = list(BATCH_DIRS.keys())
+        last_unfused_model = None  # 保留最后一个训练后 (未 val) 的模型作 template
         for node_idx, (node_name, data_dir) in enumerate(BATCH_DIRS.items()):
             log(f"    训练 {node_name}...")
             node_yaml = write_node_yaml(data_dir)
@@ -233,15 +234,16 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             dt = time.time() - t0
             log(f"      {dt/60:.1f} min")
             
-            # 评估本地模型
+            # 提取 state_dict — 在 val 之前取! 
+            # model.val() 会 fuse model.model (不可逆), 导致 key 从 691→239
+            sd = {k: v.detach().cpu().clone() for k, v in model.model.state_dict().items()}
+            
+            # 评估本地模型 (val 会 fuse, 但 sd 已取)
             val_res = model.val(data=val_yaml, device=DEVICE, project=strat_dir,
                                 name=f'r{round_idx}_{node_name}_val', exist_ok=True)
             mAP50 = float(val_res.box.map50)
             mAP5095 = float(val_res.box.map)
             log(f"      {node_name}: mAP50={mAP50:.4f}, mAP50-95={mAP5095:.4f}")
-            
-            # 提取 state_dict — 直接从 model.model 取 (统一到 CPU)
-            sd = {k: v.detach().cpu().clone() for k, v in model.model.state_dict().items()}
             
             # FedProx: interpolate local toward global
             if strategy_name == "fedprox":
@@ -255,40 +257,23 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
                 'mAP': round(mAP5095, 4),
             })
             
-            # 保留最后一个本地模型作为 global template (fused, 和 avg_sd 同格式)
-            # 前面的释放掉
-            if node_idx < len(node_names) - 1:
-                release_model(model)
-                model = None
-            else:
-                last_model = model  # 保留作 template
-                model = None
-        
-        # 聚合
-        if strategy_name == "ewa":
-            if round_idx < EWA_WARMUP_ROUNDS:
-                log(f"    EWA warmup (round {round_idx+1}): using FedAvg")
-                weights = [s / sum(local_sizes) for s in local_sizes]
-                avg_sd = fedavg_aggregate(local_weights, weights)
-            else:
-                weights = compute_ewa_weights(local_metrics, signal="mAP")
-                log(f"    EWA weights: {[round(w,3) for w in weights]}")
-                avg_sd = fedavg_aggregate(local_weights, weights)
-        else:
-            weights = [s / sum(local_sizes) for s in local_sizes]
-            avg_sd = fedavg_aggregate(local_weights, weights)
+            # 保留最后一个本地模型 (训练后, val 前) 作为 global template
+            # 但 val 已经 fuse 了 model.model... 
+            # 所以不能直接用 last_model, 需要重新加载 global_ckpt 作 template
+            release_model(model)
+            model = None
         
         # 保存 global model
-        # 用最后一个本地模型作为 template (fused, 和 avg_sd 同格式)
-        # 避免用 init_ckpt (unfused) 导致 key 不匹配
+        # 用 init_ckpt (unfused) 作为 template, 和 avg_sd (unfused) 同格式
         import torch
         from copy import deepcopy
         from datetime import datetime
         from ultralytics import __version__
         global_ckpt = os.path.join(strat_dir, f'global_r{round_idx}.pt')
         
-        # 用 last_model (fused) 作为 template, load_state_dict 替换为 avg_sd
-        model_sd = last_model.model.state_dict()
+        # 用 init_ckpt 作 template (unfused, 691 keys, 和 avg_sd 同格式)
+        global_model = load_model(init_ckpt)
+        model_sd = global_model.model.state_dict()
         loaded = 0
         for key in avg_sd:
             if key in model_sd and avg_sd[key].shape == model_sd[key].shape:
@@ -298,16 +283,16 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
         
         # 用 torch.save 保存 (不用 model.save 避免 fuse)
         gckpt = {
-            'model': deepcopy(last_model.model).float(),
+            'model': deepcopy(global_model.model).float(),
             'date': datetime.now().isoformat(),
             'version': __version__,
             'license': 'AGPL-3.0 License',
             'docs': 'https://docs.ultralytics.com',
-            'train_args': dict(last_model.overrides) if hasattr(last_model, 'overrides') and hasattr(last_model.overrides, '__dict__') else {},
+            'train_args': dict(global_model.overrides) if hasattr(global_model, 'overrides') and hasattr(global_model.overrides, '__dict__') else {},
         }
         torch.save(gckpt, global_ckpt)
-        release_model(last_model)
-        last_model = None
+        release_model(global_model)
+        global_model = None
         log(f"    Global model saved: {global_ckpt}")
         
         # 评估全局模型
