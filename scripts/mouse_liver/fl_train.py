@@ -44,7 +44,7 @@ BATCH_DIRS = {
     'b3': os.path.join(DATA_BASE, 'batch3'),
 }
 OUTPUT_DIR = r"runs\mouse_liver_fl"
-NUM_ROUNDS = 5
+NUM_ROUNDS = 10
 WORKERS = 0  # Windows: 0=主进程加载, 避免 spawn 子进程重复加载 torch DLL (WinError 1455)
 LOCAL_EPOCHS = 10
 IMGSZ = 640
@@ -111,28 +111,68 @@ def fedprox_interpolate(local_sd, global_sd, mu=0.01):
 
 # ============ 数据准备 ============
 
-def write_node_yaml(data_dir):
-    """为每个节点写 data.yaml (绝对路径, 正斜杠) + 清 labels.cache"""
+# 每批用于 val 的图片索引 (其余用于训练)
+VAL_INDICES = {
+    'b1': [7, 8, 9],       # B1 有 image_00~09, val 取后 3 张
+    'b2': [7, 8, 9],       # B2 有 image_00~09
+    'b3': [17, 18, 19],    # B3 有 image_00~19, val 取后 3 张
+}
+
+def write_node_yaml(data_dir, node_name):
+    """为每个节点写 data.yaml — train 用排除 val 的图, val 用同批 val 图"""
+    import glob
     node_yaml = os.path.join(data_dir, 'data.yaml')
-    with open(node_yaml, 'w') as f:
-        f.write(f'path: {safe_path(data_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
-    cache = os.path.join(data_dir, 'labels.cache')
-    if os.path.exists(cache):
+    img_dir = os.path.join(data_dir, 'images')
+    lbl_dir = os.path.join(data_dir, 'labels')
+    
+    # 创建 train_split 子目录 (排除 val 图)
+    train_img_dir = os.path.join(data_dir, 'train_images')
+    train_lbl_dir = os.path.join(data_dir, 'train_labels')
+    for d in [train_img_dir, train_lbl_dir]:
+        os.makedirs(d, exist_ok=True)
+        # 清空旧文件
+        for old in os.listdir(d):
+            try:
+                os.remove(os.path.join(d, old))
+            except:
+                pass
+    
+    val_indices = set(VAL_INDICES.get(node_name, []))
+    for img_file in sorted(os.listdir(img_dir)):
+        # image_XX.jpg → idx
+        name = os.path.splitext(img_file)[0]  # image_XX
         try:
-            os.remove(cache)
-        except PermissionError:
-            pass  # Windows 文件锁, 下次训练会自动覆盖
+            idx = int(name.split('_')[1])
+        except (IndexError, ValueError):
+            continue
+        if idx in val_indices:
+            continue  # 跳过 val 图
+        # 复制到 train_split
+        shutil.copy2(os.path.join(img_dir, img_file), os.path.join(train_img_dir, img_file))
+        lbl_file = img_file.replace('.jpg', '.txt')
+        if os.path.exists(os.path.join(lbl_dir, lbl_file)):
+            shutil.copy2(os.path.join(lbl_dir, lbl_file), os.path.join(train_lbl_dir, lbl_file))
+    
+    with open(node_yaml, 'w') as f:
+        f.write(f'path: {safe_path(data_dir)}\ntrain: train_images\nval: train_images\nnc: 1\nnames: [\'organoid\']\n')
+    # 清 cache
+    for cache_name in ['labels.cache', 'train_images.cache', 'train_labels.cache']:
+        cache = os.path.join(data_dir, cache_name)
+        if os.path.exists(cache):
+            try:
+                os.remove(cache)
+            except PermissionError:
+                pass
     return node_yaml
 
 
 def prepare_val_set():
-    """统一 val set: 每批各取前 2 张 (共 6 张)"""
+    """统一 val set: 每批取 VAL_INDICES 指定的图 (共 9 张)"""
     val_dir = os.path.join(OUTPUT_DIR, 'val_set')
     if os.path.exists(val_dir):
         try:
             shutil.rmtree(val_dir)
         except PermissionError:
-            # Windows 文件锁, 尝试删除内容
             for root, dirs, files in os.walk(val_dir, topdown=False):
                 for f in files:
                     try:
@@ -150,12 +190,13 @@ def prepare_val_set():
     for node, ddir in BATCH_DIRS.items():
         img_src = os.path.join(ddir, 'images')
         lbl_src = os.path.join(ddir, 'labels')
-        for idx in range(2):
+        for idx in VAL_INDICES[node]:
             fname = f'image_{idx:02d}'
-            shutil.copy2(os.path.join(img_src, f'{fname}.jpg'),
-                        os.path.join(val_dir, 'images', f'{node}_{fname}.jpg'))
-            shutil.copy2(os.path.join(lbl_src, f'{fname}.txt'),
-                        os.path.join(val_dir, 'labels', f'{node}_{fname}.txt'))
+            img_path = os.path.join(img_src, f'{fname}.jpg')
+            lbl_path = os.path.join(lbl_src, f'{fname}.txt')
+            if os.path.exists(img_path) and os.path.exists(lbl_path):
+                shutil.copy2(img_path, os.path.join(val_dir, 'images', f'{node}_{fname}.jpg'))
+                shutil.copy2(lbl_path, os.path.join(val_dir, 'labels', f'{node}_{fname}.txt'))
     
     # 清 val labels.cache
     val_cache = os.path.join(val_dir, 'labels.cache')
@@ -217,7 +258,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
         last_unfused_model = None  # 保留最后一个训练后 (未 val) 的模型作 template
         for node_idx, (node_name, data_dir) in enumerate(BATCH_DIRS.items()):
             log(f"    训练 {node_name}...")
-            node_yaml = write_node_yaml(data_dir)
+            node_yaml = write_node_yaml(data_dir, node_name)
             
             # 从 global_ckpt 加载模型
             model = load_model(global_ckpt)
@@ -250,7 +291,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
                 sd = fedprox_interpolate(sd, global_sd_for_fedprox, mu=FedProx_MU)
             
             local_weights.append(sd)
-            local_sizes.append(len(os.listdir(os.path.join(data_dir, 'images'))))
+            local_sizes.append(len(os.listdir(os.path.join(data_dir, 'train_images'))))
             local_metrics.append({
                 'node': node_name,
                 'mAP50': round(mAP50, 4),
@@ -357,7 +398,7 @@ def main():
         os.remove(init_ckpt)
     if not os.path.exists(init_ckpt):
         log("\n=== Step 1: 训练 init_model (1 epoch, B1 数据) ===")
-        node_yaml = write_node_yaml(BATCH_DIRS['b1'])
+        node_yaml = write_node_yaml(BATCH_DIRS['b1'], 'b1')
         model = YOLO('yolo12n.pt')
         model.train(data=node_yaml, epochs=1, imgsz=IMGSZ, batch=BATCH_SIZE,
                     device=DEVICE, workers=WORKERS, cache=False,
