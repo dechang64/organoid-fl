@@ -219,6 +219,52 @@ def load_model(ckpt_path):
     from ultralytics import YOLO
     return YOLO(ckpt_path)
 
+def load_sam2_predictor(device='cuda'):
+    """加载 SAM2 predictor — 和 sam2_segment.py 同样的方式"""
+    try:
+        from sam2.build_sam import build_sam2
+        from sam2.sam2_image_predictor import SAM2ImagePredictor
+        import torch
+        # 尝试常见 checkpoint 路径
+        ckpt_candidates = [
+            'sam2_checkpoints/sam2_hiera_small.pt',
+            'weights/sam2_hiera_small.pt',
+            'sam2_hiera_small.pt',
+        ]
+        checkpoint = None
+        for c in ckpt_candidates:
+            if os.path.exists(c):
+                checkpoint = c
+                break
+        if not checkpoint:
+            log("    SAM2 checkpoint 未找到 (sam2_hiera_small.pt), 使用 fallback")
+            return None
+        for cfg in ['sam2_hiera_s', 'sam2_hiera_small']:
+            try:
+                model = build_sam2(cfg, checkpoint, device=device)
+                predictor = SAM2ImagePredictor(model)
+                log(f"    SAM2 loaded: {cfg} / {checkpoint}")
+                return predictor
+            except Exception:
+                continue
+        log("    SAM2 加载失败, 使用 fallback")
+        return None
+    except ImportError:
+        log("    sam2 包未安装, 使用 fallback")
+        return None
+
+def release_sam2(predictor):
+    """释放 SAM2 predictor"""
+    if predictor is not None:
+        import torch
+        try:
+            del predictor.model
+            del predictor
+        except:
+            pass
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
 
 def release_model(model):
     """释放模型 GPU 显存 — model 是 YOLO 对象"""
@@ -478,44 +524,41 @@ def main():
     
     # 轮廓可视化: YOLO检测 → SAM2分割 → 像素级轮廓 (和人工红线标注同格式)
     log("\n生成轮廓可视化 (YOLO+SAM2 → 像素级mask轮廓)...")
-    try:
-        val_img_dir = os.path.join(OUTPUT_DIR, 'val_set', 'images')
-        val_lbl_dir = os.path.join(OUTPUT_DIR, 'val_set', 'labels')
-        for strategy in ['fedavg', 'ewa', 'fedprox']:
-            final_ckpt = os.path.join(OUTPUT_DIR, strategy, f'global_r{NUM_ROUNDS-1}.pt')
-            if not os.path.exists(final_ckpt):
-                continue
-            contour_dir = os.path.join(OUTPUT_DIR, 'visualization', strategy, 'contours')
-            os.makedirs(contour_dir, exist_ok=True)
+    sam2_predictor = load_sam2_predictor(DEVICE)
+    val_img_dir = os.path.join(OUTPUT_DIR, 'val_set', 'images')
+    val_lbl_dir = os.path.join(OUTPUT_DIR, 'val_set', 'labels')
+    for strategy in ['fedavg', 'ewa', 'fedprox']:
+        final_ckpt = os.path.join(OUTPUT_DIR, strategy, f'global_r{NUM_ROUNDS-1}.pt')
+        if not os.path.exists(final_ckpt):
+            log(f"  {strategy}: checkpoint 不存在, 跳过")
+            continue
+        contour_dir = os.path.join(OUTPUT_DIR, 'visualization', strategy, 'contours')
+        os.makedirs(contour_dir, exist_ok=True)
+        try:
             n = visualize_contours_yolo_sam2(
-                final_ckpt, val_img_dir, val_lbl_dir, contour_dir, DEVICE, IMGSZ)
+                final_ckpt, val_img_dir, val_lbl_dir, contour_dir, 
+                DEVICE, IMGSZ, sam2_predictor)
             log(f"  {strategy}: {n} 张轮廓图 → {contour_dir}")
-    except Exception as e:
-        log(f"  轮廓可视化跳过 (SAM2 不可用): {e}")
+        except Exception as e:
+            log(f"  {strategy}: 轮廓可视化失败: {e}")
+    release_sam2(sam2_predictor)
+    sam2_predictor = None
 
 
-def visualize_contours_yolo_sam2(yolo_ckpt, img_dir, lbl_dir, dst_dir, device='cuda', imgsz=640):
+def visualize_contours_yolo_sam2(yolo_ckpt, img_dir, lbl_dir, dst_dir, device='cuda', imgsz=640, sam2_predictor=None):
     """YOLO 检测 → SAM2 分割 → 像素级轮廓叠加图
     
     输出两种图:
     - mask_*.jpg: SAM2 mask (绿色半透明) + GT bbox (红色)
     - contour_*.jpg: SAM2 轮廓线 (绿色) + GT 轮廓线 (红色), 和人工标注同格式
+    
+    sam2_predictor: 预加载的 SAM2ImagePredictor, None 则用 fallback
     """
     import cv2
     import numpy as np
     from ultralytics import YOLO
     
-    # 尝试加载 SAM2
-    try:
-        from sam2.sam2_image_predictor import SAM2ImagePredictor
-        import torch as _torch
-        sam2_predictor = SAM2ImagePredictor.from_pretrained("facebook/sam2-hiera-small")
-        if 'cuda' in device:
-            sam2_predictor.model.cuda()
-        sam2_ok = True
-    except Exception:
-        sam2_ok = False
-        sam2_predictor = None
+    sam2_ok = sam2_predictor is not None
     
     model = YOLO(yolo_ckpt)
     images = sorted([f for f in os.listdir(img_dir) if f.endswith(('.jpg', '.png'))])
@@ -544,7 +587,7 @@ def visualize_contours_yolo_sam2(yolo_ckpt, img_dir, lbl_dir, dst_dir, device='c
                     mask_preds, _, _ = sam2_predictor.predict(
                         point_coords=None,
                         point_labels=None,
-                        box=np.array(box),
+                        box=np.array(box, dtype=np.float32),
                         multimask_output=False,
                     )
                 masks.append(mask_preds[0])
@@ -646,17 +689,20 @@ def plot_fl_curves(all_results, output_dir):
     fig.savefig(os.path.join(output_dir, 'fl_convergence_mAP5095.png'), dpi=150)
     plt.close(fig)
     
-    # 图3: EWA 权重演化
-    ewa_weights = [r['weights'] for r in all_results['ewa'] if r['weights']]
+    # 图3: EWA 权重演化 (跳过 warmup 轮, 从 EWA 启动轮开始)
+    ewa_weights = []
+    for r_idx, r in enumerate(all_results['ewa']):
+        if r_idx >= EWA_WARMUP_ROUNDS and r['weights']:
+            ewa_weights.append(r['weights'])
     if ewa_weights:
         fig, ax = plt.subplots(figsize=(10, 6))
-        ewa_rounds = list(range(1, len(ewa_weights) + 1))
+        ewa_rounds = list(range(EWA_WARMUP_ROUNDS + 1, EWA_WARMUP_ROUNDS + 1 + len(ewa_weights)))
         for i, node in enumerate(['B1', 'B2', 'B3']):
             w = [rw[i] for rw in ewa_weights]
             ax.plot(ewa_rounds, w, 'o-', label=node, linewidth=2, markersize=6)
         ax.set_xlabel('FL Round', fontsize=13)
         ax.set_ylabel('EWA Weight', fontsize=13)
-        ax.set_title('EWA Weight Evolution', fontsize=14)
+        ax.set_title('EWA Weight Evolution (after warmup)', fontsize=14)
         ax.legend(fontsize=12)
         ax.grid(True, alpha=0.3)
         ax.set_xticks(ewa_rounds)
