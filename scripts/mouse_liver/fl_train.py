@@ -213,7 +213,8 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
         local_metrics = []
         global_sd_for_fedprox = None
         
-        for node_name, data_dir in BATCH_DIRS.items():
+        node_names = list(BATCH_DIRS.keys())
+        for node_idx, (node_name, data_dir) in enumerate(BATCH_DIRS.items()):
             log(f"    训练 {node_name}...")
             node_yaml = write_node_yaml(data_dir)
             
@@ -254,9 +255,14 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
                 'mAP': round(mAP5095, 4),
             })
             
-            # 释放模型显存
-            release_model(model)
-            model = None  # 覆盖调用方引用, 触发 GC
+            # 保留最后一个本地模型作为 global template (fused, 和 avg_sd 同格式)
+            # 前面的释放掉
+            if node_idx < len(node_names) - 1:
+                release_model(model)
+                model = None
+            else:
+                last_model = model  # 保留作 template
+                model = None
         
         # 聚合
         if strategy_name == "ewa":
@@ -273,37 +279,35 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
             avg_sd = fedavg_aggregate(local_weights, weights)
         
         # 保存 global model
-        # 跨版本兼容: 不同 Ultralytics 版本对 fused/unfused 处理不同
-        # 用 strict=False 容忍 key 差异, 只加载匹配的 key
-        # 不匹配的 key (bn.weight vs conv.bias) 保留 init_model 原值
+        # 用最后一个本地模型作为 template (fused, 和 avg_sd 同格式)
+        # 避免用 init_ckpt (unfused) 导致 key 不匹配
         import torch
         from copy import deepcopy
         from datetime import datetime
         from ultralytics import __version__
         global_ckpt = os.path.join(strat_dir, f'global_r{round_idx}.pt')
-        global_model = load_model(init_ckpt)
         
-        # 用 in-place copy_() 逐 key 加载, 只加载 shape 匹配的 key
-        model_sd = global_model.model.state_dict()
+        # 用 last_model (fused) 作为 template, load_state_dict 替换为 avg_sd
+        model_sd = last_model.model.state_dict()
         loaded = 0
         for key in avg_sd:
             if key in model_sd and avg_sd[key].shape == model_sd[key].shape:
                 model_sd[key].copy_(avg_sd[key])
                 loaded += 1
-        log(f"    Loaded {loaded}/{len(avg_sd)} keys (strict=False)")
+        log(f"    Loaded {loaded}/{len(avg_sd)} keys")
         
         # 用 torch.save 保存 (不用 model.save 避免 fuse)
         gckpt = {
-            'model': deepcopy(global_model.model).float(),
+            'model': deepcopy(last_model.model).float(),
             'date': datetime.now().isoformat(),
             'version': __version__,
             'license': 'AGPL-3.0 License',
             'docs': 'https://docs.ultralytics.com',
-            'train_args': dict(global_model.overrides) if hasattr(global_model, 'overrides') and hasattr(global_model.overrides, '__dict__') else {},
+            'train_args': dict(last_model.overrides) if hasattr(last_model, 'overrides') and hasattr(last_model.overrides, '__dict__') else {},
         }
         torch.save(gckpt, global_ckpt)
-        release_model(global_model)
-        global_model = None
+        release_model(last_model)
+        last_model = None
         log(f"    Global model saved: {global_ckpt}")
         
         # 评估全局模型
