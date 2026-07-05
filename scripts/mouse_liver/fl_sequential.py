@@ -360,8 +360,11 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                     total = sum(maps)
                     w_local, w_global = maps[0] / total, maps[1] / total
                     global_sd = fedavg_aggregate([local_sd, global_sd], [w_local, w_global])
+                    # 更新 global_signal_cache (近似: 加权平均)
+                    # 不更新则 b2/b3 用上一轮末尾的陈旧值算 EWA 权重
+                    global_signal_cache = w_local * signal_local + w_global * (global_signal_cache or 0)
                     round_weights.append([round(w_local, 4), round(w_global, 4)])
-                    log(f"      [soft] weights: local={w_local:.3f}, global={w_global:.3f}")
+                    log(f"      [soft] weights: local={w_local:.3f}, global={w_global:.3f}, est_global_signal={global_signal_cache:.4f}")
 
             elif args.gate == 'local':
                 # 本地门控: 各节点自己决定是否存储
