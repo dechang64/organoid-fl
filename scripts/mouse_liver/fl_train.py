@@ -119,15 +119,22 @@ VAL_INDICES = {
 }
 
 def write_node_yaml(data_dir, node_name):
-    """为每个节点写 data.yaml — train 用排除 val 的图, val 用同批 val 图"""
+    """为每个节点写 data.yaml — train 用排除 val 的图, val 用同批 val 图
+
+    重要: Ultralytics img2label_paths 用 os.sep+'images'+os.sep → os.sep+'labels'+os.sep
+    做路径替换。目录必须叫 images/labels (不能叫 train_images/train_labels)，
+    否则标签找不到 → 0 labels → 模型不学习。
+    解法: 用 fl_split 子目录避免覆盖原始 images/labels。
+    """
     import glob
     node_yaml = os.path.join(data_dir, 'data.yaml')
     img_dir = os.path.join(data_dir, 'images')
     lbl_dir = os.path.join(data_dir, 'labels')
-    
-    # 创建 train_split 子目录 (排除 val 图)
-    train_img_dir = os.path.join(data_dir, 'train_images')
-    train_lbl_dir = os.path.join(data_dir, 'train_labels')
+
+    # 创建 fl_split 子目录 (排除 val 图)
+    split_dir = os.path.join(data_dir, 'fl_split')
+    train_img_dir = os.path.join(split_dir, 'images')
+    train_lbl_dir = os.path.join(split_dir, 'labels')
     for d in [train_img_dir, train_lbl_dir]:
         os.makedirs(d, exist_ok=True)
         # 清空旧文件
@@ -136,7 +143,7 @@ def write_node_yaml(data_dir, node_name):
                 os.remove(os.path.join(d, old))
             except:
                 pass
-    
+
     val_indices = set(VAL_INDICES.get(node_name, []))
     for img_file in sorted(os.listdir(img_dir)):
         # image_XX.jpg → idx
@@ -147,17 +154,17 @@ def write_node_yaml(data_dir, node_name):
             continue
         if idx in val_indices:
             continue  # 跳过 val 图
-        # 复制到 train_split
+        # 复制到 fl_split
         shutil.copy2(os.path.join(img_dir, img_file), os.path.join(train_img_dir, img_file))
         lbl_file = img_file.replace('.jpg', '.txt')
         if os.path.exists(os.path.join(lbl_dir, lbl_file)):
             shutil.copy2(os.path.join(lbl_dir, lbl_file), os.path.join(train_lbl_dir, lbl_file))
-    
+
     with open(node_yaml, 'w') as f:
-        f.write(f'path: {safe_path(data_dir)}\ntrain: train_images\nval: train_images\nnc: 1\nnames: [\'organoid\']\n')
+        f.write(f'path: {safe_path(split_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     # 清 cache
-    for cache_name in ['labels.cache', 'train_images.cache', 'train_labels.cache']:
-        cache = os.path.join(data_dir, cache_name)
+    for cache_name in ['labels.cache', 'images.cache']:
+        cache = os.path.join(split_dir, cache_name)
         if os.path.exists(cache):
             try:
                 os.remove(cache)
@@ -337,7 +344,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
                 sd = fedprox_interpolate(sd, global_sd_for_fedprox, mu=FedProx_MU)
             
             local_weights.append(sd)
-            local_sizes.append(len(os.listdir(os.path.join(data_dir, 'train_images'))))
+            local_sizes.append(len(os.listdir(os.path.join(data_dir, 'fl_split', 'images'))))
             local_metrics.append({
                 'node': node_name,
                 'mAP50': round(mAP50, 4),

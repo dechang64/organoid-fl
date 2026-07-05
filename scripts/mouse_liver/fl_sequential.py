@@ -62,11 +62,21 @@ def safe_path(p):
 # ============ 数据准备 (复用 fl_train.py 逻辑) ============
 
 def write_node_yaml(data_dir, node_name):
+    """为每个节点写 data.yaml — train 用排除 val 的图, val 用同批 val 图
+
+    重要: Ultralytics img2label_paths 用 os.sep+'images'+os.sep → os.sep+'labels'+os.sep
+    做路径替换。目录必须叫 images/labels (不能叫 train_images/train_labels)，
+    否则标签找不到 → 0 labels → 模型不学习。
+    解法: 用 fl_split 子目录避免覆盖原始 images/labels。
+    """
     node_yaml = os.path.join(data_dir, 'data.yaml')
     img_dir = os.path.join(data_dir, 'images')
     lbl_dir = os.path.join(data_dir, 'labels')
-    train_img_dir = os.path.join(data_dir, 'train_images')
-    train_lbl_dir = os.path.join(data_dir, 'train_labels')
+
+    # 创建 fl_split 子目录 (排除 val 图)
+    split_dir = os.path.join(data_dir, 'fl_split')
+    train_img_dir = os.path.join(split_dir, 'images')
+    train_lbl_dir = os.path.join(split_dir, 'labels')
     for d in [train_img_dir, train_lbl_dir]:
         os.makedirs(d, exist_ok=True)
         for old in os.listdir(d):
@@ -74,6 +84,7 @@ def write_node_yaml(data_dir, node_name):
                 os.remove(os.path.join(d, old))
             except:
                 pass
+
     val_indices = set(VAL_INDICES.get(node_name, []))
     for img_file in sorted(os.listdir(img_dir)):
         name = os.path.splitext(img_file)[0]
@@ -87,10 +98,12 @@ def write_node_yaml(data_dir, node_name):
         lbl_file = img_file.replace('.jpg', '.txt')
         if os.path.exists(os.path.join(lbl_dir, lbl_file)):
             shutil.copy2(os.path.join(lbl_dir, lbl_file), os.path.join(train_lbl_dir, lbl_file))
+
     with open(node_yaml, 'w') as f:
-        f.write(f'path: {safe_path(data_dir)}\ntrain: train_images\nval: train_images\nnc: 1\nnames: [\'organoid\']\n')
-    for cache_name in ['labels.cache', 'train_images.cache', 'train_labels.cache']:
-        cache = os.path.join(data_dir, cache_name)
+        f.write(f'path: {safe_path(split_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
+    # 清 cache
+    for cache_name in ['labels.cache', 'images.cache']:
+        cache = os.path.join(split_dir, cache_name)
         if os.path.exists(cache):
             try:
                 os.remove(cache)
@@ -292,7 +305,7 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                 'mAP': round(mAP5095, 4),
             })
 
-            n_local = len(os.listdir(os.path.join(data_dir, 'train_images')))
+            n_local = len(os.listdir(os.path.join(data_dir, 'fl_split', 'images')))
             signal_local = mAP5095 if args.signal == 'mAP' else mAP50
 
             # === 更新全局参数 ===
