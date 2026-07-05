@@ -36,7 +36,11 @@ BATCH_SIZE = 4
 WORKERS = 0
 DEVICE = 'cuda'
 EPOCHS = 100
-PATIENCE = 50
+# close_mosaic: FL 每轮 10ep, close_mosaic=5 → 50% 无 mosaic
+# baseline 100ep → close_mosaic=50 匹配 FL 的 50% 比例
+CLOSE_MOSAIC = 50
+# 不用 patience: FL 每轮固定跑 10ep, baseline 也不早停
+PATIENCE = None
 
 VAL_INDICES = {
     'b1': [7, 8, 9],
@@ -168,7 +172,7 @@ def main():
         n_total = len([f for f in os.listdir(os.path.join(data_dir, 'images')) if f.endswith(('.jpg', '.png'))])
         n_train = n_total - n_val  # 排除 val 图后的训练图数
         log(f"\n{'='*60}")
-        log(f"训练 {node_name} (独立 baseline, {EPOCHS}ep patience={PATIENCE}, {n_train} train images)")
+        log(f"训练 {node_name} (独立 baseline, {EPOCHS}ep close_mosaic={CLOSE_MOSAIC}, {n_train} train images)")
         log(f"{'='*60}")
 
         node_yaml = write_node_yaml(data_dir, node_name)
@@ -177,7 +181,7 @@ def main():
 
         model = YOLO('yolo12n.pt')
         t0 = time.time()
-        model.train(
+        train_kwargs = dict(
             data=node_yaml,
             epochs=EPOCHS,
             imgsz=IMGSZ,
@@ -189,10 +193,12 @@ def main():
             name=node_name,
             exist_ok=True,
             cos_lr=True,
-            close_mosaic=5,
-            patience=PATIENCE,
+            close_mosaic=CLOSE_MOSAIC,
             verbose=True,
         )
+        if PATIENCE is not None:
+            train_kwargs['patience'] = PATIENCE
+        model.train(**train_kwargs)
         dt = time.time() - t0
         log(f"  训练时间: {dt/60:.1f} min")
 
