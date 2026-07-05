@@ -162,14 +162,13 @@ def write_node_yaml(data_dir, node_name):
 
     with open(node_yaml, 'w') as f:
         f.write(f'path: {safe_path(split_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
-    # 清 cache
-    for cache_name in ['labels.cache', 'images.cache']:
-        cache = os.path.join(split_dir, cache_name)
-        if os.path.exists(cache):
-            try:
-                os.remove(cache)
-            except PermissionError:
-                pass
+    # 清 cache (Ultralytics 缓存在 labels/ 目录下)
+    cache_path = os.path.join(split_dir, 'labels', 'labels.cache')
+    if os.path.exists(cache_path):
+        try:
+            os.remove(cache_path)
+        except PermissionError:
+            pass
     return node_yaml
 
 
@@ -206,7 +205,7 @@ def prepare_val_set():
                 shutil.copy2(lbl_path, os.path.join(val_dir, 'labels', f'{node}_{fname}.txt'))
     
     # 清 val labels.cache
-    val_cache = os.path.join(val_dir, 'labels.cache')
+    val_cache = os.path.join(val_dir, 'labels', 'labels.cache')
     if os.path.exists(val_cache):
         try:
             os.remove(val_cache)
@@ -344,7 +343,7 @@ def run_fl_strategy(strategy_name, init_ckpt, val_yaml):
                 sd = fedprox_interpolate(sd, global_sd_for_fedprox, mu=FedProx_MU)
             
             local_weights.append(sd)
-            local_sizes.append(len(os.listdir(os.path.join(data_dir, 'fl_split', 'images'))))
+            local_sizes.append(len([f for f in os.listdir(os.path.join(data_dir, 'fl_split', 'images')) if f.endswith(('.jpg', '.png'))]))
             local_metrics.append({
                 'node': node_name,
                 'mAP50': round(mAP50, 4),

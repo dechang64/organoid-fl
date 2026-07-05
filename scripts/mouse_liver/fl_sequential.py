@@ -101,14 +101,13 @@ def write_node_yaml(data_dir, node_name):
 
     with open(node_yaml, 'w') as f:
         f.write(f'path: {safe_path(split_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
-    # 清 cache
-    for cache_name in ['labels.cache', 'images.cache']:
-        cache = os.path.join(split_dir, cache_name)
-        if os.path.exists(cache):
-            try:
-                os.remove(cache)
-            except PermissionError:
-                pass
+    # 清 cache (Ultralytics 缓存在 labels/ 目录下)
+    cache_path = os.path.join(split_dir, 'labels', 'labels.cache')
+    if os.path.exists(cache_path):
+        try:
+            os.remove(cache_path)
+        except PermissionError:
+            pass
     return node_yaml
 
 
@@ -141,7 +140,8 @@ def prepare_val_set(output_dir):
             if os.path.exists(img_path) and os.path.exists(lbl_path):
                 shutil.copy2(img_path, os.path.join(val_dir, 'images', f'{node}_{fname}.jpg'))
                 shutil.copy2(lbl_path, os.path.join(val_dir, 'labels', f'{node}_{fname}.txt'))
-    val_cache = os.path.join(val_dir, 'labels.cache')
+    # 清 val cache (Ultralytics 缓存在 labels/ 目录下)
+    val_cache = os.path.join(val_dir, 'labels', 'labels.cache')
     if os.path.exists(val_cache):
         try:
             os.remove(val_cache)
@@ -305,7 +305,7 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                 'mAP': round(mAP5095, 4),
             })
 
-            n_local = len(os.listdir(os.path.join(data_dir, 'fl_split', 'images')))
+            n_local = len([f for f in os.listdir(os.path.join(data_dir, 'fl_split', 'images')) if f.endswith(('.jpg', '.png'))])
             signal_local = mAP5095 if args.signal == 'mAP' else mAP50
 
             # === 更新全局参数 ===
@@ -314,12 +314,13 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                 if global_sd is None:
                     global_sd = local_sd
                     global_data_count = n_local
+                    round_weights.append([1.0, 0.0])
                 else:
                     w_local = n_local / (n_local + global_data_count)
                     weights = [w_local, 1 - w_local]
                     global_sd = fedavg_aggregate([local_sd, global_sd], weights)
                     global_data_count += n_local
-                round_weights.append(None)
+                    round_weights.append([round(w_local, 4), round(1 - w_local, 4)])
 
             elif args.gate == 'hard':
                 # 硬门控: 本地性能 > 全局性能 + margin 才更新
@@ -328,6 +329,7 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                     global_signal_cache = signal_local
                     global_data_count = n_local
                     log(f"      [gate] 初始化全局模型 ({args.signal}={signal_local:.4f})")
+                    round_weights.append([1.0, 0.0])
                 else:
                     if signal_local > global_signal_cache + args.margin:
                         old_signal = global_signal_cache
@@ -335,9 +337,10 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                         global_signal_cache = signal_local
                         global_data_count = n_local
                         log(f"      [gate] 更新全局 ({signal_local:.4f} > {old_signal:.4f} + {args.margin})")
+                        round_weights.append([1.0, 0.0])
                     else:
                         log(f"      [gate] 保留旧全局 ({signal_local:.4f} <= {global_signal_cache:.4f} + {args.margin})")
-                round_weights.append(None)
+                        round_weights.append([0.0, 1.0])
 
             elif args.gate == 'soft':
                 # 软门控: EWA 加权 (前 warmup 轮用 FedAvg)
@@ -345,11 +348,12 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                     if global_sd is None:
                         global_sd = local_sd
                         global_data_count = n_local
+                        round_weights.append([1.0, 0.0])
                     else:
                         w_local = n_local / (n_local + global_data_count)
                         global_sd = fedavg_aggregate([local_sd, global_sd], [w_local, 1 - w_local])
                         global_data_count += n_local
-                    round_weights.append(None)
+                        round_weights.append([round(w_local, 4), round(1 - w_local, 4)])
                 else:
                     # EWA: 按性能信号加权
                     maps = [max(signal_local, 1e-8), max(global_signal_cache or 0, 1e-8)]
@@ -365,14 +369,15 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
                     node_best_sd[node_name] = local_sd
                     node_best_map[node_name] = signal_local
                     log(f"      [local] {node_name} 存储新模型 ({signal_local:.4f})")
+                    round_weights.append([1.0, 0.0])
                 else:
                     log(f"      [local] {node_name} 保留旧模型 ({signal_local:.4f} <= {node_best_map[node_name]:.4f})")
+                    round_weights.append([0.0, 1.0])
 
                 # 全局模型 = 所有节点最佳模型的平均
                 if len(node_best_sd) == 3:
                     sds = [node_best_sd[n] for n in ['b1', 'b2', 'b3'] if n in node_best_sd]
                     global_sd = fedavg_aggregate(sds)
-                round_weights.append(None)
 
             # 保存更新后的全局模型
             if global_sd is not None:
