@@ -445,6 +445,12 @@ def main():
     if args.exp in ['all', 'P1-C']:
         results['P1-C'] = run_experiment('P1-C', det_model, sam2_predictor, 'b3',
                                           b3_annot_mapping, eval_mask=True)
+        if results['P1-C'].get('mask', {}).get('tp', -1) == 0 and \
+           results['P1-C'].get('mask', {}).get('fp', -1) == 0 and \
+           results['P1-C'].get('mask', {}).get('fn', -1) == 0:
+            log("\n  ⚠️ B3 标注图未找到, mask 评估被跳过")
+            log("  标注图在云 VM: /home/z/my-project/datasets/mouse_liver_annotated_20260702/")
+            log("  冬生本地需下载这 20 张标注图到任意候选目录")
 
     # P1-D: B1+B2 → B3 (多源训练, 但 RF-DETR 只用 B1 训练的, 这里复用同一模型)
     # P1-D 需要 B1+B2 训练的 RF-DETR, 暂时用同一模型
