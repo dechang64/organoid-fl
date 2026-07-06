@@ -2,9 +2,9 @@ r"""
 Phase 1: Perception 层验证 — bbox→SAM2→形态学特征 pipeline
 
 GT 标注可用性 (审计确认):
-  B1 (10张, 2592×1944): 只有 bbox GT (annotations.json)
-  B2 (10张, 2592×1944): 只有 bbox GT (annotations.json)
-  B3 (20张, 4000×3000): bbox GT + 红色折线标注图 (真实轮廓 mask)
+  B1 (10张, 2592×1944): bbox GT + 标注图 (annotations.json + annotated/)
+  B2 (10张, 4000×3000): bbox GT + 标注图 (annotations.json + annotated/)
+  B3 (20张, 4000×3000): bbox GT + 标注图 (annotations.json + annotated/)
 
 评估方式:
   - B1/B2: bbox 级 F1 (IoU>0.5 bbox 匹配)
@@ -65,7 +65,7 @@ DET_CKPT = RFDETR_CKPT
 DET_TYPE = 'rfdetr'  # 'yolo' or 'rfdetr'
 
 # SAM2 checkpoint: TOOLS.md 确认 "sam2_checkpoints\sam2_hiera_small.pt"
-SAM2_CKPT = r"sam2_hiera_small.pt"
+SAM2_CKPT = r"sam2_checkpoints\sam2_hiera_small.pt"
 
 # 标注图目录: 新数据结构 batch{N}/annotated/
 # 从 BATCH_DIRS 自动推导
