@@ -45,6 +45,11 @@ IMGSZ = 640
 BATCH_SIZE = 4
 DEVICE = 'cuda'
 EWA_WARMUP_ROUNDS = 2
+# 固定 optimizer 和 lr0 避免 auto 模式因 batch/iterations 不同而改变学习率
+# Ultralytics auto: iterations>10000 → SGD lr=0.01, 否则 AdamW lr=0.002*5/(4+nc)
+# nc=1 → AdamW lr=0.002. 显式固定消除 batch/iterations 差异导致的 lr 不可比
+OPTIMIZER = 'AdamW'
+LR0 = 0.002  # auto 模式下 nc=1 的 AdamW lr
 
 VAL_INDICES = {
     'b1': [7, 8, 9],
@@ -61,13 +66,16 @@ def safe_path(p):
 
 # ============ 数据准备 (复用 fl_train.py 逻辑) ============
 
-def write_node_yaml(data_dir, node_name):
-    """为每个节点写 data.yaml — train 用排除 val 的图, val 用同批 val 图
+def write_node_yaml(data_dir, node_name, val_yaml=None):
+    """为每个节点写 data.yaml — train 用排除 val 的图, val 用统一 val_set
 
     重要: Ultralytics img2label_paths 用 os.sep+'images'+os.sep → os.sep+'labels'+os.sep
     做路径替换。目录必须叫 images/labels (不能叫 train_images/train_labels)，
     否则标签找不到 → 0 labels → 模型不学习。
     解法: 用 fl_split 子目录避免覆盖原始 images/labels。
+
+    val_yaml: 统一 val_set 的 yaml 路径。如果提供, node_yaml 的 val 字段指向它,
+              避免 train=val=images 导致 best.pt 基于训练集选择。
     """
     node_yaml = os.path.join(data_dir, 'data.yaml')
     img_dir = os.path.join(data_dir, 'images')
@@ -100,7 +108,12 @@ def write_node_yaml(data_dir, node_name):
             shutil.copy2(os.path.join(lbl_dir, lbl_file), os.path.join(train_lbl_dir, lbl_file))
 
     with open(node_yaml, 'w') as f:
-        f.write(f'path: {safe_path(split_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
+        if val_yaml:
+            # val 指向统一 val_set 的 images 目录 (绝对路径), 避免 train=val=images
+            val_dir = os.path.join(os.path.dirname(val_yaml), 'val_set', 'images')
+            f.write(f'path: {safe_path(os.path.abspath(split_dir))}\ntrain: images\nval: {safe_path(os.path.abspath(val_dir))}\nnc: 1\nnames: [\'organoid\']\n')
+        else:
+            f.write(f'path: {safe_path(os.path.abspath(split_dir))}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     # 清 cache (Ultralytics 缓存在 labels/ 目录下)
     cache_path = os.path.join(split_dir, 'labels', 'labels.cache')
     if os.path.exists(cache_path):
@@ -273,12 +286,13 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
         for node_pos, node_name in enumerate(node_order):
             data_dir = BATCH_DIRS[node_name]
             log(f"    [{node_pos+1}/{len(node_order)}] 训练 {node_name}...")
-            node_yaml = write_node_yaml(data_dir, node_name)
+            node_yaml = write_node_yaml(data_dir, node_name, val_yaml)
 
-            # B3 可选不同 imgsz/batch (实验 E10: B3@1280)
+            # B3 可选不同 imgsz (实验 E10: B3@1280)
+            # batch 保持 BATCH_SIZE=4, lr0 固定, 唯一变量是 imgsz
             if args.b3_imgsz and node_name == 'b3':
                 node_imgsz = args.b3_imgsz
-                node_batch = max(1, BATCH_SIZE * IMGSZ // args.b3_imgsz)  # 按显存比例降
+                node_batch = BATCH_SIZE  # 保持 batch=4, 如果 OOM 冬生会看到
             else:
                 node_imgsz = IMGSZ
                 node_batch = BATCH_SIZE
@@ -288,7 +302,7 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
 
             t0 = time.time()
             model.train(data=node_yaml, epochs=LOCAL_EPOCHS, imgsz=node_imgsz, batch=node_batch,
-                        device=DEVICE, workers=WORKERS, cache=False,
+                        device=DEVICE, workers=WORKERS, cache=False, lr0=LR0, optimizer=OPTIMIZER,
                         project=strat_dir, name=f'r{round_idx}_{node_name}',
                         exist_ok=True, cos_lr=True, close_mosaic=5, verbose=False)
             dt = time.time() - t0
@@ -537,33 +551,31 @@ def main():
     # 准备 val_set
     val_yaml = prepare_val_set(OUTPUT_BASE)
 
-    # 训练 init_model (复用 fl_train.py 的 init_model.pt)
-    init_ckpt = os.path.join('runs', 'mouse_liver_fl', 'init_model.pt')
-    if not os.path.exists(init_ckpt):
-        log("\n=== Step 1: 训练 init_model (1 epoch, B1 数据) ===")
-        from ultralytics import YOLO
-        init_ckpt = os.path.join(OUTPUT_BASE, 'init_model.pt')
-        node_yaml = write_node_yaml(BATCH_DIRS['b1'], 'b1')
-        model = YOLO('yolo12n.pt')
-        model.train(data=node_yaml, epochs=1, imgsz=IMGSZ, batch=BATCH_SIZE,
-                    device=DEVICE, workers=WORKERS, cache=False,
-                    project=OUTPUT_BASE, name='init', exist_ok=True,
-                    cos_lr=True, verbose=False)
-        import torch
-        from copy import deepcopy
-        from datetime import datetime
-        from ultralytics import __version__
-        ckpt = {
-            'model': deepcopy(model.model).float(),
-            'date': datetime.now().isoformat(),
-            'version': __version__,
-            'license': 'AGPL-3.0 License',
-            'docs': 'https://docs.ultralytics.com',
-            'train_args': dict(model.overrides) if hasattr(model, 'overrides') and hasattr(model.overrides, '__dict__') else {},
-        }
-        torch.save(ckpt, init_ckpt)
-        log(f"init_model saved: {init_ckpt}")
-        release_model(model)
+    # 训练 init_model — 强制重建, 确保和当前代码一致
+    init_ckpt = os.path.join(OUTPUT_BASE, 'init_model.pt')
+    log("\n=== Step 1: 训练 init_model (1 epoch, B1 数据) ===")
+    from ultralytics import YOLO
+    node_yaml = write_node_yaml(BATCH_DIRS['b1'], 'b1', val_yaml)
+    model = YOLO('yolo12n.pt')
+    model.train(data=node_yaml, epochs=1, imgsz=IMGSZ, batch=BATCH_SIZE,
+                device=DEVICE, workers=WORKERS, cache=False, lr0=LR0, optimizer=OPTIMIZER,
+                project=OUTPUT_BASE, name='init', exist_ok=True,
+                cos_lr=True, verbose=False)
+    import torch
+    from copy import deepcopy
+    from datetime import datetime
+    from ultralytics import __version__
+    ckpt = {
+        'model': deepcopy(model.model).float(),
+        'date': datetime.now().isoformat(),
+        'version': __version__,
+        'license': 'AGPL-3.0 License',
+        'docs': 'https://docs.ultralytics.com',
+        'train_args': dict(model.overrides) if hasattr(model, 'overrides') and hasattr(model.overrides, '__dict__') else {},
+    }
+    torch.save(ckpt, init_ckpt)
+    log(f"init_model saved: {init_ckpt}")
+    release_model(model)
 
     # === 顺序链式 FL ===
     history = run_sequential_fl(args, init_ckpt, val_yaml, OUTPUT_BASE)

@@ -26,7 +26,7 @@ import os, sys, json, time, shutil
 # 复用 fl_sequential.py 的所有基础设施
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fl_sequential import (
-    BATCH_DIRS, VAL_INDICES, IMGSZ, BATCH_SIZE, WORKERS, DEVICE,
+    BATCH_DIRS, VAL_INDICES, IMGSZ, BATCH_SIZE, WORKERS, DEVICE, LR0, OPTIMIZER,
     log, safe_path, release_model, write_node_yaml, prepare_val_set,
 )
 
@@ -39,8 +39,11 @@ EPOCHS = 100
 CLOSE_MOSAIC = 50
 
 
-def write_centralized_yaml():
-    """合并 B1+B2+B3 训练图 (排除各批 val 图) 到 centralized_split"""
+def write_centralized_yaml(val_yaml=None):
+    """合并 B1+B2+B3 训练图 (排除各批 val 图) 到 centralized_split
+
+    val_yaml: 如果提供, val 字段指向统一 val_set
+    """
     cent_dir = os.path.join(OUTPUT_BASE, 'centralized_split')
     cent_img_dir = os.path.join(cent_dir, 'images')
     cent_lbl_dir = os.path.join(cent_dir, 'labels')
@@ -78,7 +81,11 @@ def write_centralized_yaml():
 
     cent_yaml = os.path.join(cent_dir, 'data.yaml')
     with open(cent_yaml, 'w') as f:
-        f.write(f'path: {safe_path(cent_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
+        if val_yaml:
+            val_dir = os.path.join(os.path.dirname(val_yaml), 'val_set', 'images')
+            f.write(f'path: {safe_path(cent_dir)}\ntrain: images\nval: {safe_path(os.path.abspath(val_dir))}\nnc: 1\nnames: [\'organoid\']\n')
+        else:
+            f.write(f'path: {safe_path(cent_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     # 清 cache
     cache_path = os.path.join(cent_lbl_dir, 'labels.cache')
     if os.path.exists(cache_path):
@@ -116,6 +123,8 @@ def train_one(name, node_yaml, n_train, imgsz=None, batch=None):
         device=DEVICE,
         workers=WORKERS,
         cache=False,
+        lr0=LR0,
+        optimizer=OPTIMIZER,
         project=OUTPUT_BASE,
         name=name,
         exist_ok=True,
@@ -158,35 +167,51 @@ def main():
 
     results = {}
 
+    # 如果已有 baseline_results.json, 加载已有结果避免重跑
+    existing_path = os.path.join(OUTPUT_BASE, 'baseline_results.json')
+    if os.path.exists(existing_path):
+        with open(existing_path) as f:
+            results = json.load(f)
+        log(f"加载已有结果: {existing_path} ({len(results)} 组)")
+
     # === 各节点独立训练 ===
     for node_name in ['b1', 'b2', 'b3']:
+        if node_name in results:
+            log(f"跳过 {node_name} (已有结果)")
+            continue
         data_dir = BATCH_DIRS[node_name]
         n_val = len(VAL_INDICES[node_name])
         n_total = len([f for f in os.listdir(os.path.join(data_dir, 'images')) if f.endswith(('.jpg', '.png'))])
         n_train = n_total - n_val
 
         # 复用 fl_sequential.write_node_yaml (会写 fl_split/)
-        node_yaml = write_node_yaml(data_dir, node_name)
+        node_yaml = write_node_yaml(data_dir, node_name, val_yaml)
         results[node_name] = train_one(node_name, node_yaml, n_train)
 
     # === 集中式上界 ===
-    cent_yaml, total_train = write_centralized_yaml()
-    results['centralized'] = train_one('centralized', cent_yaml, total_train)
+    if 'centralized' in results:
+        log(f"跳过 centralized (已有结果)")
+        cent_yaml = os.path.join(OUTPUT_BASE, 'centralized_split', 'data.yaml')
+        total_train = results['centralized']['n_train_images']
+    else:
+        cent_yaml, total_train = write_centralized_yaml(val_yaml)
+        results['centralized'] = train_one('centralized', cent_yaml, total_train)
 
     # === E9: B3 独立 imgsz=1280 ===
-    log(f"\n{'#'*60}")
-    log(f"# E9: B3 独立 imgsz=1280 (验证 B3 高分辨率下能否学到)")
-    log(f"{'#'*60}")
-    # B3 的 yaml 在上面循环里已经写过了, 直接复用
-    b3_yaml = write_node_yaml(BATCH_DIRS['b3'], 'b3')  # 重新写确保 fl_split 干净
-    n_b3 = len([f for f in os.listdir(os.path.join(BATCH_DIRS['b3'], 'images')) if f.endswith(('.jpg', '.png'))]) - len(VAL_INDICES['b3'])
-    results['b3_1280'] = train_one('b3_1280', b3_yaml, n_b3, imgsz=1280, batch=2)
+    if 'b3_1280' not in results:
+        log(f"\n{'#'*60}")
+        log(f"# E9: B3 独立 imgsz=1280 (验证 B3 高分辨率下能否学到)")
+        log(f"{'#'*60}")
+        b3_yaml = write_node_yaml(BATCH_DIRS['b3'], 'b3', val_yaml)
+        n_b3 = len([f for f in os.listdir(os.path.join(BATCH_DIRS['b3'], 'images')) if f.endswith(('.jpg', '.png'))]) - len(VAL_INDICES['b3'])
+        results['b3_1280'] = train_one('b3_1280', b3_yaml, n_b3, imgsz=1280, batch=BATCH_SIZE)
 
     # === E11: 集中式 imgsz=1280 ===
-    log(f"\n{'#'*60}")
-    log(f"# E11: 集中式 imgsz=1280 (控制变量: 集中式高分辨率上界)")
-    log(f"{'#'*60}")
-    results['centralized_1280'] = train_one('centralized_1280', cent_yaml, total_train, imgsz=1280, batch=2)
+    if 'centralized_1280' not in results:
+        log(f"\n{'#'*60}")
+        log(f"# E11: 集中式 imgsz=1280 (控制变量: 集中式高分辨率上界)")
+        log(f"{'#'*60}")
+        results['centralized_1280'] = train_one('centralized_1280', cent_yaml, total_train, imgsz=1280, batch=BATCH_SIZE)
 
     # 保存汇总
     result_path = os.path.join(OUTPUT_BASE, 'baseline_results.json')

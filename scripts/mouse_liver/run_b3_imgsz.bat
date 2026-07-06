@@ -1,23 +1,28 @@
 @echo off
 REM B3 imgsz 对比实验 — 验证"B3 目标尺度不匹配是 FL 更低的根因"
 REM
-REM E9:  B3 独立 imgsz=1280 (baseline 脚本里)
+REM 审计修复版: 删除旧 baseline_results.json 强制重跑
+REM (旧结果用 train=val=images + auto optimizer, 和新代码不可比)
+REM
+REM E9:  B3 独立 imgsz=1280
 REM E10: FL soft gate, B3@1280, B1/B2@640
-REM E11: 集中式 imgsz=1280 (baseline 脚本里)
-REM
-REM 用法:
-REM   1. 先跑 baseline (含 E9+E11):
-REM      python scripts\mouse_liver\train_baseline.py
-REM   2. 再跑 E10 (FL B3@1280):
-REM      scripts\mouse_liver\run_b3_imgsz.bat
-REM
-REM 或者直接跑这个 bat 会依次执行两步
+REM E11: 集中式 imgsz=1280
 
 cd /d C:\Users\decha\organoid-fl
 call .venv\Scripts\activate
 
 echo ============================================================
-echo Step 1/2: Baseline + E9 (B3@1280) + E11 (centralized@1280)
+echo 删除旧 baseline_results.json (代码已改, 旧结果不可比)
+echo ============================================================
+if exist "runs\mouse_liver_baseline\baseline_results.json" (
+    del "runs\mouse_liver_baseline\baseline_results.json"
+    echo 已删除
+) else (
+    echo 不存在, 跳过
+)
+
+echo ============================================================
+echo Step 1/2: Baseline (B1/B2/B3/centralized @640) + E9 + E11
 echo ============================================================
 python scripts\mouse_liver\train_baseline.py
 
