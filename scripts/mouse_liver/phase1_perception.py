@@ -279,9 +279,9 @@ def evaluate_mask_f1(detections, gt_mask, iou_thr=0.5):
         for gi, gc in enumerate(gt_contours):
             if gi in matched_gt:
                 continue
-            gt_m = np.zeros_like(gt_bool)
-            cv2.drawContours(gt_m, [gc], -1, True, thickness=cv2.FILLED)
-            iou = mask_iou(pred_mask, gt_m)
+            gt_m = np.zeros_like(gt_bool, dtype=np.uint8)
+            cv2.drawContours(gt_m, [gc], -1, 1, thickness=cv2.FILLED)
+            iou = mask_iou(pred_mask, gt_m.astype(bool))
             if iou > best_iou:
                 best_iou = iou
                 best_gi = gi

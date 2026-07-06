@@ -23,7 +23,7 @@ def load_rfdetr(weights_path, model_variant='small'):
     ModelClass = model_map.get(model_variant, RFDETRSmall)
     return ModelClass(pretrain_weights=weights_path, num_classes=1)
 
-def load_sam2(checkpoint='sam2_hiera_small.pt', device='cuda'):
+def load_sam2(checkpoint='sam2_checkpoints/sam2_hiera_small.pt', device='cuda'):
     from sam2.build_sam import build_sam2
     from sam2.sam2_image_predictor import SAM2ImagePredictor
     # config name is sam2_hiera_s or sam2_hiera_small depending on version
@@ -64,7 +64,8 @@ def compute_morphology(mask, bbox):
         ellipse = cv2.fitEllipse(c)
         major, minor = ellipse[1]
         aspect_ratio = major / minor if minor > 0 else 0
-        eccentricity = np.sqrt(1 - (minor / major) ** 2) if major > 0 else 0
+        ratio = (minor / major) ** 2 if major > 0 else 0
+        eccentricity = np.sqrt(max(0, 1 - ratio)) if major > 0 else 0
     else:
         aspect_ratio = 1.0
         eccentricity = 0.0
@@ -120,7 +121,7 @@ def main():
     parser.add_argument('--dst', default='results/sam2_segment')
     parser.add_argument('--model-variant', default='small', choices=['nano', 'small', 'base'])
     parser.add_argument('--threshold', type=float, default=0.25)
-    parser.add_argument('--sam2-checkpoint', default='sam2_hiera_small.pt')
+    parser.add_argument('--sam2-checkpoint', default='sam2_checkpoints/sam2_hiera_small.pt')
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--resize-to', type=int, nargs=2, default=None, metavar=('W', 'H'),
                         help='Resize images to WxH before processing (e.g. --resize-to 2592 1944)')
