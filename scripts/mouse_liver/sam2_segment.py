@@ -63,6 +63,8 @@ def compute_morphology(mask, bbox):
     if len(c) >= 5:
         ellipse = cv2.fitEllipse(c)
         major, minor = ellipse[1]
+        # fitEllipse 返回 (width, height), 不保证 width > height
+        major, minor = max(major, minor), min(major, minor)
         aspect_ratio = major / minor if minor > 0 else 0
         ratio = (minor / major) ** 2 if major > 0 else 0
         eccentricity = np.sqrt(max(0, 1 - ratio)) if major > 0 else 0
