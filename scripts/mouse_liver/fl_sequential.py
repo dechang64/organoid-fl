@@ -298,7 +298,9 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
             local_sd = {k: v.detach().cpu().clone() for k, v in model.model.state_dict().items()}
 
             # 评估本地模型 (val 会 fuse, 但 sd 已取)
-            val_res = model.val(data=val_yaml, device=DEVICE, project=strat_dir,
+            # 强制 imgsz=640 保持所有实验可比
+            val_res = model.val(data=val_yaml, device=DEVICE, imgsz=IMGSZ,
+                                project=strat_dir,
                                 name=f'r{round_idx}_{node_name}_val', exist_ok=True)
             mAP50 = float(val_res.box.map50)
             mAP5095 = float(val_res.box.map)
@@ -401,9 +403,9 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
 
         local_metrics_history.append(round_local_metrics)
 
-        # 评估全局模型
+        # 评估全局模型 (强制 imgsz=640 保持可比性)
         g_model = load_model(global_ckpt)
-        val_res = g_model.val(data=val_yaml, device=DEVICE, project=strat_dir,
+        val_res = g_model.val(data=val_yaml, device=DEVICE, imgsz=IMGSZ, project=strat_dir,
                               name=f'r{round_idx}_global_val', exist_ok=True)
         g_mAP50 = float(val_res.box.map50)
         g_mAP5095 = float(val_res.box.map)

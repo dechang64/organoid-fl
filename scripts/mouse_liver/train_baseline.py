@@ -126,8 +126,8 @@ def train_one(name, node_yaml, n_train, imgsz=None, batch=None):
     dt = time.time() - t0
     log(f"  训练时间: {dt/60:.1f} min")
 
-    # 用 FL 同一 val_set 评估
-    val_res = model.val(data=val_yaml, device=DEVICE,
+    # 用 FL 同一 val_set 评估 (强制 imgsz=640 保持可比性)
+    val_res = model.val(data=val_yaml, device=DEVICE, imgsz=IMGSZ,
                         project=os.path.join(OUTPUT_BASE, name),
                         name='val_fl_set', exist_ok=True)
     mAP50 = float(val_res.box.map50)
@@ -177,7 +177,8 @@ def main():
     log(f"\n{'#'*60}")
     log(f"# E9: B3 独立 imgsz=1280 (验证 B3 高分辨率下能否学到)")
     log(f"{'#'*60}")
-    b3_yaml = write_node_yaml(BATCH_DIRS['b3'], 'b3')
+    # B3 的 yaml 在上面循环里已经写过了, 直接复用
+    b3_yaml = write_node_yaml(BATCH_DIRS['b3'], 'b3')  # 重新写确保 fl_split 干净
     n_b3 = len([f for f in os.listdir(os.path.join(BATCH_DIRS['b3'], 'images')) if f.endswith(('.jpg', '.png'))]) - len(VAL_INDICES['b3'])
     results['b3_1280'] = train_one('b3_1280', b3_yaml, n_b3, imgsz=1280, batch=2)
 
