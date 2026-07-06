@@ -9,13 +9,19 @@ import argparse
 import os
 import json
 import cv2
+
+
+def cv2_imread_unicode(path):
+    """cv2.imread 在 Windows 上不支持中文路径, 用 imdecode + fromfile 替代"""
+    return cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
 import numpy as np
 from pathlib import Path
 from PIL import Image
 
 def detect_organoids(img_path, min_area=5000, max_area=500000):
     """传统CV检测：阈值分割 + 形态学 + 连通域"""
-    img = cv2.imread(str(img_path))
+    img = cv2_imread_unicode(str(img_path))
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     h, w = gray.shape
     

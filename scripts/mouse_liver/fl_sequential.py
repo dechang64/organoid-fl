@@ -493,12 +493,18 @@ def plot_experiment(history, tag, output_dir):
 
 def visualize_detections(ckpt_path, img_dir, lbl_dir, dst_dir, device='cuda', imgsz=640):
     import cv2
+
+
+def cv2_imread_unicode(path):
+    """cv2.imread 在 Windows 上不支持中文路径, 用 imdecode + fromfile 替代"""
+    return cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
     from ultralytics import YOLO
     model = YOLO(ckpt_path)
     images = sorted([f for f in os.listdir(img_dir) if f.endswith(('.jpg', '.png'))])
     for img_file in images:
         img_path = os.path.join(img_dir, img_file)
-        orig = cv2.imread(img_path)
+        orig = cv2_imread_unicode(img_path)
         h, w = orig.shape[:2]
         results = model.predict(img_path, device=device, imgsz=imgsz, verbose=False, conf=0.25)
         vis = orig.copy()

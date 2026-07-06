@@ -41,6 +41,11 @@ import numpy as np
 from PIL import Image
 import cv2
 
+
+def cv2_imread_unicode(path):
+    """cv2.imread 在 Windows 上不支持中文路径, 用 imdecode + fromfile 替代"""
+    return cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sam2_segment import (
     load_rfdetr, load_sam2, compute_morphology,
@@ -189,7 +194,7 @@ def get_gt_mask_from_annot(img_file, batch_dir):
         log(f"    ⚠️ 标注图 {annot_file} 未找到 ({annot_path})")
         return None, None
 
-    annot_img = cv2.imread(annot_path)
+    annot_img = cv2_imread_unicode(annot_path)
     if annot_img is None:
         return None, None
     annot_img = cv2.cvtColor(annot_img, cv2.COLOR_BGR2RGB)

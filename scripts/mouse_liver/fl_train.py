@@ -561,6 +561,12 @@ def visualize_contours_yolo_sam2(yolo_ckpt, img_dir, lbl_dir, dst_dir, device='c
     sam2_predictor: 预加载的 SAM2ImagePredictor, None 则用 fallback
     """
     import cv2
+
+
+def cv2_imread_unicode(path):
+    """cv2.imread 在 Windows 上不支持中文路径, 用 imdecode + fromfile 替代"""
+    return cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
     import numpy as np
     from ultralytics import YOLO
     
@@ -571,7 +577,7 @@ def visualize_contours_yolo_sam2(yolo_ckpt, img_dir, lbl_dir, dst_dir, device='c
     
     for img_file in images:
         img_path = os.path.join(img_dir, img_file)
-        orig = cv2.imread(img_path)
+        orig = cv2_imread_unicode(img_path)
         h, w = orig.shape[:2]
         
         # YOLO 检测
@@ -750,7 +756,7 @@ def visualize_detections(ckpt_path, img_dir, lbl_dir, dst_dir, device='cuda', im
     
     for img_file in images:
         img_path = os.path.join(img_dir, img_file)
-        orig = cv2.imread(img_path)
+        orig = cv2_imread_unicode(img_path)
         h, w = orig.shape[:2]
         
         # 推理

@@ -10,6 +10,12 @@ Usage:
 import argparse
 import os
 import cv2
+
+
+def cv2_imread_unicode(path):
+    """cv2.imread 在 Windows 上不支持中文路径, 用 imdecode + fromfile 替代"""
+    return cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
 import numpy as np
 from PIL import Image
 from pathlib import Path
@@ -89,7 +95,7 @@ def main():
     annot_images = sorted(annot_dir.glob('*.jpg')) if annot_dir else []
     
     for i, img_path in enumerate(images):
-        orig = cv2.imread(str(img_path))
+        orig = cv2_imread_unicode(str(img_path))
         dets = detect_and_draw(model, img_path, args.threshold)
         
         # 1. Detection only (green)
@@ -116,7 +122,7 @@ def main():
     
     # Also create overlay: detection + GT on same image
     for i, img_path in enumerate(images):
-        orig = cv2.imread(str(img_path))
+        orig = cv2_imread_unicode(str(img_path))
         dets = detect_and_draw(model, img_path, args.threshold)
         
         # Draw GT first (red, thick)
