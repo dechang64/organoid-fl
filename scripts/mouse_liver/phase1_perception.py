@@ -150,7 +150,7 @@ def run_pipeline(det_model, sam2_predictor, img_path, det_type='yolo'):
 def get_gt_bboxes(node_name, img_file):
     """从 annotations.json 获取 bbox GT"""
     ann_path = os.path.join(BATCH_DIRS[node_name], 'annotations.json')
-    with open(ann_path) as f:
+    with open(ann_path, encoding='utf-8') as f:
         ann = json.load(f)
     img_name = img_file
     for item in ann:
@@ -171,7 +171,7 @@ def get_gt_mask_from_annot(img_file, batch_dir):
     if not os.path.exists(ann_path):
         return None, None
 
-    with open(ann_path) as f:
+    with open(ann_path, encoding='utf-8') as f:
         ann = json.load(f)
 
     # 找到对应的 source_annotated
@@ -507,8 +507,8 @@ def main():
             pass  # mask 不在 per_image 里 (已清除)
 
     result_path = os.path.join(OUTPUT_BASE, 'phase1_results.json')
-    with open(result_path, 'w') as f:
-        json.dump(results, f, indent=2, default=str)
+    with open(result_path, 'w', encoding='utf-8') as f:
+        json.dump(results, f, indent=2, default=str, ensure_ascii=False)
 
     log(f"\n{'='*60}")
     log(f"Phase 1 汇总")
