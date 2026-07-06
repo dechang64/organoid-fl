@@ -52,25 +52,21 @@ from fl_sequential import BATCH_DIRS, VAL_INDICES, log
 # 配置 (从 workspace 确认, 不猜)
 # ============================================================
 
-# RF-DETR checkpoint: TOOLS.md 确认 "output\checkpoint_best_regular.pth"
-# (R3 small+640 覆盖了 R1 small+560)
-RFDETR_CKPT = r"output\checkpoint_best_regular.pth"
-RFDETR_VARIANT = 'small'
+# 检测器: 用 YOLOv12n (RF-DETR 跨域失败, P1-B F1=3%)
+# YOLOv12n checkpoint: baseline 训练后 best.pt (冬生本地跑完 baseline 后有)
+# Phase 1 先用 COCO 预训练 yolo12n.pt 做 zero-shot 检测
+# 如果 zero-shot 不行, 用 baseline 训练的 best.pt
+DET_CKPT = r"yolo12n.pt"  # 先 zero-shot, 后续可换 best.pt
+DET_TYPE = 'yolo'  # 'yolo' or 'rfdetr'
 
 # SAM2 checkpoint: TOOLS.md 确认 "sam2_checkpoints\sam2_hiera_small.pt"
-SAM2_CKPT = r"sam2_checkpoints\sam2_hiera_small.pt"
+SAM2_CKPT = r"sam2_hiera_small.pt"
 
-# B3 红色折线标注图: 从 B3 annotations.json source_annotated 字段获取文件名
-# 标注图目录: 冬生本地可能和 B3 原始图同目录, 或在单独目录
-# 默认尝试 D:\datasets\mouse_liver_data\batch3\ (B3 原始图目录)
-B3_ANNOT_DIR = r"D:\datasets\mouse_liver_data\batch3"
-
-# B3 source_annotated 映射 (从 annotations.json 确认)
-def load_b3_annot_mapping():
-    """返回 {image_name: annot_file_name}"""
-    with open(os.path.join(BATCH_DIRS['b3'], 'annotations.json')) as f:
-        ann = json.load(f)
-    return {item['image']: item['source_annotated'] for item in ann}
+# 标注图目录: 新数据结构 batch{N}/annotated/
+# 从 BATCH_DIRS 自动推导
+def get_annot_dir(batch_dir):
+    """获取标注图目录"""
+    return os.path.join(batch_dir, 'annotated')
 
 # 输出
 OUTPUT_BASE = r"runs\mouse_liver_phase1"
@@ -84,10 +80,22 @@ SAM2_DEVICE = 'cuda'
 # 核心函数
 # ============================================================
 
-def run_pipeline(det_model, sam2_predictor, img_path):
-    """RF-DETR 检测 → SAM2 分割 → 形态学特征
+def load_detector(ckpt_path, det_type='yolo'):
+    """加载检测器 (YOLOv12n 或 RF-DETR)"""
+    if det_type == 'yolo':
+        from ultralytics import YOLO
+        return YOLO(ckpt_path)
+    elif det_type == 'rfdetr':
+        from sam2_segment import load_rfdetr
+        return load_rfdetr(ckpt_path, 'small')
+    else:
+        raise ValueError(f"Unknown det_type: {det_type}")
 
-    不 resize — RF-DETR 内部处理分辨率, SAM2 需要原图尺寸的 mask
+
+def run_pipeline(det_model, sam2_predictor, img_path, det_type='yolo'):
+    """检测 → SAM2 分割 → 形态学特征
+
+    不 resize — 检测器内部处理分辨率, SAM2 需要原图尺寸的 mask
     和 GT mask (原图尺寸) 保持一致
 
     Returns:
@@ -97,37 +105,46 @@ def run_pipeline(det_model, sam2_predictor, img_path):
     img_np = np.array(img_pil)
     h, w = img_np.shape[:2]
 
-    # 1. RF-DETR 检测
-    dets = det_model.predict(img_pil, threshold=DET_THRESHOLD)
+    # 1. 检测
+    if det_type == 'yolo':
+        results = det_model(img_pil, verbose=False, conf=DET_THRESHOLD)
+        boxes = results[0].boxes
+        if len(boxes) == 0:
+            return []
+        xyxy = boxes.xyxy.cpu().numpy()
+        confs = boxes.conf.cpu().numpy()
+    else:  # rfdetr
+        dets = det_model.predict(img_pil, threshold=DET_THRESHOLD)
+        if len(dets.xyxy) == 0:
+            return []
+        xyxy = dets.xyxy
+        confs = dets.confidence
 
-    if len(dets.xyxy) == 0:
-        return []
-
-    results = []
+    detections = []
     if sam2_predictor:
         sam2_predictor.set_image(img_np)
-        for di in range(len(dets.xyxy)):
-            box = dets.xyxy[di].astype(np.float32)
+        for di in range(len(xyxy)):
+            box = xyxy[di].astype(np.float32)
             masks, scores, _ = sam2_predictor.predict(box=box, multimask_output=False)
             mask = masks[0]
             morph = compute_morphology(mask, box.tolist())
-            morph['confidence'] = float(dets.confidence[di])
+            morph['confidence'] = float(confs[di])
             morph['mask'] = mask
             morph['bbox'] = box.tolist()
-            results.append(morph)
+            detections.append(morph)
     else:
         # Fallback: bbox as mask (SAM2 加载失败时)
-        for di in range(len(dets.xyxy)):
-            x1, y1, x2, y2 = dets.xyxy[di].astype(int)
+        for di in range(len(xyxy)):
+            x1, y1, x2, y2 = xyxy[di].astype(int)
             mask = np.zeros((h, w), dtype=bool)
             mask[y1:y2, x1:x2] = True
-            morph = compute_morphology(mask, dets.xyxy[di].tolist())
-            morph['confidence'] = float(dets.confidence[di])
+            morph = compute_morphology(mask, xyxy[di].tolist())
+            morph['confidence'] = float(confs[di])
             morph['mask'] = mask
-            morph['bbox'] = dets.xyxy[di].tolist()
-            results.append(morph)
+            morph['bbox'] = xyxy[di].tolist()
+            detections.append(morph)
 
-    return results
+    return detections
 
 
 def get_gt_bboxes(node_name, img_file):
@@ -142,33 +159,34 @@ def get_gt_bboxes(node_name, img_file):
     return []
 
 
-def get_gt_mask_from_b3_annot(img_file, b3_annot_mapping):
-    """从 B3 红色折线标注图获取真实轮廓 mask
+def get_gt_mask_from_annot(img_file, batch_dir):
+    """从标注图获取真实轮廓 mask (适用于所有 batch)
 
-    多路径搜索: B3_ANNOT_DIR → B3 原始图目录 → B3 images 子目录
+    新数据结构: batch{N}/annotated/ 目录下有标注图
+    从 annotations.json 的 source_annotated 字段获取文件名
     Returns: (gt_mask, gt_contours) or (None, None)
     """
-    if img_file not in b3_annot_mapping:
+    annot_dir = get_annot_dir(batch_dir)
+    ann_path = os.path.join(batch_dir, 'annotations.json')
+    if not os.path.exists(ann_path):
         return None, None
 
-    annot_file = b3_annot_mapping[img_file]
+    with open(ann_path) as f:
+        ann = json.load(f)
 
-    # 多路径搜索 (不猜, 尝试所有可能)
-    candidate_dirs = [
-        B3_ANNOT_DIR,
-        BATCH_DIRS['b3'],                          # D:\datasets\mouse_liver_data\batch3
-        os.path.join(BATCH_DIRS['b3'], 'images'),   # batch3\images
-        r"D:\datasets\mouse_liver_annotated_20260702",  # 云 VM 对应目录
-    ]
-    annot_path = None
-    for d in candidate_dirs:
-        p = os.path.join(d, annot_file)
-        if os.path.exists(p):
-            annot_path = p
+    # 找到对应的 source_annotated
+    annot_file = None
+    for item in ann:
+        if item['image'] == img_file:
+            annot_file = item.get('source_annotated')
             break
 
-    if annot_path is None:
-        log(f"    ⚠️ 标注图 {annot_file} 未找到 (尝试了 {len(candidate_dirs)} 个目录)")
+    if not annot_file:
+        return None, None
+
+    annot_path = os.path.join(annot_dir, annot_file)
+    if not os.path.exists(annot_path):
+        log(f"    ⚠️ 标注图 {annot_file} 未找到 ({annot_path})")
         return None, None
 
     annot_img = cv2.imread(annot_path)
@@ -307,16 +325,15 @@ def compute_kl_divergence(p_vals, q_vals, n_bins=20):
 # 实验函数
 # ============================================================
 
-def run_experiment(tag, det_model, sam2_predictor, test_node, b3_annot_mapping=None,
-                   train_nodes=None, eval_mask=False, test_images=None):
+def run_experiment(tag, det_model, sam2_predictor, test_node, det_type='yolo',
+                   eval_mask=False, test_images=None):
     """跑一个实验
 
-    train_nodes: 不影响推理 (RF-DETR 已训练好), 只用于日志
-    eval_mask: 是否评估 mask F1 (仅 B3)
-    test_images: 指定测试图列表 (如 ['image_17.jpg', ...]), None 则用全部
+    eval_mask: 是否评估 mask F1 (所有有标注图的 batch 都可以)
+    test_images: 指定测试图列表, None 则用全部
     """
     log(f"\n{'='*60}")
-    log(f"实验 {tag}: test={test_node}, mask_eval={eval_mask}")
+    log(f"实验 {tag}: test={test_node}, mask_eval={eval_mask}, det={det_type}")
     log(f"{'='*60}")
 
     test_img_dir = os.path.join(BATCH_DIRS[test_node], 'images')
@@ -336,7 +353,7 @@ def run_experiment(tag, det_model, sam2_predictor, test_node, b3_annot_mapping=N
         img_w, img_h = img_pil.size
 
         # 跑 pipeline
-        dets = run_pipeline(det_model, sam2_predictor, img_path)
+        dets = run_pipeline(det_model, sam2_predictor, img_path, det_type)
 
         # bbox F1
         gt_bboxes = get_gt_bboxes(test_node, img_file)
@@ -345,10 +362,10 @@ def run_experiment(tag, det_model, sam2_predictor, test_node, b3_annot_mapping=N
         total_bbox['fp'] += bbox_res['fp']
         total_bbox['fn'] += bbox_res['fn']
 
-        # mask F1 (仅 B3)
+        # mask F1 (所有有标注图的 batch)
         mask_res = None
-        if eval_mask and b3_annot_mapping:
-            gt_mask, _ = get_gt_mask_from_b3_annot(img_file, b3_annot_mapping)
+        if eval_mask:
+            gt_mask, _ = get_gt_mask_from_annot(img_file, BATCH_DIRS[test_node])
             if gt_mask is not None:
                 mask_res = evaluate_mask_f1(dets, gt_mask)
                 total_mask['tp'] += mask_res['tp']
@@ -407,20 +424,19 @@ def run_experiment(tag, det_model, sam2_predictor, test_node, b3_annot_mapping=N
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp', type=str, default='all', choices=['all', 'P1-A', 'P1-B', 'P1-C', 'P1-D', 'P1-E'])
-    parser.add_argument('--rfdetr-weights', type=str, default=RFDETR_CKPT)
+    parser.add_argument('--det-weights', type=str, default=DET_CKPT, help='检测器 checkpoint')
+    parser.add_argument('--det-type', type=str, default=DET_TYPE, choices=['yolo', 'rfdetr'])
     parser.add_argument('--sam2-checkpoint', type=str, default=SAM2_CKPT)
     parser.add_argument('--no-sam2', action='store_true', help='不用 SAM2, 只用 bbox')
     args = parser.parse_args()
 
     os.makedirs(OUTPUT_BASE, exist_ok=True)
 
-    # B3 标注映射
-    b3_annot_mapping = load_b3_annot_mapping()
+    # 加载检测器
+    log(f"加载检测器 ({args.det_type}): {args.det_weights}")
+    det_model = load_detector(args.det_weights, args.det_type)
 
-    # 加载模型
-    log("加载 RF-DETR...")
-    det_model = load_rfdetr(args.rfdetr_weights, RFDETR_VARIANT)
-
+    # 加载 SAM2
     sam2_predictor = None
     if not args.no_sam2:
         log("加载 SAM2...")
@@ -433,43 +449,33 @@ def main():
 
     results = {}
 
-    # P1-A: B1 → B1
+    # P1-A: B1 → B1 (mask F1: B1 有标注图)
     if args.exp in ['all', 'P1-A']:
-        results['P1-A'] = run_experiment('P1-A', det_model, sam2_predictor, 'b1')
+        results['P1-A'] = run_experiment('P1-A', det_model, sam2_predictor, 'b1',
+                                          det_type=args.det_type, eval_mask=True)
 
-    # P1-B: B1 → B2
+    # P1-B: B1 → B2 (B2 有标注图, 可以评估 mask F1)
     if args.exp in ['all', 'P1-B']:
-        results['P1-B'] = run_experiment('P1-B', det_model, sam2_predictor, 'b2')
+        results['P1-B'] = run_experiment('P1-B', det_model, sam2_predictor, 'b2',
+                                          det_type=args.det_type, eval_mask=True)
 
-    # P1-C: B1 → B3 (关键! bbox F1 + mask F1)
+    # P1-C: B1 → B3 (跨分辨率, B3 有标注图)
     if args.exp in ['all', 'P1-C']:
         results['P1-C'] = run_experiment('P1-C', det_model, sam2_predictor, 'b3',
-                                          b3_annot_mapping, eval_mask=True)
-        if results['P1-C'].get('mask', {}).get('tp', -1) == 0 and \
-           results['P1-C'].get('mask', {}).get('fp', -1) == 0 and \
-           results['P1-C'].get('mask', {}).get('fn', -1) == 0:
-            log("\n  ⚠️ B3 标注图未找到, mask 评估被跳过")
-            log("  标注图在云 VM: /home/z/my-project/datasets/mouse_liver_annotated_20260702/")
-            log("  冬生本地需下载这 20 张标注图到任意候选目录")
+                                          det_type=args.det_type, eval_mask=True)
 
-    # P1-D: B1+B2 → B3 (多源训练, 但 RF-DETR 只用 B1 训练的, 这里复用同一模型)
-    # P1-D 需要 B1+B2 训练的 RF-DETR, 暂时用同一模型
+    # P1-D: B1+B2 → B3 (需要多源训练的检测器, 当前复用同一模型)
     if args.exp in ['all', 'P1-D']:
-        log("\n  ⚠️ P1-D 需要 B1+B2 训练的 RF-DETR, 当前复用 B1 模型")
-        log("  如果要严格 P1-D, 需要先训练 B1+B2 RF-DETR")
+        log("\n  ⚠️ P1-D 需要多源训练的检测器, 当前复用同一模型")
         results['P1-D'] = run_experiment('P1-D', det_model, sam2_predictor, 'b3',
-                                          b3_annot_mapping, eval_mask=True)
+                                          det_type=args.det_type, eval_mask=True)
 
-    # P1-E: B1+B2+B3 → val 9张 (集中式上界)
-    # 需要集中式训练的 RF-DETR, 暂时用 B1 模型
-    # val_set 包含 B1×3+B2×3+B3×3, 其中 B3 的 3 张可以做 mask 评估
+    # P1-E: B1+B2+B3 → val (集中式上界, 当前复用同一模型)
     if args.exp in ['all', 'P1-E']:
-        log("\n  ⚠️ P1-E 需要 B1+B2+B3 训练的 RF-DETR, 当前复用 B1 模型")
-        log("  测试集用 B3 的 3 张 val 图 (有红色折线标注)")
-        # 用 B3 的 val 图 (idx 17,18,19)
+        log("\n  ⚠️ P1-E 需要集中式训练的检测器, 当前复用同一模型")
         b3_val_imgs = ['image_17.jpg', 'image_18.jpg', 'image_19.jpg']
         results['P1-E'] = run_experiment('P1-E', det_model, sam2_predictor, 'b3',
-                                          b3_annot_mapping, eval_mask=True,
+                                          det_type=args.det_type, eval_mask=True,
                                           test_images=b3_val_imgs)
 
     # 形态学特征分布对比

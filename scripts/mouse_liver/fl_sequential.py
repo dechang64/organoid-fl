@@ -31,7 +31,7 @@ Usage (冬生本地):
 import os, sys, json, time, copy, shutil, argparse
 import numpy as np
 
-DATA_BASE = r"D:\datasets\mouse_liver_data"
+DATA_BASE = r"D:\datasets\mouse_liver_correct"
 BATCH_DIRS = {
     'b1': os.path.join(DATA_BASE, 'batch1'),
     'b2': os.path.join(DATA_BASE, 'batch2'),
