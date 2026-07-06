@@ -37,7 +37,7 @@ BATCH_DIRS = {
     'b2': os.path.join(DATA_BASE, 'batch2'),
     'b3': os.path.join(DATA_BASE, 'batch3'),
 }
-OUTPUT_BASE = r"runs\mouse_liver_fl_seq"
+OUTPUT_BASE = os.environ.get('MOUSE_LIVER_RUNS', r"runs") + r"\mouse_liver_fl_seq"
 NUM_ROUNDS = 10
 WORKERS = 0
 LOCAL_EPOCHS = 10

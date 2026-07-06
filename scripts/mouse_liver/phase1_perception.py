@@ -69,7 +69,7 @@ def get_annot_dir(batch_dir):
     return os.path.join(batch_dir, 'annotated')
 
 # 输出
-OUTPUT_BASE = r"runs\mouse_liver_phase1"
+OUTPUT_BASE = os.environ.get('MOUSE_LIVER_RUNS', r"runs") + r"\mouse_liver_phase1"
 
 # 推理参数
 DET_THRESHOLD = 0.5  # M14 用 0.5 (不是 0.25), 0.25 FP 太多

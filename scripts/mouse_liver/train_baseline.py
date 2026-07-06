@@ -30,8 +30,8 @@ from fl_sequential import (
     log, safe_path, release_model, write_node_yaml, prepare_val_set,
 )
 
-OUTPUT_BASE = r"runs\mouse_liver_baseline"
-FL_SEQ_DIR = r"runs\mouse_liver_fl_seq"
+OUTPUT_BASE = os.environ.get('MOUSE_LIVER_RUNS', r"runs") + r"\mouse_liver_baseline"
+FL_SEQ_DIR = os.environ.get('MOUSE_LIVER_RUNS', r"runs") + r"\mouse_liver_fl_seq"
 
 EPOCHS = 100
 # close_mosaic: FL 每轮 10ep, close_mosaic=5 → 50% 无 mosaic
