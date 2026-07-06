@@ -54,7 +54,7 @@ nc: 1
 names: ['organoid']
 """
     yaml_path = split_dir / 'data.yaml'
-    with open(yaml_path, 'w') as f:
+    with open(yaml_path, 'w', encoding='utf-8') as f:
         f.write(yaml_content)
     
     print(f"Split: {len(train_imgs)} train + {len(val_imgs)} val")
@@ -116,7 +116,7 @@ def evaluate(model_path, data_yaml, output_dir, model_variant='small'):
         lbl_path = val_lbl_dir / (img_path.stem + '.txt')
         gt_boxes = []
         if lbl_path.exists():
-            with open(lbl_path) as f:
+            with open(lbl_path, encoding='utf-8') as f:
                 for line in f:
                     parts = line.strip().split()
                     if len(parts) == 5:

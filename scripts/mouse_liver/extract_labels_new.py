@@ -55,7 +55,7 @@ def main():
         labels = extract_yolo_labels(annot_path, 0, 0)
         # Use ORIGINAL image name for the label file
         out_name = Path(orig_files[i]).stem + '.txt'
-        with open(os.path.join(args.dst, out_name), 'w') as f:
+        with open(os.path.join(args.dst, out_name), 'w', encoding='utf-8') as f:
             f.write('\n'.join(labels))
         total += len(labels)
         print(f"  [{i}] {orig_files[i]} ↔ {annot_files[i]}: {len(labels)} organoids")

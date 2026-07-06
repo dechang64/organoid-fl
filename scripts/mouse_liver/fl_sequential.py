@@ -107,7 +107,7 @@ def write_node_yaml(data_dir, node_name, val_yaml=None):
         if os.path.exists(os.path.join(lbl_dir, lbl_file)):
             shutil.copy2(os.path.join(lbl_dir, lbl_file), os.path.join(train_lbl_dir, lbl_file))
 
-    with open(node_yaml, 'w') as f:
+    with open(node_yaml, 'w', encoding='utf-8') as f:
         if val_yaml:
             # val 指向统一 val_set 的 images 目录 (绝对路径), 避免 train=val=images
             val_dir = os.path.join(os.path.dirname(val_yaml), 'val_set', 'images')
@@ -161,7 +161,7 @@ def prepare_val_set(output_dir):
         except PermissionError:
             pass
     val_yaml = os.path.join(output_dir, 'val.yaml')
-    with open(val_yaml, 'w') as f:
+    with open(val_yaml, 'w', encoding='utf-8') as f:
         f.write(f'path: {safe_path(os.path.abspath(val_dir))}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     return val_yaml
 
@@ -512,7 +512,7 @@ def visualize_detections(ckpt_path, img_dir, lbl_dir, dst_dir, device='cuda', im
         lbl_file = img_file.replace('.jpg', '.txt').replace('.png', '.txt')
         lbl_path = os.path.join(lbl_dir, lbl_file)
         if os.path.exists(lbl_path):
-            with open(lbl_path) as f:
+            with open(lbl_path, encoding='utf-8') as f:
                 for line in f:
                     parts = line.strip().split()
                     if len(parts) == 5:
@@ -582,7 +582,7 @@ def main():
 
     # 保存结果
     result_path = os.path.join(OUTPUT_BASE, f'{args.tag}_results.json')
-    with open(result_path, 'w') as f:
+    with open(result_path, 'w', encoding='utf-8') as f:
         json.dump({
             'tag': args.tag,
             'config': vars(args),

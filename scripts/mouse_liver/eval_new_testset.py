@@ -353,7 +353,7 @@ def main():
         'morphology_fp': all_fp_morphs,
     }
     out_path = os.path.join(args.dst, 'new_testset_results.json')
-    with open(out_path, 'w') as f:
+    with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(output, f, indent=2, default=str)
     print(f"\n  Report: {out_path}")
     print(f"  Vis:    {args.dst}/vis_*.jpg")

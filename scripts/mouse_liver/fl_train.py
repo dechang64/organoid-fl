@@ -160,7 +160,7 @@ def write_node_yaml(data_dir, node_name):
         if os.path.exists(os.path.join(lbl_dir, lbl_file)):
             shutil.copy2(os.path.join(lbl_dir, lbl_file), os.path.join(train_lbl_dir, lbl_file))
 
-    with open(node_yaml, 'w') as f:
+    with open(node_yaml, 'w', encoding='utf-8') as f:
         f.write(f'path: {safe_path(split_dir)}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     # 清 cache (Ultralytics 缓存在 labels/ 目录下)
     cache_path = os.path.join(split_dir, 'labels', 'labels.cache')
@@ -213,7 +213,7 @@ def prepare_val_set():
             pass
     
     val_yaml = os.path.join(OUTPUT_DIR, 'val.yaml')
-    with open(val_yaml, 'w') as f:
+    with open(val_yaml, 'w', encoding='utf-8') as f:
         f.write(f'path: {safe_path(os.path.abspath(val_dir))}\ntrain: images\nval: images\nnc: 1\nnames: [\'organoid\']\n')
     return val_yaml
 
@@ -487,8 +487,8 @@ def main():
         all_results[strategy] = history
     
     # 保存对比结果
-    with open(os.path.join(OUTPUT_DIR, 'fl_comparison.json'), 'w') as f:
-        json.dump(all_results, f, indent=2)
+    with open(os.path.join(OUTPUT_DIR, 'fl_comparison.json'), 'w', encoding='utf-8') as f:
+        json.dump(all_results, f, indent=2, ensure_ascii=False)
     
     # === 汇总 ===
     log(f"\n{'='*60}")
@@ -615,7 +615,7 @@ def visualize_contours_yolo_sam2(yolo_ckpt, img_dir, lbl_dir, dst_dir, device='c
         lbl_file = img_file.replace('.jpg', '.txt').replace('.png', '.txt')
         lbl_path = os.path.join(lbl_dir, lbl_file)
         if os.path.exists(lbl_path):
-            with open(lbl_path) as f:
+            with open(lbl_path, encoding='utf-8') as f:
                 for line in f:
                     parts = line.strip().split()
                     if len(parts) == 5:
@@ -637,7 +637,7 @@ def visualize_contours_yolo_sam2(yolo_ckpt, img_dir, lbl_dir, dst_dir, device='c
             cv2.drawContours(contour_vis, contours, -1, (0, 255, 0), 3)
         # GT 轮廓 (红色) — 从 bbox 画矩形轮廓
         if os.path.exists(lbl_path):
-            with open(lbl_path) as f:
+            with open(lbl_path, encoding='utf-8') as f:
                 for line in f:
                     parts = line.strip().split()
                     if len(parts) == 5:
@@ -770,7 +770,7 @@ def visualize_detections(ckpt_path, img_dir, lbl_dir, dst_dir, device='cuda', im
         lbl_file = img_file.replace('.jpg', '.txt').replace('.png', '.txt')
         lbl_path = os.path.join(lbl_dir, lbl_file)
         if os.path.exists(lbl_path):
-            with open(lbl_path) as f:
+            with open(lbl_path, encoding='utf-8') as f:
                 for line in f:
                     parts = line.strip().split()
                     if len(parts) == 5:

@@ -123,7 +123,7 @@ def evaluate(detections, gt_path, img_w, img_h):
     # Load GT (YOLO format)
     bboxes = []
     if os.path.exists(gt_path):
-        with open(gt_path) as f:
+        with open(gt_path, encoding='utf-8') as f:
             for line in f:
                 parts = line.strip().split()
                 if len(parts) == 5:
@@ -272,7 +272,7 @@ def main():
     # Save results
     output = {'summary': summary, 'per_image': results}
     out_path = Path(args.dst) / 'zeroshot_results.json'
-    with open(out_path, 'w') as f:
+    with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(output, f, indent=2)
     print(f"  Report: {out_path}")
 

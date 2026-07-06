@@ -76,7 +76,7 @@ def check_batch(batch_name):
 
     for lbl_file in lbl_files:
         lbl_path = os.path.join(lbl_dir, lbl_file)
-        with open(lbl_path, 'r') as f:
+        with open(lbl_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
 
         if not lines or all(l.strip() == '' for l in lines):
@@ -145,7 +145,7 @@ def check_batch(batch_name):
     boxes_per_img = []
     for lbl_file in lbl_files:
         lbl_path = os.path.join(lbl_dir, lbl_file)
-        with open(lbl_path, 'r') as f:
+        with open(lbl_path, 'r', encoding='utf-8') as f:
             n = sum(1 for line in f if line.strip())
         boxes_per_img.append(n)
 

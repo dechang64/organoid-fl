@@ -80,7 +80,7 @@ def write_centralized_yaml(val_yaml=None):
             total_train += 1
 
     cent_yaml = os.path.join(cent_dir, 'data.yaml')
-    with open(cent_yaml, 'w') as f:
+    with open(cent_yaml, 'w', encoding='utf-8') as f:
         if val_yaml:
             val_dir = os.path.join(os.path.dirname(val_yaml), 'val_set', 'images')
             f.write(f'path: {safe_path(cent_dir)}\ntrain: images\nval: {safe_path(os.path.abspath(val_dir))}\nnc: 1\nnames: [\'organoid\']\n')
@@ -170,7 +170,7 @@ def main():
     # 如果已有 baseline_results.json, 加载已有结果避免重跑
     existing_path = os.path.join(OUTPUT_BASE, 'baseline_results.json')
     if os.path.exists(existing_path):
-        with open(existing_path) as f:
+        with open(existing_path, encoding='utf-8') as f:
             results = json.load(f)
         log(f"加载已有结果: {existing_path} ({len(results)} 组)")
 
@@ -215,7 +215,7 @@ def main():
 
     # 保存汇总
     result_path = os.path.join(OUTPUT_BASE, 'baseline_results.json')
-    with open(result_path, 'w') as f:
+    with open(result_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2)
 
     log(f"\n{'='*60}")

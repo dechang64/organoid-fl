@@ -86,7 +86,7 @@ def load_gt_mask(label_path, img_h, img_w):
     """从 YOLO 格式标注生成 mask（将 bbox 区域作为 GT mask 的近似）"""
     mask = np.zeros((img_h, img_w), dtype=np.uint8)
     if os.path.exists(label_path):
-        with open(label_path) as f:
+        with open(label_path, encoding='utf-8') as f:
             for line in f:
                 parts = line.strip().split()
                 if len(parts) == 5:
@@ -193,7 +193,7 @@ def main():
         if args.gt:
             lbl_path = Path(args.gt) / (img_path.stem + '.txt')
             if lbl_path.exists():
-                with open(lbl_path) as f:
+                with open(lbl_path, encoding='utf-8') as f:
                     for line in f:
                         parts = line.strip().split()
                         if len(parts) == 5:
@@ -301,7 +301,7 @@ def main():
         'per_image': all_results,
     }
     out_path = Path(args.dst) / 'sam2_results.json'
-    with open(out_path, 'w') as f:
+    with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(output, f, indent=2, default=str)
     print(f"  Report: {out_path}")
     print(f"\n  Visualization:")

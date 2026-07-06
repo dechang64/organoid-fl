@@ -39,7 +39,7 @@ def draw_gt_from_yolo(orig_img, label_path):
     vis = orig_img.copy()
     h, w = vis.shape[:2]
     if os.path.exists(label_path):
-        with open(label_path) as f:
+        with open(label_path, encoding='utf-8') as f:
             for line in f:
                 parts = line.strip().split()
                 if len(parts) == 5:
