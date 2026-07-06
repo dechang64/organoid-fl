@@ -32,7 +32,7 @@ print(f"   → {'FUSED' if has_conv_bias and not has_bn else 'UNFUSED'}")
 # 2. 训练 1 epoch
 print("\n" + "="*50)
 print("2. Training 1 epoch (B1 data)...")
-data_yaml = r"D:\datasets\mouse_liver_data\batch1\data.yaml"
+data_yaml = r"D:\datasets\mouse_liver_correct\batch1\data.yaml"
 if not os.path.exists(data_yaml):
     print(f"   ERROR: {data_yaml} not found!")
     sys.exit(1)

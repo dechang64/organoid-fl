@@ -7,9 +7,9 @@ Usage (冬生本地):
     python scripts\mouse_liver\fl_train.py
 
 数据路径 (本地):
-    D:\datasets\mouse_liver_data\batch1\  (10张 2592x1944, 23 organoids)
-    D:\datasets\mouse_liver_data\batch2\  (10张 2592x1944, 23 organoids)
-    D:\datasets\mouse_liver_data\batch3\  (20张 4000x3000, 40 organoids)
+    D:\datasets\mouse_liver_correct\batch1\  (10张 2592x1944, 23 organoids)
+    D:\datasets\mouse_liver_correct\batch2\  (10张 4000x3000, 41 organoids)
+    D:\datasets\mouse_liver_correct\batch3\  (20张 4000x3000, 42 organoids)
 
 输出:
     runs\mouse_liver_fl\  — 每轮 global model + 评估结果 + 对比图
@@ -37,7 +37,7 @@ import numpy as np
 # 顶层 import torch 会导致 DLL 重复加载, 页面文件耗尽 (WinError 1455)
 
 # ============ 配置 ============
-DATA_BASE = r"D:\datasets\mouse_liver_data"
+DATA_BASE = r"D:\datasets\mouse_liver_correct"
 BATCH_DIRS = {
     'b1': os.path.join(DATA_BASE, 'batch1'),
     'b2': os.path.join(DATA_BASE, 'batch2'),
