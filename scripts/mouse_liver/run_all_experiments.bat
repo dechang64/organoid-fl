@@ -67,10 +67,10 @@ python scripts\mouse_liver\phase1_perception.py
 
 echo.
 echo ============================================================
-echo 全部完成! 结果文件:
-echo   Baseline:  runs\mouse_liver_baseline\baseline_results.json
-echo   E4-E8:     runs\mouse_liver_fl_seq\E*_results.json
-echo   E10:       runs\mouse_liver_fl_seq\E10_soft_b3_1280_results.json
-echo   Phase 1:   runs\mouse_liver_phase1\phase1_results.json
+echo 全部完成! 结果文件 (输出目录: %MOUSE_LIVER_RUNS%):
+echo   Baseline:  %MOUSE_LIVER_RUNS%\mouse_liver_baseline\baseline_results.json
+echo   E4-E8:     %MOUSE_LIVER_RUNS%\mouse_liver_fl_seq\E*_results.json
+echo   E10:       %MOUSE_LIVER_RUNS%\mouse_liver_fl_seq\E10_soft_b3_1280_results.json
+echo   Phase 1:   %MOUSE_LIVER_RUNS%\mouse_liver_phase1\phase1_results.json
 echo ============================================================
 pause

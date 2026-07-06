@@ -22,6 +22,7 @@ python scripts\mouse_liver\phase1_perception.py
 
 echo.
 echo ============================================================
-echo 完成! 结果: runs\mouse_liver_phase1\phase1_results.json
+echo 完成! 结果: %MOUSE_LIVER_RUNS%\mouse_liver_phase1\phase1_results.json
+echo        (默认: runs\mouse_liver_phase1\phase1_results.json)
 echo ============================================================
 pause
