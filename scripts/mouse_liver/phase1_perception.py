@@ -76,7 +76,7 @@ def load_b3_annot_mapping():
 OUTPUT_BASE = r"runs\mouse_liver_phase1"
 
 # 推理参数
-DET_THRESHOLD = 0.25
+DET_THRESHOLD = 0.5  # M14 用 0.5 (不是 0.25), 0.25 FP 太多
 SAM2_DEVICE = 'cuda'
 
 
