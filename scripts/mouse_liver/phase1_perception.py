@@ -60,9 +60,10 @@ RFDETR_VARIANT = 'small'
 # SAM2 checkpoint: TOOLS.md 确认 "sam2_checkpoints\sam2_hiera_small.pt"
 SAM2_CKPT = r"sam2_checkpoints\sam2_hiera_small.pt"
 
-# B3 红色折线标注图: datasets\mouse_liver_annotated_20260702\
-# (从 B3 annotations.json source_annotated 字段确认, 20/20 匹配)
-B3_ANNOT_DIR = r"D:\datasets\mouse_liver_annotated_20260702"
+# B3 红色折线标注图: 从 B3 annotations.json source_annotated 字段获取文件名
+# 标注图目录: 冬生本地可能和 B3 原始图同目录, 或在单独目录
+# 默认尝试 D:\datasets\mouse_liver_data\batch3\ (B3 原始图目录)
+B3_ANNOT_DIR = r"D:\datasets\mouse_liver_data\batch3"
 
 # B3 source_annotated 映射 (从 annotations.json 确认)
 def load_b3_annot_mapping():
@@ -83,15 +84,16 @@ SAM2_DEVICE = 'cuda'
 # 核心函数
 # ============================================================
 
-def run_pipeline(det_model, sam2_predictor, img_path, img_size=None):
+def run_pipeline(det_model, sam2_predictor, img_path):
     """RF-DETR 检测 → SAM2 分割 → 形态学特征
+
+    不 resize — RF-DETR 内部处理分辨率, SAM2 需要原图尺寸的 mask
+    和 GT mask (原图尺寸) 保持一致
 
     Returns:
         detections: list of {bbox, mask, confidence, morphology}
     """
     img_pil = Image.open(img_path).convert('RGB')
-    if img_size:
-        img_pil = img_pil.resize(img_size, Image.LANCZOS)
     img_np = np.array(img_pil)
     h, w = img_np.shape[:2]
 
@@ -114,7 +116,7 @@ def run_pipeline(det_model, sam2_predictor, img_path, img_size=None):
             morph['bbox'] = box.tolist()
             results.append(morph)
     else:
-        # Fallback: bbox as mask
+        # Fallback: bbox as mask (SAM2 加载失败时)
         for di in range(len(dets.xyxy)):
             x1, y1, x2, y2 = dets.xyxy[di].astype(int)
             mask = np.zeros((h, w), dtype=bool)
@@ -143,14 +145,30 @@ def get_gt_bboxes(node_name, img_file):
 def get_gt_mask_from_b3_annot(img_file, b3_annot_mapping):
     """从 B3 红色折线标注图获取真实轮廓 mask
 
+    多路径搜索: B3_ANNOT_DIR → B3 原始图目录 → B3 images 子目录
     Returns: (gt_mask, gt_contours) or (None, None)
     """
     if img_file not in b3_annot_mapping:
         return None, None
 
     annot_file = b3_annot_mapping[img_file]
-    annot_path = os.path.join(B3_ANNOT_DIR, annot_file)
-    if not os.path.exists(annot_path):
+
+    # 多路径搜索 (不猜, 尝试所有可能)
+    candidate_dirs = [
+        B3_ANNOT_DIR,
+        BATCH_DIRS['b3'],                          # D:\datasets\mouse_liver_data\batch3
+        os.path.join(BATCH_DIRS['b3'], 'images'),   # batch3\images
+        r"D:\datasets\mouse_liver_annotated_20260702",  # 云 VM 对应目录
+    ]
+    annot_path = None
+    for d in candidate_dirs:
+        p = os.path.join(d, annot_file)
+        if os.path.exists(p):
+            annot_path = p
+            break
+
+    if annot_path is None:
+        log(f"    ⚠️ 标注图 {annot_file} 未找到 (尝试了 {len(candidate_dirs)} 个目录)")
         return None, None
 
     annot_img = cv2.imread(annot_path)
@@ -290,18 +308,22 @@ def compute_kl_divergence(p_vals, q_vals, n_bins=20):
 # ============================================================
 
 def run_experiment(tag, det_model, sam2_predictor, test_node, b3_annot_mapping=None,
-                   train_nodes=None, eval_mask=False):
+                   train_nodes=None, eval_mask=False, test_images=None):
     """跑一个实验
 
     train_nodes: 不影响推理 (RF-DETR 已训练好), 只用于日志
     eval_mask: 是否评估 mask F1 (仅 B3)
+    test_images: 指定测试图列表 (如 ['image_17.jpg', ...]), None 则用全部
     """
     log(f"\n{'='*60}")
     log(f"实验 {tag}: test={test_node}, mask_eval={eval_mask}")
     log(f"{'='*60}")
 
     test_img_dir = os.path.join(BATCH_DIRS[test_node], 'images')
-    test_imgs = sorted([f for f in os.listdir(test_img_dir) if f.endswith('.jpg')])
+    if test_images:
+        test_imgs = test_images
+    else:
+        test_imgs = sorted([f for f in os.listdir(test_img_dir) if f.endswith('.jpg')])
 
     total_bbox = {'tp': 0, 'fp': 0, 'fn': 0}
     total_mask = {'tp': 0, 'fp': 0, 'fn': 0}
@@ -434,10 +456,15 @@ def main():
 
     # P1-E: B1+B2+B3 → val 9张 (集中式上界)
     # 需要集中式训练的 RF-DETR, 暂时用 B1 模型
+    # val_set 包含 B1×3+B2×3+B3×3, 其中 B3 的 3 张可以做 mask 评估
     if args.exp in ['all', 'P1-E']:
         log("\n  ⚠️ P1-E 需要 B1+B2+B3 训练的 RF-DETR, 当前复用 B1 模型")
+        log("  测试集用 B3 的 3 张 val 图 (有红色折线标注)")
+        # 用 B3 的 val 图 (idx 17,18,19)
+        b3_val_imgs = ['image_17.jpg', 'image_18.jpg', 'image_19.jpg']
         results['P1-E'] = run_experiment('P1-E', det_model, sam2_predictor, 'b3',
-                                          b3_annot_mapping, eval_mask=True)
+                                          b3_annot_mapping, eval_mask=True,
+                                          test_images=b3_val_imgs)
 
     # 形态学特征分布对比
     log(f"\n{'='*60}")
