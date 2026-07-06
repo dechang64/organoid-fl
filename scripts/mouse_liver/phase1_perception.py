@@ -52,12 +52,12 @@ from fl_sequential import BATCH_DIRS, VAL_INDICES, log
 # 配置 (从 workspace 确认, 不猜)
 # ============================================================
 
-# 检测器: 用 YOLOv12n (RF-DETR 跨域失败, P1-B F1=3%)
-# YOLOv12n checkpoint: baseline 训练后 best.pt (冬生本地跑完 baseline 后有)
-# Phase 1 先用 COCO 预训练 yolo12n.pt 做 zero-shot 检测
-# 如果 zero-shot 不行, 用 baseline 训练的 best.pt
-DET_CKPT = r"yolo12n.pt"  # 先 zero-shot, 后续可换 best.pt
-DET_TYPE = 'yolo'  # 'yolo' or 'rfdetr'
+# 检测器: 保持和之前 Phase 1 一致 (RF-DETR), 只改数据路径
+# 不换检测器, 只看数据修正后的变化
+RFDETR_CKPT = r"output\checkpoint_best_regular.pth"
+RFDETR_VARIANT = 'small'
+DET_CKPT = RFDETR_CKPT
+DET_TYPE = 'rfdetr'  # 'yolo' or 'rfdetr'
 
 # SAM2 checkpoint: TOOLS.md 确认 "sam2_checkpoints\sam2_hiera_small.pt"
 SAM2_CKPT = r"sam2_hiera_small.pt"
