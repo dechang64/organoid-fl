@@ -20,17 +20,21 @@ cd /d C:\Users\decha\organoid-fl
 call .venv\Scripts\activate
 
 echo ============================================================
-echo 删除旧结果 (数据已修正, 旧结果全部无效)
+echo 清理所有旧结果 (数据已修正, 旧结果全部无效)
 echo ============================================================
-if exist "runs\mouse_liver_baseline\baseline_results.json" del "runs\mouse_liver_baseline\baseline_results.json"
-if exist "runs\mouse_liver_fl_seq\E4_seq_none_results.json" del "runs\mouse_liver_fl_seq\E4_seq_none_results.json"
-if exist "runs\mouse_liver_fl_seq\E5_seq_hard_results.json" del "runs\mouse_liver_fl_seq\E5_seq_hard_results.json"
-if exist "runs\mouse_liver_fl_seq\E6_seq_soft_results.json" del "runs\mouse_liver_fl_seq\E6_seq_soft_results.json"
-if exist "runs\mouse_liver_fl_seq\E7_seq_hard_rev_results.json" del "runs\mouse_liver_fl_seq\E7_seq_hard_rev_results.json"
-if exist "runs\mouse_liver_fl_seq\E8_seq_local_results.json" del "runs\mouse_liver_fl_seq\E8_seq_local_results.json"
-if exist "runs\mouse_liver_fl_seq\E10_soft_b3_1280_results.json" del "runs\mouse_liver_fl_seq\E10_soft_b3_1280_results.json"
-if exist "runs\mouse_liver_phase1\phase1_results.json" del "runs\mouse_liver_phase1\phase1_results.json"
-echo 已清理旧结果
+
+REM 删除整个 runs 目录 (checkpoint + fl_split + val_set + json 全部清除)
+if exist "runs\mouse_liver_baseline" rmdir /s /q "runs\mouse_liver_baseline"
+if exist "runs\mouse_liver_fl_seq" rmdir /s /q "runs\mouse_liver_fl_seq"
+if exist "runs\mouse_liver_fl" rmdir /s /q "runs\mouse_liver_fl"
+if exist "runs\mouse_liver_phase1" rmdir /s /q "runs\mouse_liver_phase1"
+
+REM 删除各 batch 下的 fl_split (旧数据残留)
+if exist "D:\datasets\mouse_liver_correct\batch1\fl_split" rmdir /s /q "D:\datasets\mouse_liver_correct\batch1\fl_split"
+if exist "D:\datasets\mouse_liver_correct\batch2\fl_split" rmdir /s /q "D:\datasets\mouse_liver_correct\batch2\fl_split"
+if exist "D:\datasets\mouse_liver_correct\batch3\fl_split" rmdir /s /q "D:\datasets\mouse_liver_correct\batch3\fl_split"
+
+echo 已清理所有旧结果
 
 echo ============================================================
 echo Step 1/4: Baseline + E9 (B3@1280) + E11 (centralized@1280)
@@ -40,6 +44,7 @@ python scripts\mouse_liver\train_baseline.py
 echo ============================================================
 echo Step 2/4: E4-E8 顺序链式 FL 矩阵
 echo ============================================================
+
 echo.
 echo [E4] gate=none, b1→b2→b3
 python scripts\mouse_liver\fl_sequential.py --gate none --order b1_b2_b3 --tag E4_seq_none
