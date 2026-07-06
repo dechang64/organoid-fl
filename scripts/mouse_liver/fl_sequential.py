@@ -275,11 +275,19 @@ def run_sequential_fl(args, init_ckpt, val_yaml, output_dir):
             log(f"    [{node_pos+1}/{len(node_order)}] 训练 {node_name}...")
             node_yaml = write_node_yaml(data_dir, node_name)
 
+            # B3 可选不同 imgsz/batch (实验 E10: B3@1280)
+            if args.b3_imgsz and node_name == 'b3':
+                node_imgsz = args.b3_imgsz
+                node_batch = max(1, BATCH_SIZE * IMGSZ // args.b3_imgsz)  # 按显存比例降
+            else:
+                node_imgsz = IMGSZ
+                node_batch = BATCH_SIZE
+
             # 加载当前全局模型
             model = load_model(global_ckpt)
 
             t0 = time.time()
-            model.train(data=node_yaml, epochs=LOCAL_EPOCHS, imgsz=IMGSZ, batch=BATCH_SIZE,
+            model.train(data=node_yaml, epochs=LOCAL_EPOCHS, imgsz=node_imgsz, batch=node_batch,
                         device=DEVICE, workers=WORKERS, cache=False,
                         project=strat_dir, name=f'r{round_idx}_{node_name}',
                         exist_ok=True, cos_lr=True, close_mosaic=5, verbose=False)
@@ -514,6 +522,7 @@ def main():
     parser.add_argument('--signal', choices=['mAP50', 'mAP'], default='mAP', help='门控性能信号')
     parser.add_argument('--margin', type=float, default=0.0, help='硬门控性能提升阈值')
     parser.add_argument('--tag', default='E5', help='实验标签')
+    parser.add_argument('--b3-imgsz', type=int, default=0, help='B3 训练 imgsz (0=用全局 IMGSZ)')
     args = parser.parse_args()
 
     log(f"\n{'='*60}")

@@ -89,12 +89,21 @@ def write_centralized_yaml():
     return cent_yaml, total_train
 
 
-def train_one(name, node_yaml, n_train):
-    """训练单个模型并在 FL val_set 上评估"""
+def train_one(name, node_yaml, n_train, imgsz=None, batch=None):
+    """训练单个模型并在 FL val_set 上评估
+
+    imgsz/batch 可选, 默认用全局 IMGSZ/BATCH_SIZE
+    评估始终用 IMGSZ (640) 保持可比性
+    """
     from ultralytics import YOLO
 
+    if imgsz is None:
+        imgsz = IMGSZ
+    if batch is None:
+        batch = BATCH_SIZE
+
     log(f"\n{'='*60}")
-    log(f"训练 {name} ({EPOCHS}ep close_mosaic={CLOSE_MOSAIC}, {n_train} train images)")
+    log(f"训练 {name} ({EPOCHS}ep close_mosaic={CLOSE_MOSAIC}, {n_train} train images, imgsz={imgsz}, batch={batch})")
     log(f"{'='*60}")
 
     model = YOLO('yolo12n.pt')
@@ -102,8 +111,8 @@ def train_one(name, node_yaml, n_train):
     model.train(
         data=node_yaml,
         epochs=EPOCHS,
-        imgsz=IMGSZ,
-        batch=BATCH_SIZE,
+        imgsz=imgsz,
+        batch=batch,
         device=DEVICE,
         workers=WORKERS,
         cache=False,
@@ -164,19 +173,36 @@ def main():
     cent_yaml, total_train = write_centralized_yaml()
     results['centralized'] = train_one('centralized', cent_yaml, total_train)
 
+    # === E9: B3 独立 imgsz=1280 ===
+    log(f"\n{'#'*60}")
+    log(f"# E9: B3 独立 imgsz=1280 (验证 B3 高分辨率下能否学到)")
+    log(f"{'#'*60}")
+    b3_yaml = write_node_yaml(BATCH_DIRS['b3'], 'b3')
+    n_b3 = len([f for f in os.listdir(os.path.join(BATCH_DIRS['b3'], 'images')) if f.endswith(('.jpg', '.png'))]) - len(VAL_INDICES['b3'])
+    results['b3_1280'] = train_one('b3_1280', b3_yaml, n_b3, imgsz=1280, batch=2)
+
+    # === E11: 集中式 imgsz=1280 ===
+    log(f"\n{'#'*60}")
+    log(f"# E11: 集中式 imgsz=1280 (控制变量: 集中式高分辨率上界)")
+    log(f"{'#'*60}")
+    results['centralized_1280'] = train_one('centralized_1280', cent_yaml, total_train, imgsz=1280, batch=2)
+
     # 保存汇总
     result_path = os.path.join(OUTPUT_BASE, 'baseline_results.json')
     with open(result_path, 'w') as f:
         json.dump(results, f, indent=2)
 
     log(f"\n{'='*60}")
-    log(f"Baseline 汇总 (统一 val_set)")
+    log(f"Baseline 汇总 (统一 val_set, 评估 imgsz=640)")
     log(f"{'='*60}")
-    log(f"\n{'节点':<14} {'训练图':<8} {'mAP50':<12} {'mAP50-95':<12} {'P':<10} {'R':<10}")
-    log("-" * 66)
-    for node in ['b1', 'b2', 'b3', 'centralized']:
+    log(f"\n{'节点':<20} {'训练图':<8} {'imgsz':<8} {'mAP50':<12} {'mAP50-95':<12} {'P':<10} {'R':<10}")
+    log("-" * 78)
+    for node in ['b1', 'b2', 'b3', 'b3_1280', 'centralized', 'centralized_1280']:
+        if node not in results:
+            continue
         r = results[node]
-        log(f"  {node:<12} {r['n_train_images']:<8} {r['fl_val_mAP50']:<12} {r['fl_val_mAP5095']:<12} {r['fl_val_P']:<10} {r['fl_val_R']:<10}")
+        img = '1280' if '1280' in node else '640'
+        log(f"  {node:<18} {r['n_train_images']:<8} {img:<8} {r['fl_val_mAP50']:<12} {r['fl_val_mAP5095']:<12} {r['fl_val_P']:<10} {r['fl_val_R']:<10}")
 
     log(f"\n结果: {result_path}")
 
