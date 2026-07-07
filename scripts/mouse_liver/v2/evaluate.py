@@ -83,7 +83,7 @@ def match_detections(det_boxes, det_scores, gt_boxes, iou_thr=0.5):
 
 
 def evaluate_batch(batch_name, weights_path, data_root, output_base,
-                   threshold=0.25, model_variant='small'):
+                   threshold=0.25, model_variant='small', tag=None):
     """评估单个 batch 的 test set"""
     from rfdetr import RFDETRSmall, RFDETRNano, RFDETRBase
     model_map = {'nano': RFDETRNano, 'small': RFDETRSmall, 'base': RFDETRBase}
@@ -164,8 +164,11 @@ def evaluate_batch(batch_name, weights_path, data_root, output_base,
         'per_image': per_image,
     }
 
-    # 判断是 full 还是 fewshot
-    mode = 'full' if 'full' in str(weights_path).replace('/', os.sep) else 'fewshot'
+    # 判断输出目录: 用 tag 或从 weights_path 推断
+    if tag:
+        mode = tag
+    else:
+        mode = 'full' if 'full' in str(weights_path).replace('/', os.sep) else 'fewshot'
 
     # Save results
     output_dir = Path(output_base) / batch_name / mode
@@ -194,13 +197,14 @@ def main():
     parser.add_argument('--output', default='runs/mouse_liver_v2')
     parser.add_argument('--threshold', type=float, default=0.25)
     parser.add_argument('--model-variant', default='small', choices=['nano', 'small', 'base'])
+    parser.add_argument('--tag', default=None, help='Custom tag for output dir (e.g. b1_to_b2_zeroshot, central)')
     args = parser.parse_args()
 
     batches = ['b1', 'b2', 'b3'] if args.batch == 'all' else [args.batch]
 
     for batch in batches:
         evaluate_batch(batch, args.weights, args.data_root, args.output,
-                       args.threshold, args.model_variant)
+                       args.threshold, args.model_variant, args.tag)
 
 
 if __name__ == '__main__':
