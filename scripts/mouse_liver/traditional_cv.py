@@ -57,7 +57,7 @@ def detect_organoids(img_path, min_area=5000, max_area=500000):
         if x < margin or y < margin or x+bw > w-margin or y+bh > h-margin:
             continue
         
-        bboxes.append({'x': x, 'y': y, 'w': bw, 'h': bh, 'area': area, 'confidence': 1.0})
+        bboxes.append({'x': int(x), 'y': int(y), 'w': int(bw), 'h': int(bh), 'area': int(area), 'confidence': 1.0})
     
     return bboxes
 
@@ -74,7 +74,7 @@ def load_gt(gt_path, img_w, img_h):
                     y1 = int((yc - h/2) * img_h)
                     bw = int(w * img_w)
                     bh = int(h * img_h)
-                    bboxes.append({'x': x1, 'y': y1, 'w': bw, 'h': bh})
+                    bboxes.append({'x': int(x1), 'y': int(y1), 'w': int(bw), 'h': int(bh)})
     return bboxes
 
 def iou(box1, box2):
