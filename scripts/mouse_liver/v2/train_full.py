@@ -78,6 +78,7 @@ def train_batch(batch_name, data_root, pretrained_path, output_base, epochs=EPOC
         'epochs': epochs,
         'grad_accum_steps': GRAD_ACCUM,
         'resolution': resolution,
+        'batch_size': 'auto',  # 768 resolution 在 12GB 上需要 auto batch
         'output_dir': str(output_dir.resolve()),
         'early_stopping': True,
         'early_stopping_patience': EARLY_STOPPING_PATIENCE,

@@ -49,15 +49,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fl_sequential import (
     fedavg_aggregate, compute_ewa_weights, get_node_order, copy_sd_to_model, save_model_ckpt,
     safe_path, load_model, release_model,
-    BATCH_SIZE, DEVICE, EWA_WARMUP_ROUNDS
+    BATCH_SIZE, DEVICE, EWA_WARMUP_ROUNDS, WORKERS, OPTIMIZER, LR0,
 )
 
 # v2 参数
 NUM_ROUNDS = 10
 LOCAL_EPOCHS = 10
-WORKERS = 8
-CLOSE_MOSAIC = 5  # 最后5轮关闭mosaic (和baseline 100ep的50%一致)
-IMGSZ = 640  # YOLO统一用640 (FL不用RF-DETR, 用YOLOv12n)
+IMGSZ = 640  # YOLO 统一用 640 (FL 不用 RF-DETR, 用 YOLOv12n)
+CLOSE_MOSAIC = 5  # 最后5轮关闭 mosaic
+# WORKERS, OPTIMIZER, LR0 从 fl_sequential import (保持一致)
 SEED = 42
 
 DATA_BASE = r"D:\datasets\mouse_liver_split"
@@ -148,6 +148,8 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
             device=DEVICE,
             workers=WORKERS,
             cache=False,
+            lr0=LR0,
+            optimizer=OPTIMIZER,
             project=str(output_dir),
             name='init',
             exist_ok=True,
@@ -236,7 +238,7 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
             with open(node_yaml, 'w', encoding='utf-8') as f:
                 f.write(f"path: {safe_path(str(fl_split_dir.resolve()))}\n")
                 f.write(f"train: images\n")
-                f.write(f"val: {safe_path(str(val_yaml.parent.resolve()))}\n")
+                f.write(f"val: {safe_path(str((val_yaml.parent / 'images').resolve()))}\n")
                 f.write(f"nc: 1\nnames: ['organoid']\n")
 
             # 加载模型: 用 init_ckpt (1类) 做 template, 不是 yolo12n.pt (80类)
@@ -248,7 +250,7 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
                 loaded = copy_sd_to_model(model, global_sd)
                 log_msg(f"    Loaded global_sd: {loaded}/{len(global_sd)} keys")
 
-            # 训练
+            # 训练 (参数和 fl_sequential.py 保持一致, 确保可比性)
             results = model.train(
                 data=str(node_yaml),
                 epochs=LOCAL_EPOCHS,
@@ -256,7 +258,11 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
                 batch=BATCH_SIZE,
                 device=DEVICE,
                 workers=WORKERS,
+                cache=False,
+                lr0=LR0,
+                optimizer=OPTIMIZER,
                 seed=SEED,
+                cos_lr=True,
                 close_mosaic=CLOSE_MOSAIC,
                 project=str(fl_split_dir),
                 name='train',
