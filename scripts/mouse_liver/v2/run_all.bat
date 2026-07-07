@@ -3,9 +3,10 @@ REM 鼠肝 organoid v2 全量实验一键运行
 REM 
 REM 前提:
 REM   1. batch1/2/3 数据在 D:\datasets\mouse_liver_correct\ (含 images/ 和 labels/)
-REM   2. RF-DETR MultiOrg pretrained checkpoint 在 output\checkpoint_best_regular.pth
-REM   3. SAM2 checkpoint 在 sam2_checkpoints\sam2_hiera_small.pt
-REM   4. 冬生本地 Win11 + RTX 3060 12GB
+REM   2. SAM2 checkpoint 在 sam2_checkpoints\sam2_hiera_small.pt
+REM   3. 冬生本地 Win11 + RTX 3060 12GB
+REM
+REM RF-DETR 用 COCO 预训练从头训练, 不用 MultiOrg checkpoint
 REM
 REM 输出路径:
 REM   DATA_ROOT (D:\datasets\mouse_liver_split) — 数据分配
@@ -21,7 +22,6 @@ REM     fl\{F1,F2,F3,F4}\ — FL 实验结果
 set SRC_ROOT=D:\datasets\mouse_liver_correct
 set DATA_ROOT=D:\datasets\mouse_liver_split
 set OUTPUT=runs\mouse_liver_v2
-set PRETRAINED=output\checkpoint_best_regular.pth
 set SAM2_CKPT=sam2_checkpoints\sam2_hiera_small.pt
 
 echo ========================================
@@ -30,7 +30,6 @@ echo ========================================
 echo Source: %SRC_ROOT%
 echo Data root: %DATA_ROOT%
 echo Output: %OUTPUT%
-echo Pretrained: %PRETRAINED%
 echo SAM2: %SAM2_CKPT%
 echo.
 
@@ -40,15 +39,15 @@ python scripts\mouse_liver\v2\prepare_data.py --data-root %SRC_ROOT% --output %D
 if errorlevel 1 goto error
 echo.
 
-REM Step 2: 全量训练 (RF-DETR)
-echo [2/7] 全量训练 (RF-DETR)...
-python scripts\mouse_liver\v2\train_full.py --batch all --data-root %DATA_ROOT% --pretrained %PRETRAINED% --output %OUTPUT%
+REM Step 2: 全量训练 (RF-DETR, COCO 预训练)
+echo [2/7] 全量训练 (RF-DETR, COCO pretrained)...
+python scripts\mouse_liver\v2\train_full.py --batch all --data-root %DATA_ROOT% --output %OUTPUT%
 if errorlevel 1 goto error
 echo.
 
-REM Step 3: few-shot 训练 (RF-DETR 3-shot)
-echo [3/7] few-shot 训练 (3-shot)...
-python scripts\mouse_liver\v2\train_fewshot.py --batch all --data-root %DATA_ROOT% --pretrained %PRETRAINED% --output %OUTPUT%
+REM Step 3: few-shot 训练 (RF-DETR 3-shot, COCO 预训练)
+echo [3/7] few-shot 训练 (3-shot, COCO pretrained)...
+python scripts\mouse_liver\v2\train_fewshot.py --batch all --data-root %DATA_ROOT% --output %OUTPUT%
 if errorlevel 1 goto error
 echo.
 

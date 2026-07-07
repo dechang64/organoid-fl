@@ -19,10 +19,10 @@ Usage (冬生本地):
     .\.venv\Scripts\activate
 
     # 跑单个 batch
-    python scripts\mouse_liver\v2\train_full.py --batch b1 --data-root D:\datasets\mouse_liver_split --pretrained output\checkpoint_best_regular.pth
+    python scripts\mouse_liver\v2\train_full.py --batch b1 --data-root D:\datasets\mouse_liver_split 
 
     # 跑全部 batch
-    python scripts\mouse_liver\v2\train_full.py --batch all --data-root D:\datasets\mouse_liver_split --pretrained output\checkpoint_best_regular.pth
+    python scripts\mouse_liver\v2\train_full.py --batch all --data-root D:\datasets\mouse_liver_split 
 
 输出:
     runs\mouse_liver_v2\{batch}\full\  — checkpoint + 训练日志
@@ -50,8 +50,8 @@ EARLY_STOPPING_PATIENCE = 10
 SEED = 42
 
 
-def train_batch(batch_name, data_root, pretrained_path, output_base, epochs=EPOCHS):
-    """训练单个 batch 的全量模型"""
+def train_batch(batch_name, data_root, output_base, epochs=EPOCHS):
+    """训练单个 batch 的全量模型 (COCO 预训练, 从头训练)"""
     from rfdetr import RFDETRSmall
 
     config = BATCH_CONFIG[batch_name]
@@ -72,7 +72,7 @@ def train_batch(batch_name, data_root, pretrained_path, output_base, epochs=EPOC
     print(f"Training {batch_name} (full)")
     print(f"{'='*60}")
     print(f"  Data: {batch_dir}")
-    print(f"  Pretrained: {pretrained_path}")
+    print(f"  Pretrained: COCO (RF-DETR default)")
     print(f"  Resolution: {resolution}")
     print(f"  Batch size: {batch_size}")
     print(f"  Grad accum: {grad_accum} (effective batch={batch_size * grad_accum})")
@@ -84,7 +84,7 @@ def train_batch(batch_name, data_root, pretrained_path, output_base, epochs=EPOC
     # RF-DETR resolution 必须能被 32 整除
     assert resolution % 32 == 0, f"resolution must be divisible by 32, got {resolution}"
 
-    model = RFDETRSmall(pretrain_weights=pretrained_path, num_classes=1)
+    model = RFDETRSmall(num_classes=1)  # COCO 预训练, 不用 MultiOrg checkpoint
 
     train_kwargs = {
         'dataset_dir': str(batch_dir.resolve()),
@@ -118,8 +118,6 @@ def main():
                         help='Which batch to train')
     parser.add_argument('--data-root', default=r'D:\datasets\mouse_liver_split',
                         help='Root directory containing b1/b2/b3 splits')
-    parser.add_argument('--pretrained', required=True,
-                        help='Pretrained RF-DETR checkpoint (MultiOrg)')
     parser.add_argument('--output', default='runs/mouse_liver_v2',
                         help='Output directory')
     parser.add_argument('--epochs', type=int, default=EPOCHS)
@@ -128,7 +126,7 @@ def main():
     batches = ['b1', 'b2', 'b3'] if args.batch == 'all' else [args.batch]
 
     for batch in batches:
-        train_batch(batch, args.data_root, args.pretrained, args.output, args.epochs)
+        train_batch(batch, args.data_root, args.output, args.epochs)
 
     print(f"\n{'='*60}")
     print(f"All batches done!")
