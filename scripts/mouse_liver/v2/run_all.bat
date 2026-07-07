@@ -90,11 +90,15 @@ echo.
 
 REM === 最终评估 ===
 echo [评估] 底线 + 天花板 + few-shot...
+REM full 评估: 所有 batch
 for %%b in (b1 b2 b3) do (
     python scripts\mouse_liver\v2\evaluate.py --batch %%b --weights %OUTPUT%\%%b\full\checkpoint_best_regular.pth --data-root %DATA_ROOT% --output %OUTPUT%
-    python scripts\mouse_liver\v2\evaluate.py --batch %%b --weights %OUTPUT%\%%b\fewshot\checkpoint_best_regular.pth --data-root %DATA_ROOT% --output %OUTPUT%
 )
-python scripts\mouse_liver\v2\evaluate.py --batch all --weights %OUTPUT%\central\checkpoint_best_regular.pth --data-root %DATA_ROOT% --output %OUTPUT% --tag central
+REM fewshot 评估: 只有 b2/b3 (B1→B2/B3 跨域迁移, 没有 b1 fewshot)
+python scripts\mouse_liver\v2\evaluate.py --batch b2 --weights %OUTPUT%\b2\fewshot\checkpoint_best_regular.pth --data-root %DATA_ROOT% --output %OUTPUT%
+python scripts\mouse_liver\v2\evaluate.py --batch b3 --weights %OUTPUT%\b3\fewshot\checkpoint_best_regular.pth --data-root %DATA_ROOT% --output %OUTPUT%
+REM 集中式评估: 用 resolution=640 (训练时用的)
+python scripts\mouse_liver\v2\evaluate.py --batch all --weights %OUTPUT%\central\checkpoint_best_regular.pth --data-root %DATA_ROOT% --output %OUTPUT% --tag central --resolution 640
 echo.
 
 echo ========================================
