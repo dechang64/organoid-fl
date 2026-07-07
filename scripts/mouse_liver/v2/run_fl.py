@@ -49,8 +49,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fl_sequential import (
     fedavg_aggregate, compute_ewa_weights, get_node_order, copy_sd_to_model, save_model_ckpt,
     safe_path, load_model, release_model,
-    BATCH_SIZE, DEVICE, EWA_WARMUP_ROUNDS, WORKERS, OPTIMIZER, LR0,
+    BATCH_SIZE, DEVICE, EWA_WARMUP_ROUNDS, OPTIMIZER, LR0,
 )
+# Windows 多进程会崩溃, 必须用 WORKERS=0 (fl_sequential.py 验证过)
+WORKERS = 0
 
 # v2 参数
 NUM_ROUNDS = 10
@@ -278,10 +280,10 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
             metrics = model.val(
                 data=str(val_yaml),
                 imgsz=IMGSZ,
-                batch=BATCH_SIZE,
                 device=DEVICE,
-                workers=WORKERS,
-                verbose=False,
+                project=str(fl_split_dir),
+                name=f'r{round_idx+1}_{node_name}_val',
+                exist_ok=True,
             )
             mAP50 = float(metrics.box.map50)
             mAP5095 = float(metrics.box.map)
@@ -363,10 +365,10 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
             metrics = model.val(
                 data=str(val_yaml),
                 imgsz=IMGSZ,
-                batch=BATCH_SIZE,
                 device=DEVICE,
-                workers=WORKERS,
-                verbose=False,
+                project=str(output_dir / f'round_{round_idx+1}'),
+                name='global_val',
+                exist_ok=True,
             )
             global_mAP50 = float(metrics.box.map50)
             global_mAP5095 = float(metrics.box.map)
