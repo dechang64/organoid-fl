@@ -206,8 +206,8 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
 
             # 写 data.yaml
             node_yaml = fl_split_dir / 'data.yaml'
-            train_img_dir = node_data_dir / 'images'
-            train_lbl_dir = node_data_dir / 'labels'
+            train_img_dir = node_data_dir / 'train' / 'images'
+            train_lbl_dir = node_data_dir / 'train' / 'labels'
 
             # 创建 fl_split 子目录 (images/labels 必须叫这名, Ultralytics img2label_paths 铁律)
             img_link_dir = fl_split_dir / 'images'

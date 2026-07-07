@@ -12,29 +12,44 @@ r"""
   - test 只用于最终评估
   - seed=42 保证可复现
 
+RF-DETR 数据格式 (Roboflow YOLO):
+  dataset_dir/
+    data.yaml
+    train/
+      images/
+      labels/
+    valid/
+      images/
+      labels/
+    test/           (可选)
+      images/
+      labels/
+
+  RF-DETR 不读 data.yaml 里的 train/val 路径!
+  它用固定路径: root/train/images, root/valid/images
+  (源码: rfdetr/datasets/__init__.py build_roboflow_from_yolo)
+
 Usage (冬生本地):
     cd C:\Users\decha\organoid-fl
     .\.venv\Scripts\activate
     python scripts\mouse_liver\v2\prepare_data.py --data-root D:\datasets\mouse_liver_correct --output D:\datasets\mouse_liver_split
 
-    # 或用默认路径 (DATA_BASE 在 fl_sequential.py 里定义)
-    python scripts\mouse_liver\v2\prepare_data.py
-
 输出结构:
     {output}/
     ├── b1/
     │   ├── full/           # 全量训练集 (6张)
-    │   │   ├── images/
-    │   │   ├── labels/
-    │   │   └── data.yaml
-    │   ├── fewshot/        # 3-shot 训练集 (3张, 从full的6张中选)
-    │   │   ├── images/
-    │   │   ├── labels/
-    │   │   └── data.yaml
-    │   ├── val/            # 验证集 (2张, 选模型)
+    │   │   ├── data.yaml
+    │   │   ├── train/
+    │   │   │   ├── images/
+    │   │   │   └── labels/
+    │   │   └── valid/      # 符号链接到 ../val/
+    │   │       ├── images/
+    │   │       └── labels/
+    │   ├── fewshot/        # 3-shot (同 full 结构)
+    │   ├── val/            # 验证集 (2张)
     │   │   ├── images/
     │   │   └── labels/
-    │   └── test/           # 测试集 (2张, 最终评估)
+    │   └── test/           # 测试集 (2张)
     │       ├── images/
     │       └── labels/
     ├── b2/ (同结构)
@@ -43,7 +58,7 @@ Usage (冬生本地):
 Note:
     - fewshot 的 3 张从 full 的 train 中选取 (前3张, 固定)
     - val 和 test 互斥 (不重叠)
-    - 所有 split 都用 images/labels 目录名 (Ultralytics img2label_paths 铁律)
+    - full/fewshot 的 valid/ 复制 val 的数据 (RF-DETR 要 valid/ 不是 val/)
 """
 import argparse
 import os
@@ -68,7 +83,6 @@ def split_batch(batch_name, plan, data_root, output_root, seed=42):
     """为单个 batch 创建 train/val/test/fewshot split"""
     batch_dir = Path(data_root) / batch_name.replace('b', 'batch')
     if not batch_dir.exists():
-        # 也试试 batch1 vs b1
         batch_dir = Path(data_root) / batch_name
     if not batch_dir.exists():
         raise FileNotFoundError(f"Batch directory not found: {batch_dir}")
@@ -115,76 +129,84 @@ def split_batch(batch_name, plan, data_root, output_root, seed=42):
     if batch_output.exists():
         shutil.rmtree(batch_output)
 
-    # 创建目录结构
-    splits = {
-        'full': train_files,       # 全量训练
-        'fewshot': fewshot_files,  # 3-shot
-        'val': val_files,          # 验证集
-        'test': test_files,        # 测试集
-    }
+    # 查找原始图片和标签
+    src_img_dir = batch_dir / 'images'
+    src_lbl_dir = batch_dir / 'labels'
 
-    for split_name, files in splits.items():
-        split_dir = batch_output / split_name
-        (split_dir / 'images').mkdir(parents=True, exist_ok=True)
-        (split_dir / 'labels').mkdir(parents=True, exist_ok=True)
+    if not src_img_dir.exists():
+        src_img_dir = batch_dir / 'yolo_format' / 'images'
+        src_lbl_dir = batch_dir / 'yolo_format' / 'labels'
 
-        # 查找原始图片和标签
-        # 优先顺序: batch_dir/images > batch_dir/yolo_format/images > data_root/yolo_format/images
-        src_img_dir = batch_dir / 'images'
+    if not src_img_dir.exists():
+        src_img_dir = Path(data_root) / 'yolo_format' / 'images'
+
+    if not src_lbl_dir.exists():
         src_lbl_dir = batch_dir / 'labels'
 
-        if not src_img_dir.exists():
-            src_img_dir = batch_dir / 'yolo_format' / 'images'
-            src_lbl_dir = batch_dir / 'yolo_format' / 'labels'
+    print(f"  Source images: {src_img_dir} (exists={src_img_dir.exists()})")
+    print(f"  Source labels: {src_lbl_dir} (exists={src_lbl_dir.exists()})")
 
-        if not src_img_dir.exists():
-            # 云 VM 上 batch 图片可能在全局 yolo_format/images
-            src_img_dir = Path(data_root) / 'yolo_format' / 'images'
-
-        if not src_lbl_dir.exists():
-            src_lbl_dir = batch_dir / 'labels'
-
-        print(f"  Source images: {src_img_dir} (exists={src_img_dir.exists()})")
-        print(f"  Source labels: {src_lbl_dir} (exists={src_lbl_dir.exists()})")
-
+    def copy_files(files, dst_img_dir, dst_lbl_dir):
+        """复制图片和标签到目标目录"""
+        dst_img_dir.mkdir(parents=True, exist_ok=True)
+        dst_lbl_dir.mkdir(parents=True, exist_ok=True)
         for img_name in files:
-            # 复制图片
             src_img = src_img_dir / img_name
             if not src_img.exists():
-                # 尝试 .jpg
                 src_img = src_img_dir / (os.path.splitext(img_name)[0] + '.jpg')
             if src_img.exists():
-                shutil.copy2(src_img, split_dir / 'images' / src_img.name)
+                shutil.copy2(src_img, dst_img_dir / src_img.name)
             else:
                 print(f"  [WARN] Image not found: {src_img}")
-
-            # 复制标签
             lbl_name = os.path.splitext(src_img.name)[0] + '.txt'
             src_lbl = src_lbl_dir / lbl_name
             if src_lbl.exists():
-                shutil.copy2(src_lbl, split_dir / 'labels' / lbl_name)
+                shutil.copy2(src_lbl, dst_lbl_dir / lbl_name)
             else:
                 print(f"  [WARN] Label not found: {src_lbl}")
 
-        # 创建 data.yaml (full 和 fewshot 需要, val/test 不需要)
-        if split_name in ('full', 'fewshot'):
-            # val 指向 val split 的 images 目录 (绝对路径)
-            val_dir = batch_output / 'val' / 'images'
-            yaml_content = f"""path: {split_dir.resolve()}
-train: images
-val: {val_dir.resolve()}
+    # === 创建 val/ 目录 (独立, 不在任何训练目录下) ===
+    val_dir = batch_output / 'val'
+    copy_files(val_files, val_dir / 'images', val_dir / 'labels')
+
+    # === 创建 test/ 目录 ===
+    test_dir = batch_output / 'test'
+    copy_files(test_files, test_dir / 'images', test_dir / 'labels')
+
+    # === 创建 full/ 目录 (RF-DETR Roboflow 格式) ===
+    # full/
+    #   data.yaml
+    #   train/images/ + train/labels/  (训练数据)
+    #   valid/images/ + valid/labels/  (验证数据, 复制 val 的)
+    for split_name, train_files_list in [('full', train_files), ('fewshot', fewshot_files)]:
+        split_dir = batch_output / split_name
+        train_sub = split_dir / 'train'
+        valid_sub = split_dir / 'valid'
+
+        # train/ 子目录
+        copy_files(train_files_list, train_sub / 'images', train_sub / 'labels')
+
+        # valid/ 子目录 (复制 val 的数据)
+        copy_files(val_files, valid_sub / 'images', valid_sub / 'labels')
+
+        # data.yaml (RF-DETR 不读这个, 但留着做参考)
+        yaml_content = f"""# RF-DETR Roboflow YOLO format
+# train data: train/images/
+# valid data: valid/images/ (copied from val split)
+path: {split_dir.resolve()}
+train: train/images
+val: valid/images
 nc: 1
 names: ['organoid']
 """
-            yaml_path = split_dir / 'data.yaml'
-            with open(yaml_path, 'w', encoding='utf-8') as f:
-                f.write(yaml_content)
-            print(f"  {split_name}/data.yaml created (val → {val_dir})")
+        yaml_path = split_dir / 'data.yaml'
+        with open(yaml_path, 'w', encoding='utf-8') as f:
+            f.write(yaml_content)
+        print(f"  {split_name}/ created (train={len(train_files_list)}, valid={len(val_files)})")
 
-    # 创建 test 的 data.yaml (用于评估, val=test)
-    test_yaml = batch_output / 'test' / 'data.yaml'
-    test_img_dir = batch_output / 'test' / 'images'
-    yaml_content = f"""path: {(batch_output / 'test').resolve()}
+    # === 创建 test/ 的 data.yaml (用于 evaluate.py) ===
+    test_yaml = test_dir / 'data.yaml'
+    yaml_content = f"""path: {test_dir.resolve()}
 train: images
 val: images
 nc: 1
@@ -236,7 +258,6 @@ def main():
         info = split_batch(batch_name, plan, args.data_root, args.output, args.seed)
         all_info[batch_name] = info
 
-    # 保存全局 split 信息
     global_info_path = Path(args.output) / 'split_info.json'
     with open(global_info_path, 'w', encoding='utf-8') as f:
         json.dump(all_info, f, indent=2, ensure_ascii=False)
