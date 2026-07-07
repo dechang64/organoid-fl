@@ -22,7 +22,7 @@ set SRC_ROOT=D:\datasets\mouse_liver_correct
 set DATA_ROOT=D:\datasets\mouse_liver_split
 set OUTPUT=runs\mouse_liver_v2
 set PRETRAINED=output\checkpoint_best_regular.pth
-set SAM2_CKPT=sam2_hiera_small.pt
+set SAM2_CKPT=sam2_checkpoints\sam2_hiera_small.pt
 
 echo ========================================
 echo 鼠肝 organoid v2 全量实验
