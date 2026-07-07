@@ -3,11 +3,16 @@ r"""
 
 每个 batch 用全量 train (B1=6, B2=6, B3=12) 训练, 在 val 上选 best.pt, 在 test 上评估
 
-参数 (基于文献调研 2026-07-06):
-  resolution: B1=544, B2/B3=768 (12GB GPU 限制)
-  grad_accum_steps: 4
+参数 (基于文献调研 2026-07-06 + 12GB 实测):
+  resolution: B1=544, B2/B3=768 (organoid 小需高分辨率)
+  batch_size: B1=4 (544 安全), B2/B3=1 (768 在 12GB 上 batch>1 会 OOM)
+  grad_accum_steps: B1=4 (等效 batch=16), B2/B3=8 (等效 batch=8)
   epochs: 20, early_stopping_patience: 10
   seed: 42
+
+⚠️ 不要用 batch_size='auto'!
+  RF-DETR 的 auto_batch 探测会先试大 batch, 768 resolution 直接 OOM 崩溃
+  (2026-07-07 冬生本地实测: auto_batch probe 在 generalized_box_iou 处 OOM)
 
 Usage (冬生本地):
     cd C:\Users\decha\organoid-fl
@@ -29,15 +34,18 @@ import json
 from pathlib import Path
 
 
-# 参数决策 (基于文献调研)
-BATCH_RESOLUTION = {
-    'b1': 544,   # 2592×1944, organoid 161px@640, 大目标, 544 够用
-    'b2': 768,   # 4000×3000, organoid 40px@640 → 48px@768, 小目标需高分辨率
-    'b3': 768,   # 4000×3000, organoid 47px@640 → 56px@768
+# 参数决策 (基于文献调研 + 12GB 实测)
+# B1: 2592×1944, organoid ~161px@640, 大目标, 544 够用, batch=4 安全
+# B2: 4000×3000, organoid ~40px@640 → 48px@768, 小目标需高分辨率
+# B3: 4000×3000, organoid ~47px@640 → 56px@768
+# 768 是 512 默认的 2.25x 显存, batch=4 必 OOM, 用 batch=1 + grad_accum=8
+BATCH_CONFIG = {
+    'b1': {'resolution': 544, 'batch_size': 4, 'grad_accum': 4},   # 等效 batch=16
+    'b2': {'resolution': 768, 'batch_size': 1, 'grad_accum': 8},   # 等效 batch=8
+    'b3': {'resolution': 768, 'batch_size': 1, 'grad_accum': 8},   # 等效 batch=8
 }
 
 EPOCHS = 20
-GRAD_ACCUM = 4
 EARLY_STOPPING_PATIENCE = 10
 SEED = 42
 
@@ -46,7 +54,11 @@ def train_batch(batch_name, data_root, pretrained_path, output_base, epochs=EPOC
     """训练单个 batch 的全量模型"""
     from rfdetr import RFDETRSmall
 
-    resolution = BATCH_RESOLUTION[batch_name]
+    config = BATCH_CONFIG[batch_name]
+    resolution = config['resolution']
+    batch_size = config['batch_size']
+    grad_accum = config['grad_accum']
+
     batch_dir = Path(data_root) / batch_name / 'full'
     data_yaml = batch_dir / 'data.yaml'
 
@@ -62,8 +74,9 @@ def train_batch(batch_name, data_root, pretrained_path, output_base, epochs=EPOC
     print(f"  Data: {batch_dir}")
     print(f"  Pretrained: {pretrained_path}")
     print(f"  Resolution: {resolution}")
+    print(f"  Batch size: {batch_size}")
+    print(f"  Grad accum: {grad_accum} (effective batch={batch_size * grad_accum})")
     print(f"  Epochs: {epochs}")
-    print(f"  Grad accum: {GRAD_ACCUM}")
     print(f"  Early stopping patience: {EARLY_STOPPING_PATIENCE}")
     print(f"  Seed: {SEED}")
     print(f"  Output: {output_dir}")
@@ -76,14 +89,14 @@ def train_batch(batch_name, data_root, pretrained_path, output_base, epochs=EPOC
     train_kwargs = {
         'dataset_dir': str(batch_dir.resolve()),
         'epochs': epochs,
-        'grad_accum_steps': GRAD_ACCUM,
+        'grad_accum_steps': grad_accum,
         'resolution': resolution,
-        'batch_size': 'auto',  # 768 resolution 在 12GB 上需要 auto batch
+        'batch_size': batch_size,  # 固定 batch_size, 不用 'auto'
         'output_dir': str(output_dir.resolve()),
         'early_stopping': True,
         'early_stopping_patience': EARLY_STOPPING_PATIENCE,
         'seed': SEED,
-        'num_workers': 2,
+        'num_workers': 0,  # Windows 必须用 0, 和 FL 一致
     }
 
     print(f"  kwargs: {train_kwargs}")

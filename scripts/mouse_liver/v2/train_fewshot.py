@@ -3,21 +3,19 @@ r"""
 
 每个 batch 用 3 张图训练 (NeurIPS FSOD 标准), 在 val 上选 best.pt, 在 test 上评估
 
-参数 (基于文献调研 2026-07-06):
+参数 (基于文献调研 2026-07-06 + 12GB 实测):
   resolution: B1=544, B2/B3=768
-  grad_accum_steps: 4
+  batch_size: B1=4, B2/B3=1 (768 在 12GB 上 batch>1 会 OOM)
+  grad_accum_steps: B1=4, B2/B3=8
   epochs: 20, early_stopping_patience: 10
   seed: 42
-  3-shot: 从 full 的 6 张 train 中取前 3 张
+
+⚠️ 不要用 batch_size='auto'! (同 train_full.py)
 
 Usage (冬生本地):
     cd C:\Users\decha\organoid-fl
     .\.venv\Scripts\activate
 
-    # 跑单个 batch
-    python scripts\mouse_liver\v2\train_fewshot.py --batch b2 --data-root D:\datasets\mouse_liver_split --pretrained output\checkpoint_best_regular.pth
-
-    # 跑全部 batch
     python scripts\mouse_liver\v2\train_fewshot.py --batch all --data-root D:\datasets\mouse_liver_split --pretrained output\checkpoint_best_regular.pth
 
 输出:
@@ -30,14 +28,13 @@ import json
 from pathlib import Path
 
 
-BATCH_RESOLUTION = {
-    'b1': 544,
-    'b2': 768,
-    'b3': 768,
+BATCH_CONFIG = {
+    'b1': {'resolution': 544, 'batch_size': 4, 'grad_accum': 4},
+    'b2': {'resolution': 768, 'batch_size': 1, 'grad_accum': 8},
+    'b3': {'resolution': 768, 'batch_size': 1, 'grad_accum': 8},
 }
 
 EPOCHS = 20
-GRAD_ACCUM = 4
 EARLY_STOPPING_PATIENCE = 10
 SEED = 42
 
@@ -46,7 +43,11 @@ def train_batch_fewshot(batch_name, data_root, pretrained_path, output_base, epo
     """3-shot 训练"""
     from rfdetr import RFDETRSmall
 
-    resolution = BATCH_RESOLUTION[batch_name]
+    config = BATCH_CONFIG[batch_name]
+    resolution = config['resolution']
+    batch_size = config['batch_size']
+    grad_accum = config['grad_accum']
+
     batch_dir = Path(data_root) / batch_name / 'fewshot'
     data_yaml = batch_dir / 'data.yaml'
 
@@ -62,9 +63,9 @@ def train_batch_fewshot(batch_name, data_root, pretrained_path, output_base, epo
     print(f"  Data: {batch_dir}")
     print(f"  Pretrained: {pretrained_path}")
     print(f"  Resolution: {resolution}")
+    print(f"  Batch size: {batch_size}")
+    print(f"  Grad accum: {grad_accum} (effective batch={batch_size * grad_accum})")
     print(f"  Epochs: {epochs}")
-    print(f"  Grad accum: {GRAD_ACCUM}")
-    print(f"  Early stopping patience: {EARLY_STOPPING_PATIENCE}")
     print(f"  Seed: {SEED}")
     print(f"  Output: {output_dir}")
 
@@ -75,14 +76,14 @@ def train_batch_fewshot(batch_name, data_root, pretrained_path, output_base, epo
     train_kwargs = {
         'dataset_dir': str(batch_dir.resolve()),
         'epochs': epochs,
-        'grad_accum_steps': GRAD_ACCUM,
+        'grad_accum_steps': grad_accum,
         'resolution': resolution,
-        'batch_size': 'auto',  # 768 resolution 在 12GB 上需要 auto batch
+        'batch_size': batch_size,
         'output_dir': str(output_dir.resolve()),
         'early_stopping': True,
         'early_stopping_patience': EARLY_STOPPING_PATIENCE,
         'seed': SEED,
-        'num_workers': 2,
+        'num_workers': 0,
     }
 
     print(f"  kwargs: {train_kwargs}")
