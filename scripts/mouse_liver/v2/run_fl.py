@@ -42,12 +42,13 @@ import copy
 import shutil
 import numpy as np
 from pathlib import Path
+from datetime import datetime
 
 # 导入复用函数
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from fl_sequential import (
-    fedavg_aggregate, compute_ewa_weights, get_node_order,
-    safe_path,
+    fedavg_aggregate, compute_ewa_weights, get_node_order, copy_sd_to_model, save_model_ckpt,
+    safe_path, load_model, release_model,
     BATCH_SIZE, DEVICE, EWA_WARMUP_ROUNDS
 )
 
@@ -118,20 +119,63 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
     # 准备 val set (统一验证集, 用 b1 的 val)
     val_yaml = Path(data_root) / 'b1' / 'val' / 'data.yaml'
     if not val_yaml.exists():
-        # 创建 val yaml
         val_dir = Path(data_root) / 'b1' / 'val'
         val_yaml = val_dir / 'data.yaml'
         val_yaml.parent.mkdir(parents=True, exist_ok=True)
         with open(val_yaml, 'w', encoding='utf-8') as f:
             f.write(f"path: {val_dir.resolve()}\ntrain: images\nval: images\nnc: 1\nnames: ['organoid']\n")
 
-    # 初始化全局模型 (yolo12n, COCO预训练)
-    global_model_path = 'yolo12n.pt'
+    # === Step 1: 训练 init_model (1 epoch warmup, COCO 80类 → 1类) ===
+    # 铁律: YOLO('yolo12n.pt') 是 80 类, 直接 load_state_dict(global_sd) 会不匹配
+    # 必须先跑 1 epoch 把检测头从 80 类 → 1 类, 保存为 init_ckpt
+    # 后续轮次用 init_ckpt 做 template 加载/保存
+    init_ckpt = output_dir / 'init_model.pt'
+    if not init_ckpt.exists():
+        log_msg(f"\n=== Step 1: 训练 init_model (1 epoch warmup) ===")
+        from ultralytics import YOLO
+        from copy import deepcopy
+        from datetime import datetime
+        from ultralytics import __version__
+
+        # 用 b1 的 full 数据跑 1 epoch
+        b1_yaml = Path(data_root) / 'b1' / 'full' / 'data.yaml'
+        model = YOLO('yolo12n.pt')
+        model.train(
+            data=str(b1_yaml),
+            epochs=1,
+            imgsz=IMGSZ,
+            batch=BATCH_SIZE,
+            device=DEVICE,
+            workers=WORKERS,
+            cache=False,
+            project=str(output_dir),
+            name='init',
+            exist_ok=True,
+            cos_lr=True,
+            verbose=False,
+        )
+        # 保存完整 checkpoint (含 model + 元数据)
+        ckpt = {
+            'model': deepcopy(model.model).float(),
+            'date': datetime.now().isoformat(),
+            'version': __version__,
+            'license': 'AGPL-3.0 License',
+            'docs': 'https://docs.ultralytics.com',
+            'train_args': dict(model.overrides) if hasattr(model, 'overrides') and hasattr(model.overrides, '__dict__') else {},
+        }
+        torch.save(ckpt, str(init_ckpt))
+        log_msg(f"init_model saved: {init_ckpt}")
+        del model
+        torch.cuda.empty_cache()
+    else:
+        log_msg(f"\ninit_model already exists: {init_ckpt}")
+
+    # 初始化全局状态
     global_sd = None
     global_signal_cache = None
     global_data_count = 0
 
-    # 本地最优模型 (local gate 用)
+    # 本地最优模型 (local gate 用, 保留接口)
     node_best_sd = {}
     node_best_map = {}
 
@@ -163,31 +207,46 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
             # 写 data.yaml
             node_yaml = fl_split_dir / 'data.yaml'
             train_img_dir = node_data_dir / 'images'
+            train_lbl_dir = node_data_dir / 'labels'
+
+            # 创建 fl_split 子目录 (images/labels 必须叫这名, Ultralytics img2label_paths 铁律)
+            img_link_dir = fl_split_dir / 'images'
+            lbl_link_dir = fl_split_dir / 'labels'
+            img_link_dir.mkdir(parents=True, exist_ok=True)
+            lbl_link_dir.mkdir(parents=True, exist_ok=True)
+
+            # 清空旧文件
+            for old in img_link_dir.iterdir():
+                try: old.unlink()
+                except: pass
+            for old in lbl_link_dir.iterdir():
+                try: old.unlink()
+                except: pass
+
+            # 复制图片和标签到 fl_split
+            for img_file in train_img_dir.glob('*.[jJ][pP][gG]'):
+                shutil.copy2(img_file, img_link_dir / img_file.name)
+            for lbl_file in train_lbl_dir.glob('*.txt'):
+                shutil.copy2(lbl_file, lbl_link_dir / lbl_file.name)
+
+            # 写 data.yaml (train 用相对路径 "images", 指向 fl_split_dir/images/)
+            # 铁律: train 必须是相对路径, 不能是绝对路径
+            # 否则 Ultralytics 在原路径找标签, 不在 fl_split/labels/ 找
+            node_yaml = fl_split_dir / 'data.yaml'
             with open(node_yaml, 'w', encoding='utf-8') as f:
                 f.write(f"path: {safe_path(str(fl_split_dir.resolve()))}\n")
-                f.write(f"train: {safe_path(str(train_img_dir.resolve()))}\n")
+                f.write(f"train: images\n")
                 f.write(f"val: {safe_path(str(val_yaml.parent.resolve()))}\n")
                 f.write(f"nc: 1\nnames: ['organoid']\n")
 
-            # 创建 images/labels 软链接 (Windows 用 copy)
-            img_link_dir = fl_split_dir / 'images'
-            lbl_link_dir = fl_split_dir / 'labels'
-            img_link_dir.mkdir(exist_ok=True)
-            lbl_link_dir.mkdir(exist_ok=True)
-
-            # 复制图片和标签
-            for img_file in train_img_dir.glob('*.[jJ][pP][gG]'):
-                shutil.copy2(img_file, img_link_dir / img_file.name)
-            for lbl_file in (node_data_dir / 'labels').glob('*.txt'):
-                shutil.copy2(lbl_file, lbl_link_dir / lbl_file.name)
-
-            # 加载全局模型训练
+            # 加载模型: 用 init_ckpt (1类) 做 template, 不是 yolo12n.pt (80类)
+            # 铁律: YOLO('yolo12n.pt') 是 80 类, load_state_dict(global_sd 1类) 会不匹配
+            # init_ckpt 是 1 epoch warmup 后的 1 类模型, 和 global_sd 匹配
+            # 铁律: 用 copy_sd_to_model 而非 load_state_dict (后者可能因 fused/unfused 不匹配)
+            model = load_model(str(init_ckpt))
             if global_sd is not None:
-                # 用上一轮的全局模型初始化
-                model = YOLO('yolo12n.pt')
-                model.model.load_state_dict(global_sd)
-            else:
-                model = YOLO('yolo12n.pt')
+                loaded = copy_sd_to_model(model, global_sd)
+                log_msg(f"    Loaded global_sd: {loaded}/{len(global_sd)} keys")
 
             # 训练
             results = model.train(
@@ -205,7 +264,11 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
                 verbose=False,
             )
 
-            # 评估本地模型
+            # 铁律: state_dict 必须在 val 前取 (model.val() 会 fuse, 不可逆)
+            local_sd = {k: v.detach().cpu().clone() for k, v in model.model.state_dict().items()}
+            n_local = len(list(train_img_dir.glob('*.[jJ][pP][gG]')))
+
+            # 评估本地模型 (val 会 fuse model, 但 local_sd 已提取)
             metrics = model.val(
                 data=str(val_yaml),
                 imgsz=IMGSZ,
@@ -219,10 +282,6 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
             signal_local = mAP5095 if 'mAP' in signal else mAP50
 
             log_msg(f"    mAP50={mAP50:.4f}, mAP50-95={mAP5095:.4f}, signal={signal_local:.4f}")
-
-            # 取本地 state_dict (val 前取, 避免 fused)
-            local_sd = {k: v.detach().cpu().clone() for k, v in model.model.state_dict().items()}
-            n_local = len(list(train_img_dir.glob('*.[jJ][pP][gG]')))
 
             # 门控聚合
             if gate == 'none':
@@ -280,18 +339,21 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
 
         local_metrics_history.append(round_local_metrics)
 
-        # 保存全局模型
+        # 保存全局模型 (用 init_ckpt 做 template, 复用 fl_sequential 的函数)
+        # 铁律: init_ckpt 是 1 类模型, 和 global_sd (1类) 匹配
+        # 铁律: save_model_ckpt 用 deepcopy(model.model).float(), 不是直接存 state_dict
         if global_sd is not None:
             global_model_path = output_dir / f'round_{round_idx+1}' / 'global.pt'
-            # 用 yolo12n 做模板保存
-            template = YOLO('yolo12n.pt')
-            template.model.load_state_dict(global_sd)
-            template.save(str(global_model_path))
-            del template
+            global_model_path.parent.mkdir(parents=True, exist_ok=True)
+            g_model = load_model(str(init_ckpt))
+            loaded = copy_sd_to_model(g_model, global_sd)
+            log_msg(f"  Save global: loaded {loaded}/{len(global_sd)} keys")
+            save_model_ckpt(g_model, str(global_model_path))
+            release_model(g_model)
 
-        # 评估全局模型
+        # 评估全局模型 (用 load_model 加载完整 checkpoint)
         if global_sd is not None:
-            model = YOLO(str(global_model_path))
+            model = load_model(str(global_model_path))
             metrics = model.val(
                 data=str(val_yaml),
                 imgsz=IMGSZ,

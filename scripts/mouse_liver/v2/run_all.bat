@@ -45,12 +45,15 @@ for %%b in (b1 b2 b3) do (
 )
 echo.
 
-REM Step 5: SAM2 分割 (zero-shot)
+REM Step 5: SAM2 分割 (zero-shot, 带 resolution 参数)
 echo [5/6] SAM2 分割 (zero-shot)...
-for %%b in (b1 b2 b3) do (
-    python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\%%b\full\checkpoint_best_regular.pth --src %DATA_ROOT%\%%b\test\images --gt %DATA_ROOT%\%%b\test\labels --dst %OUTPUT%\%%b\sam2_full --sam2-checkpoint %SAM2_CKPT%
-    python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\%%b\fewshot\checkpoint_best_regular.pth --src %DATA_ROOT%\%%b\test\images --gt %DATA_ROOT%\%%b\test\labels --dst %OUTPUT%\%%b\sam2_fewshot --sam2-checkpoint %SAM2_CKPT%
-)
+REM B1 用 544, B2/B3 用 768
+python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b1\full\checkpoint_best_regular.pth --src %DATA_ROOT%\b1\test\images --gt %DATA_ROOT%\b1\test\labels --dst %OUTPUT%\b1\sam2_full --sam2-checkpoint %SAM2_CKPT% --resolution 544
+python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b1\fewshot\checkpoint_best_regular.pth --src %DATA_ROOT%\b1\test\images --gt %DATA_ROOT%\b1\test\labels --dst %OUTPUT%\b1\sam2_fewshot --sam2-checkpoint %SAM2_CKPT% --resolution 544
+python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b2\full\checkpoint_best_regular.pth --src %DATA_ROOT%\b2\test\images --gt %DATA_ROOT%\b2\test\labels --dst %OUTPUT%\b2\sam2_full --sam2-checkpoint %SAM2_CKPT% --resolution 768
+python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b2\fewshot\checkpoint_best_regular.pth --src %DATA_ROOT%\b2\test\images --gt %DATA_ROOT%\b2\test\labels --dst %OUTPUT%\b2\sam2_fewshot --sam2-checkpoint %SAM2_CKPT% --resolution 768
+python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b3\full\checkpoint_best_regular.pth --src %DATA_ROOT%\b3\test\images --gt %DATA_ROOT%\b3\test\labels --dst %OUTPUT%\b3\sam2_full --sam2-checkpoint %SAM2_CKPT% --resolution 768
+python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b3\fewshot\checkpoint_best_regular.pth --src %DATA_ROOT%\b3\test\images --gt %DATA_ROOT%\b3\test\labels --dst %OUTPUT%\b3\sam2_fewshot --sam2-checkpoint %SAM2_CKPT% --resolution 768
 echo.
 
 REM Step 6: FL 实验 (4组)
