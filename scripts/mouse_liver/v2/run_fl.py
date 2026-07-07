@@ -127,57 +127,20 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
         with open(val_yaml, 'w', encoding='utf-8') as f:
             f.write(f"path: {val_dir.resolve()}\ntrain: images\nval: images\nnc: 1\nnames: ['organoid']\n")
 
-    # === Step 1: 训练 init_model (1 epoch warmup, COCO 80类 → 1类) ===
-    # 铁律: YOLO('yolo12n.pt') 是 80 类, 直接 load_state_dict(global_sd) 会不匹配
-    # 必须先跑 1 epoch 把检测头从 80 类 → 1 类, 保存为 init_ckpt
-    # 后续轮次用 init_ckpt 做 template 加载/保存
-    init_ckpt = output_dir / 'init_model.pt'
-    if not init_ckpt.exists():
-        log_msg(f"\n=== Step 1: 训练 init_model (1 epoch warmup) ===")
-        from ultralytics import YOLO
-        from copy import deepcopy
-        from datetime import datetime
-        from ultralytics import __version__
-
-        # 用 b1 的 full 数据跑 1 epoch
-        b1_yaml = Path(data_root) / 'b1' / 'full' / 'data.yaml'
-        model = YOLO('yolo12n.pt')
-        model.train(
-            data=str(b1_yaml),
-            epochs=1,
-            imgsz=IMGSZ,
-            batch=BATCH_SIZE,
-            device=DEVICE,
-            workers=WORKERS,
-            cache=False,
-            lr0=LR0,
-            optimizer=OPTIMIZER,
-            project=str(output_dir),
-            name='init',
-            exist_ok=True,
-            cos_lr=True,
-            verbose=False,
-        )
-        # 保存完整 checkpoint (含 model + 元数据)
-        ckpt = {
-            'model': deepcopy(model.model).float(),
-            'date': datetime.now().isoformat(),
-            'version': __version__,
-            'license': 'AGPL-3.0 License',
-            'docs': 'https://docs.ultralytics.com',
-            'train_args': dict(model.overrides) if hasattr(model, 'overrides') and hasattr(model.overrides, '__dict__') else {},
-        }
-        torch.save(ckpt, str(init_ckpt))
-        log_msg(f"init_model saved: {init_ckpt}")
-        del model
-        torch.cuda.empty_cache()
-    else:
-        log_msg(f"\ninit_model already exists: {init_ckpt}")
+    # === FL 从头训练 (COCO 预训练, 不用 init_model warmup) ===
+    # 第一轮第一个节点: YOLO('yolo12n.pt') (COCO 80类) → train → 自动变 1 类
+    # Ultralytics train() 会根据 data.yaml 的 nc 自动调整检测头
+    # 后续节点: load_model(global_ckpt) → 1 类 → copy_sd_to_model(global_sd) → train
+    # 
+    # 保存全局模型: 用当前 model 对象 (train 后 val 前, 未 fuse) 保存
+    # 不需要 init_ckpt 做 template
 
     # 初始化全局状态
     global_sd = None
     global_signal_cache = None
     global_data_count = 0
+    global_model_path = None  # 第一轮第一个节点训练后才有
+    template_ckpt = None  # 第一轮第一个节点训练后保存 (1类 template)
 
     # 本地最优模型 (local gate 用, 保留接口)
     node_best_sd = {}
@@ -243,14 +206,18 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
                 f.write(f"val: {safe_path(str((val_yaml.parent / 'images').resolve()))}\n")
                 f.write(f"nc: 1\nnames: ['organoid']\n")
 
-            # 加载模型: 用 init_ckpt (1类) 做 template, 不是 yolo12n.pt (80类)
-            # 铁律: YOLO('yolo12n.pt') 是 80 类, load_state_dict(global_sd 1类) 会不匹配
-            # init_ckpt 是 1 epoch warmup 后的 1 类模型, 和 global_sd 匹配
-            # 铁律: 用 copy_sd_to_model 而非 load_state_dict (后者可能因 fused/unfused 不匹配)
-            model = load_model(str(init_ckpt))
-            if global_sd is not None:
+            # 加载模型: 从头训练 (COCO 预训练)
+            # 第一轮第一个节点: YOLO('yolo12n.pt') (COCO 80类), train() 自动改检测头为 1 类
+            # 后续节点: load_model(global_model_path) (1类) + copy_sd_to_model(global_sd)
+            if global_model_path is not None and global_sd is not None:
+                # 后续节点: 用上一轮的 global checkpoint 做 template
+                model = load_model(str(global_model_path))
                 loaded = copy_sd_to_model(model, global_sd)
                 log_msg(f"    Loaded global_sd: {loaded}/{len(global_sd)} keys")
+            else:
+                # 第一轮第一个节点: 从 COCO 预训练开始
+                model = load_model('yolo12n.pt')
+                log_msg(f"    First node: starting from COCO pretrained yolo12n.pt")
 
             # 训练 (参数和 fl_sequential.py 保持一致, 确保可比性)
             results = model.train(
@@ -275,6 +242,13 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
             # 铁律: state_dict 必须在 val 前取 (model.val() 会 fuse, 不可逆)
             local_sd = {k: v.detach().cpu().clone() for k, v in model.model.state_dict().items()}
             n_local = len(list(train_img_dir.glob('*.[jJ][pP][gG]')))
+
+            # 第一轮第一个节点: 保存 model 为 template (1类, 未 fuse)
+            # 后续轮用这个 template 保存 global_sd
+            if template_ckpt is None:
+                template_ckpt = output_dir / 'template.pt'
+                save_model_ckpt(model, str(template_ckpt))
+                log_msg(f"    Template saved (first node): {template_ckpt}")
 
             # 评估本地模型 (val 会 fuse model, 但 local_sd 已提取)
             metrics = model.val(
@@ -347,13 +321,13 @@ def run_fl_experiment(gate, order, tag, data_root=DATA_BASE, output_base=OUTPUT_
 
         local_metrics_history.append(round_local_metrics)
 
-        # 保存全局模型 (用 init_ckpt 做 template, 复用 fl_sequential 的函数)
-        # 铁律: init_ckpt 是 1 类模型, 和 global_sd (1类) 匹配
-        # 铁律: save_model_ckpt 用 deepcopy(model.model).float(), 不是直接存 state_dict
-        if global_sd is not None:
+        # 保存全局模型 (用 template_ckpt 做 template, 1类)
+        # template_ckpt 是第一轮第一个节点训练后保存的 1 类模型
+        # 后续轮用它做 template, copy_sd_to_model 写入 global_sd
+        if global_sd is not None and template_ckpt is not None:
             global_model_path = output_dir / f'round_{round_idx+1}' / 'global.pt'
             global_model_path.parent.mkdir(parents=True, exist_ok=True)
-            g_model = load_model(str(init_ckpt))
+            g_model = load_model(str(template_ckpt))
             loaded = copy_sd_to_model(g_model, global_sd)
             log_msg(f"  Save global: loaded {loaded}/{len(global_sd)} keys")
             save_model_ckpt(g_model, str(global_model_path))
