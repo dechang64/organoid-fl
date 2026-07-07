@@ -56,6 +56,7 @@ echo [4/7] 传统CV基线...
 for %%b in (b1 b2 b3) do (
     python scripts\mouse_liver\traditional_cv.py --src %DATA_ROOT%\%%b\test\images --gt %DATA_ROOT%\%%b\test\labels --dst %OUTPUT%\%%b\traditional
 )
+if errorlevel 1 goto error
 echo.
 
 REM Step 5: SAM2 分割 (zero-shot, 带 resolution 参数)
@@ -67,6 +68,7 @@ python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b2\full\checkpoint
 python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b2\fewshot\checkpoint_best_regular.pth --src %DATA_ROOT%\b2\test\images --gt %DATA_ROOT%\b2\test\labels --dst %OUTPUT%\b2\sam2_fewshot --sam2-checkpoint %SAM2_CKPT% --resolution 768
 python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b3\full\checkpoint_best_regular.pth --src %DATA_ROOT%\b3\test\images --gt %DATA_ROOT%\b3\test\labels --dst %OUTPUT%\b3\sam2_full --sam2-checkpoint %SAM2_CKPT% --resolution 768
 python scripts\mouse_liver\sam2_segment.py --weights %OUTPUT%\b3\fewshot\checkpoint_best_regular.pth --src %DATA_ROOT%\b3\test\images --gt %DATA_ROOT%\b3\test\labels --dst %OUTPUT%\b3\sam2_fewshot --sam2-checkpoint %SAM2_CKPT% --resolution 768
+if errorlevel 1 goto error
 echo.
 
 REM Step 6: FL 实验 (4组)
@@ -75,6 +77,7 @@ python scripts\mouse_liver\v2\run_fl.py --gate none --order b1_b2_b3 --tag F1 --
 python scripts\mouse_liver\v2\run_fl.py --gate soft --order b1_b2_b3 --tag F2 --data-root %DATA_ROOT% --output %OUTPUT%\fl
 python scripts\mouse_liver\v2\run_fl.py --gate hard --order b1_b2_b3 --tag F3 --data-root %DATA_ROOT% --output %OUTPUT%\fl
 python scripts\mouse_liver\v2\run_fl.py --gate hard --order b3_b2_b1 --tag F4 --data-root %DATA_ROOT% --output %OUTPUT%\fl
+if errorlevel 1 goto error
 echo.
 
 REM Step 7: 评估

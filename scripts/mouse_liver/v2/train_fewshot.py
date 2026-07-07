@@ -6,7 +6,7 @@ r"""
 参数 (基于文献调研 2026-07-06 + 12GB 实测):
   resolution: B1=544, B2/B3=768
   batch_size: B1=4, B2/B3=1 (768 在 12GB 上 batch>1 会 OOM)
-  grad_accum_steps: B1=4, B2/B3=8
+  grad_accum_steps: 1
   epochs: 20, early_stopping_patience: 10
   seed: 42
   pretrained: COCO (RF-DETR default), 不用 MultiOrg checkpoint
@@ -30,9 +30,9 @@ from pathlib import Path
 
 
 BATCH_CONFIG = {
-    'b1': {'resolution': 544, 'batch_size': 4, 'grad_accum': 4},
-    'b2': {'resolution': 768, 'batch_size': 1, 'grad_accum': 8},
-    'b3': {'resolution': 768, 'batch_size': 1, 'grad_accum': 8},
+    'b1': {'resolution': 544, 'batch_size': 4, 'grad_accum': 1},
+    'b2': {'resolution': 768, 'batch_size': 1, 'grad_accum': 1},
+    'b3': {'resolution': 768, 'batch_size': 1, 'grad_accum': 1},
 }
 
 EPOCHS = 20

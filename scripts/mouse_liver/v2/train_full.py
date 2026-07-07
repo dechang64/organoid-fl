@@ -6,7 +6,7 @@ r"""
 参数 (基于文献调研 2026-07-06 + 12GB 实测):
   resolution: B1=544, B2/B3=768 (organoid 小需高分辨率)
   batch_size: B1=4 (544 安全), B2/B3=1 (768 在 12GB 上 batch>1 会 OOM)
-  grad_accum_steps: B1=4 (等效 batch=16), B2/B3=8 (等效 batch=8)
+  grad_accum_steps: 1 (数据量少, 每 step 都更新)
   epochs: 20, early_stopping_patience: 10
   seed: 42
 
@@ -38,11 +38,11 @@ from pathlib import Path
 # B1: 2592×1944, organoid ~161px@640, 大目标, 544 够用, batch=4 安全
 # B2: 4000×3000, organoid ~40px@640 → 48px@768, 小目标需高分辨率
 # B3: 4000×3000, organoid ~47px@640 → 56px@768
-# 768 是 512 默认的 2.25x 显存, batch=4 必 OOM, 用 batch=1 + grad_accum=8
+# 768 是 512 默认的 2.25x 显存, batch=4 必 OOM, 用 batch=1 + grad_accum=1 (每 step 更新)
 BATCH_CONFIG = {
-    'b1': {'resolution': 544, 'batch_size': 4, 'grad_accum': 4},   # 等效 batch=16
-    'b2': {'resolution': 768, 'batch_size': 1, 'grad_accum': 8},   # 等效 batch=8
-    'b3': {'resolution': 768, 'batch_size': 1, 'grad_accum': 8},   # 等效 batch=8
+    'b1': {'resolution': 544, 'batch_size': 4, 'grad_accum': 1},   # 等效 batch=4
+    'b2': {'resolution': 768, 'batch_size': 1, 'grad_accum': 1},   # 等效 batch=1
+    'b3': {'resolution': 768, 'batch_size': 1, 'grad_accum': 1},   # 等效 batch=1
 }
 
 EPOCHS = 20
