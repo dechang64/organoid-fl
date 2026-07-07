@@ -4,7 +4,7 @@ REM
 REM 前提:
 REM   1. batch1/2/3 数据在 D:\datasets\mouse_liver_correct\ (含 images/ 和 labels/)
 REM   2. RF-DETR MultiOrg pretrained checkpoint 在 output\checkpoint_best_regular.pth
-REM   3. SAM2 checkpoint 在 sam2_hiera_small.pt
+REM   3. SAM2 checkpoint 在 sam2_checkpoints\sam2_hiera_small.pt
 REM   4. 冬生本地 Win11 + RTX 3060 12GB
 REM
 REM 输出路径:
