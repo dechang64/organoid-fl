@@ -212,338 +212,6 @@
 \end{frame}
 
 % ========================================================================
-\section{鼠肝 v2：B2 图片反序 Bug}
-
-\begin{frame}{踩坑：B2 图片反序 → 训练 mAP=0}
-  \begin{alertblock}{铁律：图片重命名必须通过 annotations.json 映射，不能按排序索引}
-    \begin{itemize}
-      \item 鼠肝 v2 实验中 B2 训练 loss=15.4（B1/B3 仅 6.9），mAP=0
-      \item 标签内容正确（和 annotations.json 一致），但图片重命名时\textbf{反序}了
-      \item image\_00.jpg 实际是 image\_09 的图 $\to$ 正确标签配在错误图片上
-    \end{itemize}
-  \end{alertblock}
-  \vspace{0em}
-  \begin{block}{诊断过程}
-    \begin{tabular}{p{2.5cm}p{3.5cm}p{5cm}}
-      \toprule
-      \textbf{步骤} & \textbf{脚本} & \textbf{结果} \\
-      \midrule
-      MD5 对比 & check\_pairing.py & B1/B2 同名图不同 $\to$ 图片没问题 \\
-      标签验证 & verify\_labels.py & 标签 $\to$ annotations.json 全匹配 \\
-      extract 配对 & verify\_labels.py & 0/10 正确（排序索引配对）\\
-      \alert{像素相似度} & check\_image\_naming.py & \alert{B2 全部反序}（0/10）\\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{alertblock}{根因}
-    标注图 \texttt{微信图片\_xxx.jpg} vs 原图 \texttt{image\_00.jpg}，排序方向相反 $\to$ 按索引配对全错。
-  \end{alertblock}
-\end{frame}
-
-\begin{frame}{B2 修复前后对比}
-  \begin{columns}[T]
-    \column{0.48\textwidth}
-    \begin{alertblock}{修复前（图片反序）}
-      \begin{itemize}
-        \item 初始 loss = \alert{15.4}（B1/B3 = 6.9）
-        \item 16 epoch 后 loss = 11.1（几乎不降）
-        \item val mAP50 = \alert{0.011}
-        \item test F1 = \alert{0.00}
-        \item 模型学到"全抑制"：n\_det=0
-      \end{itemize}
-    \end{alertblock}
-    \column{0.48\textwidth}
-    \begin{block}{修复后（图片正序）}
-      \begin{itemize}
-        \item ep0 val mAP50 = \textbf{0.555}
-        \item ep1 val mAP50 = \textbf{0.794}
-        \item ep8 best mAP50-95 = \textbf{0.675}
-        \item ep20 final mAP50 = \textbf{0.812}
-        \item 正常收敛曲线
-      \end{itemize}
-    \end{block}
-  \end{columns}
-  \vspace{0em}
-  \begin{block}{诊断脚本链}
-    \begin{tabular}{p{3.5cm}p{8cm}}
-      \toprule
-      \textbf{脚本} & \textbf{检查内容} \\
-      \midrule
-      check\_pairing.py & 图片 MD5 + 标注框像素统计 \\
-      verify\_labels.py & annotations.json bbox vs YOLO label 对比 \\
-      check\_image\_naming.py & images/ vs annotated/ 像素相似度 $\to$ \textbf{找到根因} \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{alertblock}{教训：训练 loss 异常高（2x 于同类）= 数据配对问题的信号}
-  \end{alertblock}
-\end{frame}
-
-% ========================================================================
-\section{鼠肝 v2：实验设计}
-
-\begin{frame}{鼠肝 v2：14 实验矩阵}
-  \begin{block}{数据分配（独立 train/val/test）}
-    \begin{tabular}{lcccccc}
-      \toprule
-      \textbf{批次} & \textbf{张数} & \textbf{分辨率} & \textbf{Train} & \textbf{Val} & \textbf{Test} & \textbf{Fewshot} \\
-      \midrule
-      B1 & 10 & 2592$\times$1944 & 6 & 2 & 2 & 3 \\
-      B2 & 10 & 4000$\times$3000 & 6 & 2 & 2 & 3 \\
-      B3 & 20 & 4000$\times$3000 & 12 & 4 & 4 & 3 \\
-      \textbf{Central} & \textbf{40} & \textbf{混合} & \textbf{24} & \textbf{8} & — & — \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{columns}[T]
-    \column{0.32\textwidth}
-    \begin{block}{Step 1: Baseline+Ceiling (4)}
-      \begin{itemize}
-        \item B1/B2/B3 独立训练
-        \item Central 集中式上界
-        \item RF-DETR Small, COCO 预训练
-      \end{itemize}
-    \end{block}
-    \column{0.32\textwidth}
-    \begin{block}{Step 2: 跨域迁移 (4)}
-      \begin{itemize}
-        \item B1$\to$B2/B3 zeroshot
-        \item B1$\to$B2/B3 fewshot (3-shot)
-        \item 传统 CV (Otsu) 对照
-        \item SAM2 分割
-      \end{itemize}
-    \end{block}
-    \column{0.32\textwidth}
-    \begin{block}{Step 3: 联邦学习 (6)}
-      \begin{itemize}
-        \item F1: none gate, b1$\to$b2$\to$b3
-        \item F2: soft gate (EWA)
-        \item F3: hard gate, b1$\to$b2$\to$b3
-        \item F4: hard gate, b3$\to$b2$\to$b1
-      \end{itemize}
-    \end{block}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{鼠肝 v2：模型与训练参数}
-  \begin{block}{Baseline: RF-DETR Small (NMS-free Transformer)}
-    \begin{tabular}{lccc}
-      \toprule
-      & \textbf{B1} & \textbf{B2} & \textbf{B3} \\
-      \midrule
-      Resolution & 544 & 768 & 768 \\
-      Batch size & 4 & 1 & 1 \\
-      Grad accum & 1 & 1 & 1 \\
-      Epochs & 20 & 20 & 20 \\
-      Early stop & patience=10 & patience=10 & patience=10 \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{block}{FL: YOLOv12n (轻量级, 3-client 顺序链式)}
-    \begin{itemize}
-      \item 10 rounds $\times$ 10 local epochs/round
-      \item imgsz=640, batch=8, workers=0 (Windows)
-      \item Gate: none / soft (EWA) / hard (w\_local=0 or 1)
-      \item 统一 val set = B1/val（公平比较，EWA 信号基于 B1 val）
-    \end{itemize}
-  \end{block}
-  \vspace{0em}
-  \begin{alertblock}{v1 $\to$ v2 关键改进}
-    独立 test set；RF-DETR 替代 YOLOv12n；14 实验全覆盖
-  \end{alertblock}
-\end{frame}
-
-\begin{frame}{鼠肝 v2：Baseline \& Ceiling（test set F1）}
-  \begin{block}{RF-DETR Small, COCO 预训练, 独立 test set}
-    \begin{tabular}{lcccccccr}
-      \toprule
-      \textbf{模型} & \textbf{训练量} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{val mAP50} \\
-      \midrule
-      B1 & 6张 & 4 & 0 & 0 & 1.00 & 1.00 & \textbf{1.00} & 1.000 \\
-      B2 & 6张 & 6 & 3 & 0 & 0.67 & 1.00 & \textbf{0.80} & 0.818 \\
-      B3 & 12张 & 6 & 4 & 0 & 0.60 & 1.00 & \textbf{0.75} & 0.881 \\
-      Central & 24张 & 15 & 11 & 1 & 0.58 & 0.94 & \textbf{0.71} & 0.872 \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{columns}[T]
-    \column{0.48\textwidth}
-    \begin{alertblock}{B2 修复前后对比}
-      \begin{itemize}
-        \item 修复前：F1=\alert{0.00}, mAP=0.011
-        \item 修复后：F1=\textbf{0.80}, mAP=0.818
-        \item Central 也受益：0.54$\to$0.71
-      \end{itemize}
-    \end{alertblock}
-    \column{0.48\textwidth}
-    \begin{block}{观察}
-      \begin{itemize}
-        \item B1 完美（2592$\times$1944, 大目标）
-        \item B2/B3 精度略低（4000$\times$3000, 小目标）
-        \item Central 合并数据反而不如 B1 单独
-      \end{itemize}
-    \end{block}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{鼠肝 v2：跨域迁移（B1$\to$B2/B3）}
-  \begin{block}{B1 checkpoint $\to$ B2/B3 test set}
-    \begin{tabular}{llcccccc}
-      \toprule
-      \textbf{目标} & \textbf{模式} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{P} & \textbf{R} & \textbf{F1} \\
-      \midrule
-      B2 & Full (6张训练) & 6 & 3 & 0 & 0.67 & 1.00 & 0.80 \\
-      B2 & Zeroshot (直接推理) & 1 & 2 & 5 & 0.33 & 0.17 & 0.22 \\
-      B2 & \textbf{Fewshot (3-shot)} & 6 & 1 & 0 & 0.86 & 1.00 & \textbf{0.92} \\
-      \midrule
-      B3 & Full (12张训练) & 6 & 4 & 0 & 0.60 & 1.00 & 0.75 \\
-      B3 & Zeroshot (直接推理) & 0 & 10 & 6 & 0.00 & 0.00 & 0.00 \\
-      B3 & Fewshot (3-shot) & 5 & 4 & 1 & 0.56 & 0.83 & 0.67 \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{alertblock}{关键发现}
-    \begin{itemize}
-      \item \textbf{B2 fewshot F1=0.92 $>$ B2 full F1=0.80} — 3-shot 微调优于从零训练！
-      \item B3 zeroshot F1=0.00 — 完全失败（域偏移大）
-      \item B2 zeroshot F1=0.22 — 部分成功（域偏移较小）
-      \item Few-shot 是跨域迁移的有效策略
-    \end{itemize}
-  \end{alertblock}
-\end{frame}
-
-\begin{frame}{鼠肝 v2：传统 CV vs RF-DETR vs SAM2}
-  \begin{block}{三种方法对比（test set F1）}
-    \begin{tabular}{llccc}
-      \toprule
-      \textbf{Batch} & \textbf{方法} & \textbf{F1} & \textbf{P} & \textbf{R} \\
-      \midrule
-      B1 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
-      B1 & RF-DETR & \textbf{1.00} & 1.00 & 1.00 \\
-      B1 & SAM2 (bbox-guided) & \textbf{1.00} & 1.00 & 1.00 \\
-      \midrule
-      B2 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
-      B2 & RF-DETR & \textbf{0.80} & 0.67 & 1.00 \\
-      B2 & SAM2 (fewshot) & \textbf{0.92} & 0.86 & 1.00 \\
-      \midrule
-      B3 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
-      B3 & RF-DETR & \textbf{0.75} & 0.60 & 1.00 \\
-      B3 & SAM2 (fewshot) & 0.67 & 0.56 & 0.83 \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{alertblock}{结论}
-    传统 CV（Otsu 阈值分割）完全无效。RF-DETR 是有效的检测方案。SAM2 bbox-guided 分割 F1 = RF-DETR bbox F1（不增不减检测，只做分割）。
-  \end{alertblock}
-\end{frame}
-
-\begin{frame}{鼠肝 v2：SAM2 绿色 mask 可视化}
-  \begin{columns}[T]
-    \column{0.32\textwidth}
-    \begin{center}
-      \includegraphics[width=\textwidth]{b1_full_seg.jpg}
-      \vspace{-0.5em}
-      \footnotesize B1 Full: F1=\textbf{1.00}
-    \end{center}
-    \column{0.32\textwidth}
-    \begin{center}
-      \includegraphics[width=\textwidth]{b2_full_seg.jpg}
-      \vspace{-0.5em}
-      \footnotesize B2 Full: F1=\textbf{0.80}
-    \end{center}
-    \column{0.32\textwidth}
-    \begin{center}
-      \includegraphics[width=\textwidth]{b2_fewshot_seg.jpg}
-      \vspace{-0.5em}
-      \footnotesize B2 Fewshot: F1=\textbf{0.92}
-    \end{center}
-  \end{columns}
-  \vspace{0.3em}
-  \begin{block}{可视化说明}
-    \footnotesize 绿色填充 = SAM2 分割 mask；红色框 = GT bbox。B1（2592$\times$1944，大目标）完美检测。B2（4000$\times$3000，小目标）全量训练有 3 个 FP。B2 fewshot（B1 checkpoint + 3 张微调）仅 1 个 FP，\textbf{优于全量训练}。
-  \end{block}
-\end{frame}
-
-\begin{frame}{鼠肝 v2：联邦学习四组策略}
-  \begin{block}{FL 策略对比（YOLOv12n, 10 rounds $\times$ 10 local epochs）}
-    \begin{tabular}{lllccccr}
-      \toprule
-      \textbf{Tag} & \textbf{Gate} & \textbf{Order} & \textbf{Final mAP50} & \textbf{Final mAP50-95} & \textbf{Best mAP50-95} & \textbf{Best@Rd} \\
-      \midrule
-      F1 & none & b1$\to$b2$\to$b3 & 0.30 & 0.24 & 0.26 & R3 \\
-      F2 & soft (EWA) & b1$\to$b2$\to$b3 & 0.75 & 0.47 & 0.47 & R10 \\
-      F3 & hard & b1$\to$b2$\to$b3 & \textbf{0.92} & \textbf{0.62} & 0.62 & R5 \\
-      F4 & hard & b3$\to$b2$\to$b1 & 0.91 & 0.51 & 0.51 & R10 \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{columns}[T]
-    \column{0.48\textwidth}
-    \begin{alertblock}{F3 hard gate 赢家}
-      \begin{itemize}
-        \item mAP50=0.92, mAP50-95=0.62
-        \item R4 收敛后冻结（hard gate 阻断后续更新）
-        \item b1 先跑建立强基座
-      \end{itemize}
-    \end{alertblock}
-    \column{0.48\textwidth}
-    \begin{block}{B2 修复前后 FL 对比}
-      \begin{tabular}{lcc}
-        \toprule
-        & 修复前 & 修复后 \\
-        \midrule
-        F3 & 0.60 & \textbf{0.92} \\
-        F4 & 0.10 & \textbf{0.91} \\
-        F2 & 0.88 & 0.75 \\
-        \bottomrule
-      \end{tabular}
-    \end{block}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{鼠肝 v2：FL 收敛曲线}
-  \begin{block}{逐轮 mAP50 变化}
-    \begin{tabular}{lcccccccccc}
-      \toprule
-      & R1 & R2 & R3 & R4 & R5 & R6 & R7 & R8 & R9 & R10 \\
-      \midrule
-      F1 (none) & .28 & .32 & .33 & .31 & .31 & .28 & .28 & .30 & .30 & .30 \\
-      F2 (soft) & .28 & .32 & .35 & .35 & .35 & .58 & .65 & .67 & .72 & .75 \\
-      F3 (hard) & .37 & .31 & .74 & \textbf{.92} & .92 & .92 & .92 & .92 & .92 & .92 \\
-      F4 (hard) & .31 & .54 & .71 & .84 & .84 & .84 & .84 & .86 & .86 & .91 \\
-      \bottomrule
-    \end{tabular}
-  \end{block}
-  \vspace{0em}
-  \begin{columns}[T]
-    \column{0.48\textwidth}
-    \begin{alertblock}{F3 hard gate: R4 跳跃}
-      \begin{itemize}
-        \item R3$\to$R4: 0.74$\to$0.92（+18pp 跳跃）
-        \item R4 后完全冻结
-        \item hard gate = 只接受优于当前的更新
-      \end{itemize}
-    \end{alertblock}
-    \column{0.48\textwidth}
-    \begin{block}{F2 soft gate: 平滑收敛}
-      \begin{itemize}
-        \item R5$\to$R6: 0.35$\to$0.58（开始加速）
-        \item R10 仍在上升（未收敛）
-        \item soft gate = EWA 加权聚合
-      \end{itemize}
-    \end{block}
-  \end{columns}
-\end{frame}
-
-% ========================================================================
 \section{MultiOrg 实验结果}
 
 \begin{frame}{标注者选择对评估的影响}
@@ -885,6 +553,338 @@
   \begin{block}{方向转向：视觉原语框架}
     bbox → SAM2 mask → 形态学特征（不受像素尺度影响）→ FL 聚合 primitive 分布
   \end{block}
+\end{frame}
+
+% ========================================================================
+\section{鼠肝 v2：B2 图片反序 Bug}
+
+\begin{frame}{踩坑：B2 图片反序 → 训练 mAP=0}
+  \begin{alertblock}{铁律：图片重命名必须通过 annotations.json 映射，不能按排序索引}
+    \begin{itemize}
+      \item 鼠肝 v2 实验中 B2 训练 loss=15.4（B1/B3 仅 6.9），mAP=0
+      \item 标签内容正确（和 annotations.json 一致），但图片重命名时\textbf{反序}了
+      \item image\_00.jpg 实际是 image\_09 的图 $\to$ 正确标签配在错误图片上
+    \end{itemize}
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{诊断过程}
+    \begin{tabular}{p{2.5cm}p{3.5cm}p{5cm}}
+      \toprule
+      \textbf{步骤} & \textbf{脚本} & \textbf{结果} \\
+      \midrule
+      MD5 对比 & check\_pairing.py & B1/B2 同名图不同 $\to$ 图片没问题 \\
+      标签验证 & verify\_labels.py & 标签 $\to$ annotations.json 全匹配 \\
+      extract 配对 & verify\_labels.py & 0/10 正确（排序索引配对）\\
+      \alert{像素相似度} & check\_image\_naming.py & \alert{B2 全部反序}（0/10）\\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{根因}
+    标注图 \texttt{微信图片\_xxx.jpg} vs 原图 \texttt{image\_00.jpg}，排序方向相反 $\to$ 按索引配对全错。
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{B2 修复前后对比}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{alertblock}{修复前（图片反序）}
+      \begin{itemize}
+        \item 初始 loss = \alert{15.4}（B1/B3 = 6.9）
+        \item 16 epoch 后 loss = 11.1（几乎不降）
+        \item val mAP50 = \alert{0.011}
+        \item test F1 = \alert{0.00}
+        \item 模型学到"全抑制"：n\_det=0
+      \end{itemize}
+    \end{alertblock}
+    \column{0.48\textwidth}
+    \begin{block}{修复后（图片正序）}
+      \begin{itemize}
+        \item ep0 val mAP50 = \textbf{0.555}
+        \item ep1 val mAP50 = \textbf{0.794}
+        \item ep8 best mAP50-95 = \textbf{0.675}
+        \item ep20 final mAP50 = \textbf{0.812}
+        \item 正常收敛曲线
+      \end{itemize}
+    \end{block}
+  \end{columns}
+  \vspace{0em}
+  \begin{block}{诊断脚本链}
+    \begin{tabular}{p{3.5cm}p{8cm}}
+      \toprule
+      \textbf{脚本} & \textbf{检查内容} \\
+      \midrule
+      check\_pairing.py & 图片 MD5 + 标注框像素统计 \\
+      verify\_labels.py & annotations.json bbox vs YOLO label 对比 \\
+      check\_image\_naming.py & images/ vs annotated/ 像素相似度 $\to$ \textbf{找到根因} \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{教训：训练 loss 异常高（2x 于同类）= 数据配对问题的信号}
+  \end{alertblock}
+\end{frame}
+
+% ========================================================================
+\section{鼠肝 v2：实验设计}
+
+\begin{frame}{鼠肝 v2：14 实验矩阵}
+  \begin{block}{数据分配（独立 train/val/test）}
+    \begin{tabular}{lcccccc}
+      \toprule
+      \textbf{批次} & \textbf{张数} & \textbf{分辨率} & \textbf{Train} & \textbf{Val} & \textbf{Test} & \textbf{Fewshot} \\
+      \midrule
+      B1 & 10 & 2592$\times$1944 & 6 & 2 & 2 & 3 \\
+      B2 & 10 & 4000$\times$3000 & 6 & 2 & 2 & 3 \\
+      B3 & 20 & 4000$\times$3000 & 12 & 4 & 4 & 3 \\
+      \textbf{Central} & \textbf{40} & \textbf{混合} & \textbf{24} & \textbf{8} & — & — \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+    \begin{block}{Step 1: Baseline+Ceiling (4)}
+      \begin{itemize}
+        \item B1/B2/B3 独立训练
+        \item Central 集中式上界
+        \item RF-DETR Small, COCO 预训练
+      \end{itemize}
+    \end{block}
+    \column{0.32\textwidth}
+    \begin{block}{Step 2: 跨域迁移 (4)}
+      \begin{itemize}
+        \item B1$\to$B2/B3 zeroshot
+        \item B1$\to$B2/B3 fewshot (3-shot)
+        \item 传统 CV (Otsu) 对照
+        \item SAM2 分割
+      \end{itemize}
+    \end{block}
+    \column{0.32\textwidth}
+    \begin{block}{Step 3: 联邦学习 (6)}
+      \begin{itemize}
+        \item F1: none gate, b1$\to$b2$\to$b3
+        \item F2: soft gate (EWA)
+        \item F3: hard gate, b1$\to$b2$\to$b3
+        \item F4: hard gate, b3$\to$b2$\to$b1
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：模型与训练参数}
+  \begin{block}{Baseline: RF-DETR Small (NMS-free Transformer)}
+    \begin{tabular}{lccc}
+      \toprule
+      & \textbf{B1} & \textbf{B2} & \textbf{B3} \\
+      \midrule
+      Resolution & 544 & 768 & 768 \\
+      Batch size & 4 & 1 & 1 \\
+      Grad accum & 1 & 1 & 1 \\
+      Epochs & 20 & 20 & 20 \\
+      Early stop & patience=10 & patience=10 & patience=10 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{FL: YOLOv12n (轻量级, 3-client 顺序链式)}
+    \begin{itemize}
+      \item 10 rounds $\times$ 10 local epochs/round
+      \item imgsz=640, batch=8, workers=0 (Windows)
+      \item Gate: none / soft (EWA) / hard (w\_local=0 or 1)
+      \item 统一 val set = B1/val（公平比较，EWA 信号基于 B1 val）
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{v1 $\to$ v2 关键改进}
+    独立 test set；RF-DETR 替代 YOLOv12n；14 实验全覆盖
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：Baseline \& Ceiling（test set F1）}
+  \begin{block}{RF-DETR Small, COCO 预训练, 独立 test set}
+    \begin{tabular}{lcccccccr}
+      \toprule
+      \textbf{模型} & \textbf{训练量} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{val mAP50} \\
+      \midrule
+      B1 & 6张 & 4 & 0 & 0 & 1.00 & 1.00 & \textbf{1.00} & 1.000 \\
+      B2 & 6张 & 6 & 3 & 0 & 0.67 & 1.00 & \textbf{0.80} & 0.818 \\
+      B3 & 12张 & 6 & 4 & 0 & 0.60 & 1.00 & \textbf{0.75} & 0.881 \\
+      Central & 24张 & 15 & 11 & 1 & 0.58 & 0.94 & \textbf{0.71} & 0.872 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{alertblock}{B2 修复前后对比}
+      \begin{itemize}
+        \item 修复前：F1=\alert{0.00}, mAP=0.011
+        \item 修复后：F1=\textbf{0.80}, mAP=0.818
+        \item Central 也受益：0.54$\to$0.71
+      \end{itemize}
+    \end{alertblock}
+    \column{0.48\textwidth}
+    \begin{block}{观察}
+      \begin{itemize}
+        \item B1 完美（2592$\times$1944, 大目标）
+        \item B2/B3 精度略低（4000$\times$3000, 小目标）
+        \item Central 合并数据反而不如 B1 单独
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：跨域迁移（B1$\to$B2/B3）}
+  \begin{block}{B1 checkpoint $\to$ B2/B3 test set}
+    \begin{tabular}{llcccccc}
+      \toprule
+      \textbf{目标} & \textbf{模式} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{P} & \textbf{R} & \textbf{F1} \\
+      \midrule
+      B2 & Full (6张训练) & 6 & 3 & 0 & 0.67 & 1.00 & 0.80 \\
+      B2 & Zeroshot (直接推理) & 1 & 2 & 5 & 0.33 & 0.17 & 0.22 \\
+      B2 & \textbf{Fewshot (3-shot)} & 6 & 1 & 0 & 0.86 & 1.00 & \textbf{0.92} \\
+      \midrule
+      B3 & Full (12张训练) & 6 & 4 & 0 & 0.60 & 1.00 & 0.75 \\
+      B3 & Zeroshot (直接推理) & 0 & 10 & 6 & 0.00 & 0.00 & 0.00 \\
+      B3 & Fewshot (3-shot) & 5 & 4 & 1 & 0.56 & 0.83 & 0.67 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{关键发现}
+    \begin{itemize}
+      \item \textbf{B2 fewshot F1=0.92 $>$ B2 full F1=0.80} — 3-shot 微调优于从零训练！
+      \item B3 zeroshot F1=0.00 — 完全失败（域偏移大）
+      \item B2 zeroshot F1=0.22 — 部分成功（域偏移较小）
+      \item Few-shot 是跨域迁移的有效策略
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：传统 CV vs RF-DETR vs SAM2}
+  \begin{block}{三种方法对比（test set F1）}
+    \begin{tabular}{llccc}
+      \toprule
+      \textbf{Batch} & \textbf{方法} & \textbf{F1} & \textbf{P} & \textbf{R} \\
+      \midrule
+      B1 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
+      B1 & RF-DETR & \textbf{1.00} & 1.00 & 1.00 \\
+      B1 & SAM2 (bbox-guided) & \textbf{1.00} & 1.00 & 1.00 \\
+      \midrule
+      B2 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
+      B2 & RF-DETR & \textbf{0.80} & 0.67 & 1.00 \\
+      B2 & SAM2 (fewshot) & \textbf{0.92} & 0.86 & 1.00 \\
+      \midrule
+      B3 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
+      B3 & RF-DETR & \textbf{0.75} & 0.60 & 1.00 \\
+      B3 & SAM2 (fewshot) & 0.67 & 0.56 & 0.83 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{结论}
+    传统 CV（Otsu 阈值分割）完全无效。RF-DETR 是有效的检测方案。SAM2 bbox-guided 分割 F1 = RF-DETR bbox F1（不增不减检测，只做分割）。
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：SAM2 绿色 mask 可视化}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+    \begin{center}
+      \includegraphics[width=\textwidth]{b1_full_seg.jpg}
+      \vspace{-0.5em}
+      \footnotesize B1 Full: F1=\textbf{1.00}
+    \end{center}
+    \column{0.32\textwidth}
+    \begin{center}
+      \includegraphics[width=\textwidth]{b2_full_seg.jpg}
+      \vspace{-0.5em}
+      \footnotesize B2 Full: F1=\textbf{0.80}
+    \end{center}
+    \column{0.32\textwidth}
+    \begin{center}
+      \includegraphics[width=\textwidth]{b2_fewshot_seg.jpg}
+      \vspace{-0.5em}
+      \footnotesize B2 Fewshot: F1=\textbf{0.92}
+    \end{center}
+  \end{columns}
+  \vspace{0.3em}
+  \begin{block}{可视化说明}
+    \footnotesize 绿色填充 = SAM2 分割 mask；红色框 = GT bbox。B1（2592$\times$1944，大目标）完美检测。B2（4000$\times$3000，小目标）全量训练有 3 个 FP。B2 fewshot（B1 checkpoint + 3 张微调）仅 1 个 FP，\textbf{优于全量训练}。
+  \end{block}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：联邦学习四组策略}
+  \begin{block}{FL 策略对比（YOLOv12n, 10 rounds $\times$ 10 local epochs）}
+    \begin{tabular}{lllccccr}
+      \toprule
+      \textbf{Tag} & \textbf{Gate} & \textbf{Order} & \textbf{Final mAP50} & \textbf{Final mAP50-95} & \textbf{Best mAP50-95} & \textbf{Best@Rd} \\
+      \midrule
+      F1 & none & b1$\to$b2$\to$b3 & 0.30 & 0.24 & 0.26 & R3 \\
+      F2 & soft (EWA) & b1$\to$b2$\to$b3 & 0.75 & 0.47 & 0.47 & R10 \\
+      F3 & hard & b1$\to$b2$\to$b3 & \textbf{0.92} & \textbf{0.62} & 0.62 & R5 \\
+      F4 & hard & b3$\to$b2$\to$b1 & 0.91 & 0.51 & 0.51 & R10 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{alertblock}{F3 hard gate 赢家}
+      \begin{itemize}
+        \item mAP50=0.92, mAP50-95=0.62
+        \item R4 收敛后冻结（hard gate 阻断后续更新）
+        \item b1 先跑建立强基座
+      \end{itemize}
+    \end{alertblock}
+    \column{0.48\textwidth}
+    \begin{block}{B2 修复前后 FL 对比}
+      \begin{tabular}{lcc}
+        \toprule
+        & 修复前 & 修复后 \\
+        \midrule
+        F3 & 0.60 & \textbf{0.92} \\
+        F4 & 0.10 & \textbf{0.91} \\
+        F2 & 0.88 & 0.75 \\
+        \bottomrule
+      \end{tabular}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：FL 收敛曲线}
+  \begin{block}{逐轮 mAP50 变化}
+    \begin{tabular}{lcccccccccc}
+      \toprule
+      & R1 & R2 & R3 & R4 & R5 & R6 & R7 & R8 & R9 & R10 \\
+      \midrule
+      F1 (none) & .28 & .32 & .33 & .31 & .31 & .28 & .28 & .30 & .30 & .30 \\
+      F2 (soft) & .28 & .32 & .35 & .35 & .35 & .58 & .65 & .67 & .72 & .75 \\
+      F3 (hard) & .37 & .31 & .74 & \textbf{.92} & .92 & .92 & .92 & .92 & .92 & .92 \\
+      F4 (hard) & .31 & .54 & .71 & .84 & .84 & .84 & .84 & .86 & .86 & .91 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{alertblock}{F3 hard gate: R4 跳跃}
+      \begin{itemize}
+        \item R3$\to$R4: 0.74$\to$0.92（+18pp 跳跃）
+        \item R4 后完全冻结
+        \item hard gate = 只接受优于当前的更新
+      \end{itemize}
+    \end{alertblock}
+    \column{0.48\textwidth}
+    \begin{block}{F2 soft gate: 平滑收敛}
+      \begin{itemize}
+        \item R5$\to$R6: 0.35$\to$0.58（开始加速）
+        \item R10 仍在上升（未收敛）
+        \item soft gate = EWA 加权聚合
+      \end{itemize}
+    \end{block}
+  \end{columns}
 \end{frame}
 
 % ========================================================================
