@@ -356,6 +356,7 @@ def evaluate_detections_mask(detections, gt_masks, iou_threshold=0.5):
             # 没有 mask，跳过（不应该发生）
             tp_list.append(0)
             fp_list.append(1)
+            det['matched'] = False
             continue
 
         best_iou, best_gt = 0, -1
@@ -372,9 +373,12 @@ def evaluate_detections_mask(detections, gt_masks, iou_threshold=0.5):
             matched_gt[best_gt] = True
             tp_list.append(1)
             fp_list.append(0)
+            det['matched'] = True
+            det['match_iou'] = float(best_iou)
         else:
             tp_list.append(0)
             fp_list.append(1)
+            det['matched'] = False
 
     tp_cum = np.cumsum(tp_list)
     fp_cum = np.cumsum(fp_list)

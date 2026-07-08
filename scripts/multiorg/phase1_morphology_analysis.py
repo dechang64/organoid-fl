@@ -38,28 +38,51 @@ def extract_primitives(results_json):
         fp_bbox = img_data.get('fp_bbox', 0)
         
         detections = img_data.get('detections', [])
-        for i, det in enumerate(detections):
-            # TP = first tp_bbox detections, FP = rest
-            label = 'TP' if i < tp_bbox else 'FP'
-            
-            morph = det.get('morphology', det)  # might be nested
-            if 'area' not in morph:
-                morph = det  # try direct
-            
-            primitive = {
-                'image': img_name,
-                'label': label,
-                'area': float(morph.get('area', 0)),
-                'perimeter': float(morph.get('perimeter', 0)),
-                'circularity': float(morph.get('circularity', 0)),
-                'solidity': float(morph.get('solidity', 0)),
-                'aspect_ratio': float(morph.get('aspect_ratio', 0)),
-                'eccentricity': float(morph.get('eccentricity', 0)),
-                'confidence': float(morph.get('confidence', det.get('confidence', 0))),
-            }
-            primitives.append(primitive)
+        
+        # Bug fix: detections 可能不是 TP-first 排序
+        # 检查每个 detection 是否有 matched/is_tp 字段
+        if detections and 'matched' in detections[0]:
+            # 有 matched 字段，直接用
+            for det in detections:
+                label = 'TP' if det.get('matched', False) else 'FP'
+                primitives.append(_make_primitive(img_name, label, det))
+        elif detections and 'is_tp' in detections[0]:
+            for det in detections:
+                label = 'TP' if det.get('is_tp', False) else 'FP'
+                primitives.append(_make_primitive(img_name, label, det))
+        else:
+            # Fallback: 假设 TP 在前（按 confidence 降序匹配 IoU）
+            # 但这不一定准确，打印警告
+            if tp_bbox > 0 and fp_bbox > 0:
+                print(f"  [WARN] {img_name}: no matched/is_tp field, assuming TP-first order")
+            for i, det in enumerate(detections):
+                label = 'TP' if i < tp_bbox else 'FP'
+                primitives.append(_make_primitive(img_name, label, det))
     
     return primitives
+
+
+def _make_primitive(img_name, label, det):
+    """从 detection dict 提取形态学特征"""
+    # MultiOrg SAM2: morphology fields directly on det (not nested)
+    morph = det.get('morphology', det)
+    if 'area' not in morph:
+        morph = det
+    
+    # eccentricity might not exist in MultiOrg (only mouse liver has it)
+    ecc = float(morph.get('eccentricity', 0))
+    
+    return {
+        'image': img_name,
+        'label': label,
+        'area': float(morph.get('area', 0)),
+        'perimeter': float(morph.get('perimeter', 0)),
+        'circularity': float(morph.get('circularity', 0)),
+        'solidity': float(morph.get('solidity', 0)),
+        'aspect_ratio': float(morph.get('aspect_ratio', 0)),
+        'eccentricity': ecc,
+        'confidence': float(morph.get('confidence', det.get('confidence', 0))),
+    }
 
 
 def analyze(primitives, output_dir):
@@ -85,8 +108,9 @@ def analyze(primitives, output_dir):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    # t-SNE
-    perplexity = min(5, len(X) - 1)
+    # t-SNE — perplexity scales with dataset size
+    n = len(X)
+    perplexity = min(30, max(5, n - 1))  # Bug fix: was min(5, n-1), too low for large data
     tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
     X_2d = tsne.fit_transform(X_scaled)
     
@@ -120,9 +144,15 @@ def analyze(primitives, output_dir):
     for i, feat in enumerate(features):
         tp_vals = X[tp_mask, i]
         fp_vals = X[fp_mask, i]
-        tp_medians.append(np.median(tp_vals))
-        fp_medians.append(np.median(fp_vals))
-        u, p = mannwhitneyu(tp_vals, fp_vals, alternative='two-sided')
+        tp_medians.append(np.median(tp_vals) if len(tp_vals) > 0 else 0)
+        fp_medians.append(np.median(fp_vals) if len(fp_vals) > 0 else 0)
+        if len(tp_vals) > 0 and len(fp_vals) > 0:
+            try:
+                u, p = mannwhitneyu(tp_vals, fp_vals, alternative='two-sided')
+            except ValueError:
+                p = 1.0  # all values identical
+        else:
+            p = 1.0
         p_values.append(p)
     
     fig, axes = plt.subplots(1, 2, figsize=(14, 6), constrained_layout=True)
@@ -142,27 +172,33 @@ def analyze(primitives, output_dir):
         sig = '***' if p < 0.001 else '**' if p < 0.01 else '*' if p < 0.05 else 'ns'
         ax.text(-np.log10(p) + 0.1, i, sig, va='center', fontsize=11, fontweight='bold')
     
-    # Classification
-    ax = axes[1]
-    loo = LeaveOneOut()
+    # Classification — use 5-fold CV for large datasets, LOO for small
+    n_samples = len(y)
+    if n_samples > 200:
+        from sklearn.model_selection import StratifiedKFold
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        cv_name = "5-fold"
+    else:
+        cv = LeaveOneOut()
+        cv_name = "LOO"
     
     results = {'Baseline (all TP)': y.mean()}
     
     # Morphology only
     X_morph = X_scaled[:, :6]  # exclude confidence
-    scores = cross_val_score(LogisticRegression(random_state=42, max_iter=1000), X_morph, y, cv=loo, scoring='accuracy')
+    scores = cross_val_score(LogisticRegression(random_state=42, max_iter=1000), X_morph, y, cv=cv, scoring='accuracy')
     results['Morphology only (LR)'] = scores.mean()
     
-    scores = cross_val_score(RandomForestClassifier(n_estimators=50, random_state=42), X_morph, y, cv=loo, scoring='accuracy')
+    scores = cross_val_score(RandomForestClassifier(n_estimators=50, random_state=42), X_morph, y, cv=cv, scoring='accuracy')
     results['Morphology only (RF)'] = scores.mean()
     
     # Confidence only
     X_conf = X_scaled[:, 6:7]
-    scores = cross_val_score(LogisticRegression(random_state=42), X_conf, y, cv=loo, scoring='accuracy')
+    scores = cross_val_score(LogisticRegression(random_state=42), X_conf, y, cv=cv, scoring='accuracy')
     results['Confidence only (LR)'] = scores.mean()
     
     # All features
-    scores = cross_val_score(LogisticRegression(random_state=42, max_iter=1000), X_scaled, y, cv=loo, scoring='accuracy')
+    scores = cross_val_score(LogisticRegression(random_state=42, max_iter=1000), X_scaled, y, cv=cv, scoring='accuracy')
     results['All features (LR)'] = scores.mean()
     
     names = list(results.keys())
@@ -172,8 +208,8 @@ def analyze(primitives, output_dir):
     ax.axhline(y=results['Baseline (all TP)'], color='#EF4444', linestyle='--', linewidth=1.5)
     ax.set_xticks(range(len(names)))
     ax.set_xticklabels([n.replace(' (', '\n(') for n in names], fontsize=9)
-    ax.set_ylabel('LOO Accuracy', fontsize=12)
-    ax.set_title('Classification: Can Morphology Separate TP/FP?', fontsize=14, fontweight='bold')
+    ax.set_ylabel(f'{cv_name} Accuracy', fontsize=12)
+    ax.set_title(f'Classification: Can Morphology Separate TP/FP? ({cv_name})', fontsize=14, fontweight='bold')
     ax.set_ylim(0, 1.0)
     for bar, acc in zip(bars, accs):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, f'{acc:.3f}',
