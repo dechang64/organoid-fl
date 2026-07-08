@@ -362,6 +362,48 @@
   \end{columns}
 \end{frame}
 
+\begin{frame}{鼠肝 Batch 1：最早实验结果（2026-06）}
+  \begin{block}{实验设计：RF-DETR few-shot + SAM2 zero-shot}
+    \begin{itemize}
+      \item Batch 1（10张, 2592$\times$1944, 2026-01）$\to$ 6 train + 2 test
+      \item RF-DETR Small (COCO) + SAM2 zero-shot (bbox prompt)
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{检测结果（RF-DETR bbox）}
+      \begin{tabular}{lc}
+        \toprule
+        \textbf{指标} & \textbf{Batch 1 test} \\
+        \midrule
+        TP & 7 \\
+        FP & 0 \\
+        FN & 0 \\
+        Precision & \textbf{1.00} \\
+        Recall & \textbf{1.00} \\
+        F1 & \textbf{1.00} \\
+        \bottomrule
+      \end{tabular}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{分割结果（SAM2 mask）}
+      \begin{tabular}{lc}
+        \toprule
+        \textbf{指标} & \textbf{Batch 1 test} \\
+        \midrule
+        mask F1 & \textbf{93.9\%} \\
+        mask IoU (TP) & 0.872 \\
+        \bottomrule
+      \end{tabular}
+    \end{block}
+  \end{columns}
+  \vspace{0em}
+  \begin{alertblock}{意义}
+    RF-DETR + SAM2 管线可行。红色折线标注 $\to$ SAM2 zero-shot 即可高精度。
+  \end{alertblock}
+\end{frame}
+
 \begin{frame}{鼠肝实验：三方案结果 (YOLOv12n, CPU)}
   \begin{alertblock}{方案1: 跨域推理 (Batch1 训练 → Batch2/3 推理)}
     \begin{tabular}{lcccc}
