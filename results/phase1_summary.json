@@ -1,0 +1,29 @@
+{
+  "phase": "Phase 1: 形态学特征提取与 TP/FP 可分性分析",
+  "date": "2026-07-08",
+  "data_source": "鼠肝 v2 SAM2 results (B1/B2/B3, full/fewshot)",
+  "total_primitives": 39,
+  "tp": 27,
+  "fp": 12,
+  "features": [
+    "area",
+    "perimeter",
+    "circularity",
+    "solidity",
+    "aspect_ratio",
+    "eccentricity",
+    "confidence"
+  ],
+  "key_findings": {
+    "1. 形态学特征单独不可分": "6个形态学特征全部 p>0.05 (ns)，TP/FP在面积/圆度/solidity/长宽比/离心率上无显著差异。这与MultiOrg上DINOv2+DPMM失败一致——TP/FP在所有可观测特征上不可分。",
+    "2. confidence是唯一显著特征": "RF-DETR confidence p<0.0001***，TP median=0.853 vs FP median=0.287。confidence是区分TP/FP的唯一有效信号。",
+    "3. 组合分类准确率": "所有特征组合 LOO LR = 0.821，比 baseline 0.692 高 13pp。但形态学单独只有 0.744（仅高 5pp），且 RF 只有 0.641（低于baseline）。",
+    "4. 结论": "形态学特征对TP/FP过滤贡献很小，主要靠confidence。视觉原语方案需要加入VLM语义确认（Step 4）和CTM持续思考（多步推理）来补充形态学特征的不足。"
+  },
+  "implications": [
+    "形态学特征不够用 → 需要VLM语义确认（Step 4）",
+    "confidence有效但不够强(0.821) → 需要CTM多步推理修正",
+    "FL聚合primitive分布仍可行 → 虽然TP/FP不可分，但不同batch的primitive分布有差异（area范围不同），可以用来做跨域分析",
+    "下一步：Phase 2 VLM语义确认，用GLM-4V判断mask区域是否为organoid"
+  ]
+}
