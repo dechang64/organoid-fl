@@ -1099,43 +1099,6 @@
   \end{alertblock}
 \end{frame}
 
-\begin{frame}{PCB-Defect-FL：最早的联邦学习实验（2025）}
-  \begin{block}{DeepPCB 数据集}
-    \begin{itemize}
-      \item 工业 PCB 缺陷检测：6 类（短路、断路、毛刺、缺口、鼠咬、杂铜）
-      \item 1500 张（1200 train + 300 val），YOLO 格式
-      \item 从检测数据集裁剪 bbox 区域 $\to$ DeepPCB\_cropped (8008/2005)
-    \end{itemize}
-  \end{block}
-  \vspace{0em}
-  \begin{columns}[T]
-    \column{0.48\textwidth}
-    \begin{block}{Baseline (YOLOv12n, 集中式)}
-      \begin{tabular}{lc}
-        \toprule
-        \textbf{指标} & \textbf{结果} \\
-        \midrule
-        mAP50 & \textbf{98.6\%} \\
-        mAP50-95 & \textbf{78.0\%} \\
-        训练时间 & 29 min (100 ep) \\
-        \bottomrule
-      \end{tabular}
-    \end{block}
-    \column{0.48\textwidth}
-    \begin{block}{FL 实验 (3-client non-IID)}
-      \begin{itemize}
-        \item EWA: $w_c = \exp(-H_c/\alpha)$ 熵加权
-        \item TrustFL: $\kappa_c$ conformity 检测
-        \item 3-client 下 entropy 权重 $\approx 0.33$（太均匀）
-        \item conformity 检测更有效
-      \end{itemize}
-    \end{block}
-  \end{columns}
-  \vspace{0em}
-  \begin{alertblock}{PCB $\to$ Organoid 的技术迁移}
-    PCB-Defect-FL 的 EWA 熵加权 $\to$ organoid-fl 的 FL 监控框架；conformity 检测 $\to$ 幻觉防御；SAM2 分割 $\to$ 类器官形态分析。同一套核心算法跨领域复用。
-  \end{alertblock}
-\end{frame}
 
 \begin{frame}{未来工作：数据集扩展计划}
   \begin{block}{已使用数据集}
@@ -1143,7 +1106,6 @@
       \toprule
       \textbf{数据集} & \textbf{来源} & \textbf{张数} & \textbf{类型} & \textbf{状态} \\
       \midrule
-      DeepPCB & 公开 & 1500 & 工业缺陷 & \checkmark 完成 \\
       鼠肝 B1/B2/B3 & 冬生实验室 & 40 & 类器官检测 & \checkmark 完成 \\
       MultiOrg & NeurIPS 2024 & 411 & 类器官检测 & \checkmark 完成 \\
       \bottomrule
