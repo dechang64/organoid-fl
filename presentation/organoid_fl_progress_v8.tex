@@ -968,29 +968,7 @@
 \end{frame}
 
 % ========================================================================
-\section{联邦学习}
-
-\begin{frame}{EWA 熵加权聚合策略}
-  \begin{block}{核心思想}
-    传统 FedAvg 按样本量均匀加权，忽略客户端模型质量差异。\\
-    EWA 用验证集熵作为信号，\textbf{给更好的客户端更高权重}：
-    \[
-      w_c = \frac{\exp(-H_c / \alpha)}{\sum_{c'} \exp(-H_{c'} / \alpha)}
-    \]
-    其中 $H_c$ 是客户端 $c$ 在验证集上的预测熵，$\alpha$ 是温度参数。
-  \end{block}
-  \vspace{0em}
-  \begin{block}{EWA Effective Interval 理论}
-    \begin{itemize}
-      \item \textbf{IID}：质量差异小 → EWA 退化 → \alert{无优势}
-      \item \textbf{适度异质}：差异可区分 → EWA 最优 → \alert{+1.4\textasciitilde 1.5pp}
-      \item \textbf{极端异质}：信号噪声大 → \alert{+1.1pp}
-    \end{itemize}
-  \end{block}
-\end{frame}
-
-% ========================================================================
-\section{总结}
+\section{MultiOrg 扩展实验}
 
 \begin{frame}{Ensemble 实验：RF-DETR + YOLOv12}
   \begin{block}{三种融合策略结果}
@@ -1105,6 +1083,107 @@
     任何加在预训练模型上的乘性 attention 模块（SE、CBAM、CA、MPCA），初始状态必须是 identity，否则 sigmoid$\approx$0.5 会破坏预训练特征。验证方法：output/input std ratio $\approx$ 1.0。
   \end{alertblock}
 \end{frame}
+
+% ========================================================================
+\section{联邦学习}
+
+\begin{frame}{EWA 熵加权聚合策略}
+  \begin{block}{核心思想}
+    传统 FedAvg 按样本量均匀加权，忽略客户端模型质量差异。\\
+    EWA 用验证集熵作为信号，\textbf{给更好的客户端更高权重}：
+    \[
+      w_c = \frac{\exp(-H_c / \alpha)}{\sum_{c'} \exp(-H_{c'} / \alpha)}
+    \]
+    其中 $H_c$ 是客户端 $c$ 在验证集上的预测熵，$\alpha$ 是温度参数。
+  \end{block}
+  \vspace{0em}
+  \begin{block}{EWA Effective Interval 理论}
+    \begin{itemize}
+      \item \textbf{IID}：质量差异小 → EWA 退化 → \alert{无优势}
+      \item \textbf{适度异质}：差异可区分 → EWA 最优 → \alert{+1.4\textasciitilde 1.5pp}
+      \item \textbf{极端异质}：信号噪声大 → \alert{+1.1pp}
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+% ========================================================================
+\section{视觉原语方案}
+
+\begin{frame}{视觉原语框架：范式转换}
+  \begin{alertblock}{动机：bbox 范式到天花板}
+    \begin{itemize}
+      \item bbox 对不规则类器官只能参考定位，不能做分类判断
+      \item SAHI / NMS / Soft-NMS 都是后处理治标
+      \item \textbf{需要范式转换，不是渐进优化}
+    \end{itemize}
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{视觉原语框架}
+    \begin{tabular}{lll}
+      \toprule
+      \textbf{阶段} & \textbf{输入} & \textbf{输出} \\
+      \midrule
+      1. 检测 & 原图 & bbox (RF-DETR) \\
+      2. 分割 & bbox + 原图 & 无类别 mask (SAM2 zero-shot) \\
+      3. 形态学 & mask & primitive 向量 (面积/圆度/solidity) \\
+      4. 语义确认 & mask + 原图 & VLM 推理 (是/否 organoid) \\
+      5. FL 聚合 & primitive 分布 & 全局 primitive 分布 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{核心思想}
+    FL 聚合的不是模型权重，而是\textbf{primitive 分布}。形态学特征不受像素尺度、成像设备影响。
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{视觉原语方案：技术路线}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Step 1-2: 检测+分割（已完成）}
+      \begin{itemize}
+        \item RF-DETR: bbox 检测
+        \item SAM2 zero-shot: mask 分割
+        \item 鼠肝 B1: F1=1.00, mask F1=93.9\%
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Step 3: 形态学特征}
+      \begin{itemize}
+        \item 面积/周长/圆度
+        \item Solidity/Extent
+        \item 长宽比/离心率
+      \end{itemize}
+    \end{block}
+  \end{columns}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Step 4: VLM 语义确认}
+      \begin{itemize}
+        \item VLM 判断 mask 区域
+        \item ``这是类器官吗?''
+        \item 保留不确定性
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Step 5: FL 聚合分布}
+      \begin{itemize}
+        \item 各 client primitive 直方图
+        \item 全局 = 加权聚合
+        \item 不共享权重，共享知识
+      \end{itemize}
+    \end{block}
+  \end{columns}
+  \vspace{0em}
+  \begin{alertblock}{预期优势}
+    不受像素尺度影响 $\to$ 跨域泛化；保留不确定性 $\to$ 避免强制决策；FL 聚合分布 $\to$ 隐私保护
+  \end{alertblock}
+\end{frame}
+
+
+% ========================================================================
+\section{总结}
 
 \begin{frame}{总结}
   \begin{columns}[T]
