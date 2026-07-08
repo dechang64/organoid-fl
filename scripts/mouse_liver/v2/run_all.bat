@@ -35,6 +35,11 @@ echo Data:   %DATA_ROOT%
 echo Output: %OUTPUT%
 echo.
 
+REM === Step 0: Clean old output ===
+echo [0/8] Cleaning old output...
+if exist %OUTPUT% rmdir /s /q %OUTPUT%
+echo.
+
 REM === Step 1: Baseline + Ceiling ===
 echo [1/8] Data split...
 python scripts\mouse_liver\v2\prepare_data.py --data-root %SRC_ROOT% --output %DATA_ROOT%
