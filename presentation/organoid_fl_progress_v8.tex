@@ -444,6 +444,33 @@
   \end{alertblock}
 \end{frame}
 
+\begin{frame}{鼠肝 v2：SAM2 绿色 mask 可视化}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+    \begin{center}
+      \includegraphics[width=\textwidth]{b1_full_seg.jpg}
+      \vspace{-0.5em}
+      \footnotesize B1 Full: F1=\textbf{1.00}
+    \end{center}
+    \column{0.32\textwidth}
+    \begin{center}
+      \includegraphics[width=\textwidth]{b2_full_seg.jpg}
+      \vspace{-0.5em}
+      \footnotesize B2 Full: F1=\textbf{0.80}
+    \end{center}
+    \column{0.32\textwidth}
+    \begin{center}
+      \includegraphics[width=\textwidth]{b2_fewshot_seg.jpg}
+      \vspace{-0.5em}
+      \footnotesize B2 Fewshot: F1=\textbf{0.92}
+    \end{center}
+  \end{columns}
+  \vspace{0.3em}
+  \begin{block}{可视化说明}
+    \footnotesize 绿色填充 = SAM2 分割 mask；红色框 = GT bbox。B1（2592$\times$1944，大目标）完美检测。B2（4000$\times$3000，小目标）全量训练有 3 个 FP。B2 fewshot（B1 checkpoint + 3 张微调）仅 1 个 FP，\textbf{优于全量训练}。
+  \end{block}
+\end{frame}
+
 \begin{frame}{鼠肝 v2：联邦学习四组策略}
   \begin{block}{FL 策略对比（YOLOv12n, 10 rounds $\times$ 10 local epochs）}
     \begin{tabular}{lllccccr}
