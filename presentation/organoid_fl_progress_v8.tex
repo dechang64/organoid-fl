@@ -212,6 +212,44 @@
 \end{frame}
 
 % ========================================================================
+\section{Intestinal Organoid 实验（最早）}
+
+\begin{frame}{Intestinal Organoid：最早的类器官实验（2026-06）}
+  \begin{block}{Deliod 数据集}
+    \begin{itemize}
+      \item 肠道类器官（intestinal organoid）检测数据集
+      \item Deliod 论文 SOTA: YOLOv8s/1088/300ep $\to$ mAP50=85.7\%
+      \item 关键发现: imgsz=1088（非640）是高分辨率检测的关键
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{我们的实验结果}
+    \begin{tabular}{lcccc}
+      \toprule
+      \textbf{配置} & \textbf{mAP50} & \textbf{mAP50-95} & \textbf{vs Deliod} & \textbf{备注} \\
+      \midrule
+      yolo12n/1088 & 86.7\% & — & +1.0pp & 代差红利 \\
+      \textbf{yolo12s+freebies} & \textbf{88.1\%} & \textbf{62.1\%} & \textbf{+2.4pp} & best=ep57 \\
+      yolo12s+freebies v2 & 88.4\% & 62.2\% & +2.7pp & close\_mosaic 时序问题 \\
+      yolo12m/896 & — & — & — & 20.2M 参数, 训练中 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{alertblock}{超 SOTA：YOLOv12 + freebies}
+      copy\_paste=1.0, mixup=0.15, label\_smoothing=0.1, cos\_lr, close\_mosaic=15 \\
+      \textbf{88.1\% $>$ Deliod 87.5\%}（+0.6pp）
+    \end{alertblock}
+    \column{0.48\textwidth}
+    \begin{block}{失败实验}
+      SAHI: $-$11pp; TTA: +0pp; 下采样: $-$8pp
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% ========================================================================
 \section{MultiOrg 实验结果}
 
 \begin{frame}{标注者选择对评估的影响}
@@ -1102,12 +1140,13 @@
 
 \begin{frame}{未来工作：数据集扩展计划}
   \begin{block}{已使用数据集}
-    \begin{tabular}{lcccc}
+    \begin{tabular}{lccc}
       \toprule
-      \textbf{数据集} & \textbf{来源} & \textbf{张数} & \textbf{类型} & \textbf{状态} \\
+      \textbf{数据集} & \textbf{张数} & \textbf{类型} & \textbf{状态} \\
       \midrule
-      鼠肝 B1/B2/B3 & 冬生实验室 & 40 & 类器官检测 & \checkmark 完成 \\
-      MultiOrg & NeurIPS 2024 & 411 & 类器官检测 & \checkmark 完成 \\
+      Intestinal (Deliod) & — & 肠道类器官 & \checkmark 超 SOTA 88.1\% \\
+      鼠肝 B1/B2/B3 & 40 & 鼠肝类器官 & \checkmark 完成 \\
+      MultiOrg & 411 & 多类器官 & \checkmark 超 SOTA 77.8\% \\
       \bottomrule
     \end{tabular}
   \end{block}
