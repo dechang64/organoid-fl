@@ -1099,42 +1099,72 @@
   \end{alertblock}
 \end{frame}
 
+\begin{frame}{PCB-Defect-FL：最早的联邦学习实验（2025）}
+  \begin{block}{DeepPCB 数据集}
+    \begin{itemize}
+      \item 工业 PCB 缺陷检测：6 类（短路、断路、毛刺、缺口、鼠咬、杂铜）
+      \item 1500 张（1200 train + 300 val），YOLO 格式
+      \item 从检测数据集裁剪 bbox 区域 $\to$ DeepPCB\_cropped (8008/2005)
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Baseline (YOLOv12n, 集中式)}
+      \begin{tabular}{lc}
+        \toprule
+        \textbf{指标} & \textbf{结果} \\
+        \midrule
+        mAP50 & \textbf{98.6\%} \\
+        mAP50-95 & \textbf{78.0\%} \\
+        训练时间 & 29 min (100 ep) \\
+        \bottomrule
+      \end{tabular}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{FL 实验 (3-client non-IID)}
+      \begin{itemize}
+        \item EWA: $w_c = \exp(-H_c/\alpha)$ 熵加权
+        \item TrustFL: $\kappa_c$ conformity 检测
+        \item 3-client 下 entropy 权重 $\approx 0.33$（太均匀）
+        \item conformity 检测更有效
+      \end{itemize}
+    \end{block}
+  \end{columns}
+  \vspace{0em}
+  \begin{alertblock}{PCB $\to$ Organoid 的技术迁移}
+    PCB-Defect-FL 的 EWA 熵加权 $\to$ organoid-fl 的 FL 监控框架；conformity 检测 $\to$ 幻觉防御；SAM2 分割 $\to$ 类器官形态分析。同一套核心算法跨领域复用。
+  \end{alertblock}
+\end{frame}
+
 \begin{frame}{未来工作：数据集扩展计划}
   \begin{block}{已使用数据集}
     \begin{tabular}{lcccc}
       \toprule
-      \textbf{数据集} & \textbf{来源} & \textbf{张数} & \textbf{分辨率} & \textbf{状态} \\
+      \textbf{数据集} & \textbf{来源} & \textbf{张数} & \textbf{类型} & \textbf{状态} \\
       \midrule
-      鼠肝 Batch 1 & 冬生实验室 & 10 & 2592$\times$1944 & \checkmark 完成 \\
-      鼠肝 Batch 2 & 冬生实验室 & 10 & 4000$\times$3000 & \checkmark 完成 \\
-      鼠肝 Batch 3 & 冬生实验室 & 20 & 4000$\times$3000 & \checkmark 完成 \\
-      MultiOrg & NeurIPS 2024 & 411 & 6385$\times$5720 & \checkmark 完成 \\
+      DeepPCB & 公开 & 1500 & 工业缺陷 & \checkmark 完成 \\
+      鼠肝 B1/B2/B3 & 冬生实验室 & 40 & 类器官检测 & \checkmark 完成 \\
+      MultiOrg & NeurIPS 2024 & 411 & 类器官检测 & \checkmark 完成 \\
       \bottomrule
     \end{tabular}
   \end{block}
   \vspace{0em}
   \begin{block}{计划扩展数据集}
-    \begin{tabular}{lccc}
+    \begin{tabular}{lcc}
       \toprule
-      \textbf{数据集} & \textbf{来源} & \textbf{特点} & \textbf{目标} \\
+      \textbf{数据集} & \textbf{特点} & \textbf{目标} \\
       \midrule
-      肠类器官 & 合作实验室 & 不同器官类型 & 跨器官泛化 \\
-      肺类器官 & Orga-Dete 论文 & 4008张, 已有 SOTA & 精度对标 81.4\% \\
-      脑类器官 & 待收集 & 3D 结构复杂 & 形态学多样性 \\
-      \midrule
-      多实验室鼠肝 & 不同机构 & 不同显微镜/染色 & 预处理标准化 \\
-      多倍率数据 & 4X/10X/20X & 分辨率归一化 & 尺度不变性 \\
-      共聚焦/荧光 & 不同成像方式 & 多模态融合 & 跨模态 FL \\
+      肠/肺/脑类器官 & 不同器官类型 & 跨器官泛化 \\
+      多实验室鼠肝 & 不同显微镜/染色 & 预处理标准化 \\
+      多倍率 (4X/10X/20X) & 分辨率差异 & 尺度不变性 \\
+      共聚焦/荧光 & 不同成像方式 & 跨模态 FL \\
       \bottomrule
     \end{tabular}
   \end{block}
   \vspace{0em}
   \begin{alertblock}{核心方向}
-    \begin{itemize}
-      \item 图像预处理标准化模块（分辨率归一化 + CLAHE + 背景扣除 + 位深统一）
-      \item 视觉原语框架：bbox $\to$ SAM2 mask $\to$ 形态学特征 $\to$ FL 聚合 primitive 分布
-      \item 数据飞轮：检测 $\to$ 标注 $\to$ 训练 $\to$ 部署 $\to$ 反馈
-    \end{itemize}
+    预处理标准化 $\to$ 视觉原语 $\to$ FL 聚合 $\to$ 数据飞轮
   \end{alertblock}
 \end{frame}
 
