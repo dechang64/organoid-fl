@@ -13,7 +13,7 @@ if not exist %SRC% (
 )
 
 echo Packing %SRC% -> %DST% (excluding .pth files)...
-powershell -Command "Get-ChildItem -Path '%SRC%' -Recurse -File | Where-Object { $_.Extension -ne '.pth' } | Compress-Archive -DestinationPath '%DST%' -Force"
+powershell -Command "Get-ChildItem -Path '%SRC%' -Recurse -File | Where-Object { $_.Extension -notin '.pth','.ckpt','.pt' } | Compress-Archive -DestinationPath '%DST%' -Force"
 
 if exist %DST% (
     echo.
