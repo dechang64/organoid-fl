@@ -357,35 +357,163 @@
   \end{alertblock}
 \end{frame}
 
-\begin{frame}{鼠肝 v2：B2 修复后初测结果}
-  \begin{block}{B2 RF-DETR 训练曲线（修复后）}
-    \begin{tabular}{lcc}
+\begin{frame}{鼠肝 v2：Baseline \& Ceiling（test set F1）}
+  \begin{block}{RF-DETR Small, COCO 预训练, 独立 test set}
+    \begin{tabular}{lcccccccr}
       \toprule
-      \textbf{Epoch} & \textbf{val mAP50} & \textbf{val mAP50-95} \\
+      \textbf{模型} & \textbf{训练量} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{val mAP50} \\
       \midrule
-      0 (after 1st step) & 0.555 & 0.419 \\
-      1 & 0.794 & 0.593 \\
-      8 (best) & \textbf{0.803} & \textbf{0.675} \\
-      20 (final) & 0.812 & 0.645 \\
+      B1 & 6张 & 4 & 0 & 0 & 1.00 & 1.00 & \textbf{1.00} & 1.000 \\
+      B2 & 6张 & 6 & 3 & 0 & 0.67 & 1.00 & \textbf{0.80} & 0.818 \\
+      B3 & 12张 & 6 & 4 & 0 & 0.60 & 1.00 & \textbf{0.75} & 0.881 \\
+      Central & 24张 & 15 & 11 & 1 & 0.58 & 0.94 & \textbf{0.71} & 0.872 \\
       \bottomrule
     \end{tabular}
   \end{block}
   \vspace{0em}
-  \begin{alertblock}{修复前 $\to$ 修复后}
-    \begin{tabular}{lcc}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{alertblock}{B2 修复前后对比}
+      \begin{itemize}
+        \item 修复前：F1=\alert{0.00}, mAP=0.011
+        \item 修复后：F1=\textbf{0.80}, mAP=0.818
+        \item Central 也受益：0.54$\to$0.71
+      \end{itemize}
+    \end{alertblock}
+    \column{0.48\textwidth}
+    \begin{block}{观察}
+      \begin{itemize}
+        \item B1 完美（2592$\times$1944, 大目标）
+        \item B2/B3 精度略低（4000$\times$3000, 小目标）
+        \item Central 合并数据反而不如 B1 单独
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：跨域迁移（B1$\to$B2/B3）}
+  \begin{block}{B1 checkpoint $\to$ B2/B3 test set}
+    \begin{tabular}{llcccccc}
       \toprule
-      & \textbf{修复前} & \textbf{修复后} \\
+      \textbf{目标} & \textbf{模式} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{P} & \textbf{R} & \textbf{F1} \\
       \midrule
-      初始 loss & 15.4 & 正常 \\
-      best val mAP50 & 0.011 & \textbf{0.812} \\
-      best val mAP50-95 & 0.003 & \textbf{0.675} \\
+      B2 & Full (6张训练) & 6 & 3 & 0 & 0.67 & 1.00 & 0.80 \\
+      B2 & Zeroshot (直接推理) & 1 & 2 & 5 & 0.33 & 0.17 & 0.22 \\
+      B2 & \textbf{Fewshot (3-shot)} & 6 & 1 & 0 & 0.86 & 1.00 & \textbf{0.92} \\
+      \midrule
+      B3 & Full (12张训练) & 6 & 4 & 0 & 0.60 & 1.00 & 0.75 \\
+      B3 & Zeroshot (直接推理) & 0 & 10 & 6 & 0.00 & 0.00 & 0.00 \\
+      B3 & Fewshot (3-shot) & 5 & 4 & 1 & 0.56 & 0.83 & 0.67 \\
       \bottomrule
     \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{关键发现}
+    \begin{itemize}
+      \item \textbf{B2 fewshot F1=0.92 $>$ B2 full F1=0.80} — 3-shot 微调优于从零训练！
+      \item B3 zeroshot F1=0.00 — 完全失败（域偏移大）
+      \item B2 zeroshot F1=0.22 — 部分成功（域偏移较小）
+      \item Few-shot 是跨域迁移的有效策略
+    \end{itemize}
   \end{alertblock}
-  \vspace{0em}
-  \begin{block}{下一步}
-    14 实验全部重跑中（B2 数据已修复，B1/B3 本来没问题）$\to$ 完整结果待更新
+\end{frame}
+
+\begin{frame}{鼠肝 v2：传统 CV vs RF-DETR vs SAM2}
+  \begin{block}{三种方法对比（test set F1）}
+    \begin{tabular}{llccc}
+      \toprule
+      \textbf{Batch} & \textbf{方法} & \textbf{F1} & \textbf{P} & \textbf{R} \\
+      \midrule
+      B1 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
+      B1 & RF-DETR & \textbf{1.00} & 1.00 & 1.00 \\
+      B1 & SAM2 (bbox-guided) & \textbf{1.00} & 1.00 & 1.00 \\
+      \midrule
+      B2 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
+      B2 & RF-DETR & \textbf{0.80} & 0.67 & 1.00 \\
+      B2 & SAM2 (fewshot) & \textbf{0.92} & 0.86 & 1.00 \\
+      \midrule
+      B3 & Traditional (Otsu) & 0.00 & 0.00 & 0.00 \\
+      B3 & RF-DETR & \textbf{0.75} & 0.60 & 1.00 \\
+      B3 & SAM2 (fewshot) & 0.67 & 0.56 & 0.83 \\
+      \bottomrule
+    \end{tabular}
   \end{block}
+  \vspace{0em}
+  \begin{alertblock}{结论}
+    传统 CV（Otsu 阈值分割）完全无效。RF-DETR 是有效的检测方案。SAM2 bbox-guided 分割 F1 = RF-DETR bbox F1（不增不减检测，只做分割）。
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：联邦学习四组策略}
+  \begin{block}{FL 策略对比（YOLOv12n, 10 rounds $\times$ 10 local epochs）}
+    \begin{tabular}{lllccccr}
+      \toprule
+      \textbf{Tag} & \textbf{Gate} & \textbf{Order} & \textbf{Final mAP50} & \textbf{Final mAP50-95} & \textbf{Best mAP50-95} & \textbf{Best@Rd} \\
+      \midrule
+      F1 & none & b1$\to$b2$\to$b3 & 0.30 & 0.24 & 0.26 & R3 \\
+      F2 & soft (EWA) & b1$\to$b2$\to$b3 & 0.75 & 0.47 & 0.47 & R10 \\
+      F3 & hard & b1$\to$b2$\to$b3 & \textbf{0.92} & \textbf{0.62} & 0.62 & R5 \\
+      F4 & hard & b3$\to$b2$\to$b1 & 0.91 & 0.51 & 0.51 & R10 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{alertblock}{F3 hard gate 赢家}
+      \begin{itemize}
+        \item mAP50=0.92, mAP50-95=0.62
+        \item R4 收敛后冻结（hard gate 阻断后续更新）
+        \item b1 先跑建立强基座
+      \end{itemize}
+    \end{alertblock}
+    \column{0.48\textwidth}
+    \begin{block}{B2 修复前后 FL 对比}
+      \begin{tabular}{lcc}
+        \toprule
+        & 修复前 & 修复后 \\
+        \midrule
+        F3 & 0.60 & \textbf{0.92} \\
+        F4 & 0.10 & \textbf{0.91} \\
+        F2 & 0.88 & 0.75 \\
+        \bottomrule
+      \end{tabular}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{鼠肝 v2：FL 收敛曲线}
+  \begin{block}{逐轮 mAP50 变化}
+    \begin{tabular}{lcccccccccc}
+      \toprule
+      & R1 & R2 & R3 & R4 & R5 & R6 & R7 & R8 & R9 & R10 \\
+      \midrule
+      F1 (none) & .28 & .32 & .33 & .31 & .31 & .28 & .28 & .30 & .30 & .30 \\
+      F2 (soft) & .28 & .32 & .35 & .35 & .35 & .58 & .65 & .67 & .72 & .75 \\
+      F3 (hard) & .37 & .31 & .74 & \textbf{.92} & .92 & .92 & .92 & .92 & .92 & .92 \\
+      F4 (hard) & .31 & .54 & .71 & .84 & .84 & .84 & .84 & .86 & .86 & .91 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{alertblock}{F3 hard gate: R4 跳跃}
+      \begin{itemize}
+        \item R3$\to$R4: 0.74$\to$0.92（+18pp 跳跃）
+        \item R4 后完全冻结
+        \item hard gate = 只接受优于当前的更新
+      \end{itemize}
+    \end{alertblock}
+    \column{0.48\textwidth}
+    \begin{block}{F2 soft gate: 平滑收敛}
+      \begin{itemize}
+        \item R5$\to$R6: 0.35$\to$0.58（开始加速）
+        \item R10 仍在上升（未收敛）
+        \item soft gate = EWA 加权聚合
+      \end{itemize}
+    \end{block}
+  \end{columns}
 \end{frame}
 
 % ========================================================================
@@ -882,21 +1010,24 @@
         \item[\checkmark] MPCA Identity Init 铁律发现
         \item[\checkmark] 鼠肝 bbox FL 全部完成（E4-E11）
         \item[\checkmark] \textbf{B2 图片反序 Bug 修复}（mAP 0$\to$0.812）
-        \item[\checkmark] \textbf{鼠肝 v2 14 实验矩阵设计 + 重跑}
+        \item[\checkmark] \textbf{鼠肝 v2 14 实验全部完成}
       \end{itemize}
     \end{block}
     \column{0.48\textwidth}
-    \begin{alertblock}{下一步}
+    \begin{alertblock}{鼠肝 v2 关键结果}
       \begin{itemize}
-        \item[$\rightarrow$] 鼠肝 v2 14 实验全部重跑（B2 修复后）
-        \item[$\rightarrow$] 完整 baseline + transfer + FL 结果分析
-        \item[$\rightarrow$] bbox → SAM2 mask → 形态学特征
-        \item[$\rightarrow$] FL 聚合 primitive 分布（非权重）
-        \item[$\circ$] MultiOrg RF-DETR + SAHI 冲 80\%
-        \item[$\circ$] 论文撰写 + 专利申请
+        \item B1 F1=\textbf{1.00}, B2 F1=\textbf{0.80}, B3=0.75
+        \item B2 fewshot F1=\textbf{0.92} $>$ full 0.80
+        \item F3 hard gate FL mAP50=\textbf{0.92}
+        \item 传统 CV 完全无效（F1=0）
+        \item Central 合并反而不如 B1 单独
       \end{itemize}
     \end{alertblock}
   \end{columns}
+  \vspace{0em}
+  \begin{alertblock}{下一步}
+    bbox $\to$ SAM2 mask $\to$ 形态学特征 $\to$ FL 聚合 primitive 分布 $\to$ 论文撰写 + 专利申请
+  \end{alertblock}
 \end{frame}
 
 \begin{frame}[allowframebreaks]{参考文献}
