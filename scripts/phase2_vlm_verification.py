@@ -435,6 +435,14 @@ def main():
     parser.add_argument('--max-fp', type=int, default=10, help='Max FP detections to evaluate')
     args = parser.parse_args()
 
+    # 路径检查
+    if not os.path.exists(args.json):
+        print(f"[ERROR] SAM2 JSON not found: {args.json}")
+        sys.exit(1)
+    if not os.path.isdir(args.src):
+        print(f"[ERROR] Source image directory not found: {args.src}")
+        sys.exit(1)
+
     output_dir = Path(args.dst)
     crops_dir = output_dir / 'crops'
     output_dir.mkdir(parents=True, exist_ok=True)
