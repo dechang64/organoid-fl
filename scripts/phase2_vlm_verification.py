@@ -199,7 +199,10 @@ def call_vlm(crop_path, prompt, output_path, timeout=60, zai_config=None):
     if requests is None:
         return None, "requests library required: pip install requests"
     if zai_config is None:
-        zai_config = load_zai_config()
+        try:
+            zai_config = load_zai_config()
+        except FileNotFoundError as e:
+            return None, f"VLM skipped: {e}"
 
     base_url = zai_config.get('baseUrl', '')
     api_key = zai_config.get('apiKey', '')
@@ -422,6 +425,7 @@ def main():
     parser.add_argument('--dataset', default='multiorg', choices=['multiorg', 'mouse_liver'])
     parser.add_argument('--max-tp', type=int, default=10, help='Max TP detections to evaluate')
     parser.add_argument('--max-fp', type=int, default=10, help='Max FP detections to evaluate')
+    parser.add_argument('--skip-vlm', action='store_true', help='Only generate crops, skip VLM calls')
     args = parser.parse_args()
 
     # 路径检查
@@ -538,17 +542,20 @@ def main():
 
             # 调用 VLM
             vlm_output_path = output_dir / f"vlm_response_{cache_key}.json"
-            content, error = call_vlm(crop_path, VLM_PROMPT, vlm_output_path)
-
-            if error:
-                print(f"  [VLM ERROR] {error}")
+            if args.skip_vlm:
                 vlm_scores = None
             else:
-                vlm_scores = parse_vlm_response(content)
-                if vlm_scores:
-                    print(f"  VLM: is_organoid={vlm_scores['is_organoid']:.2f}, "
-                          f"typical={vlm_scores['morphology_typical']:.2f}, "
-                          f"conf={vlm_scores['confidence']:.2f}")
+                content, error = call_vlm(crop_path, VLM_PROMPT, vlm_output_path)
+
+                if error:
+                    print(f"  [VLM] {error}")
+                    vlm_scores = None
+                else:
+                    vlm_scores = parse_vlm_response(content)
+                    if vlm_scores:
+                        print(f"  VLM: is_organoid={vlm_scores['is_organoid']:.2f}, "
+                              f"typical={vlm_scores['morphology_typical']:.2f}, "
+                              f"conf={vlm_scores['confidence']:.2f}")
 
             # 缓存
             cache[cache_key] = vlm_scores
