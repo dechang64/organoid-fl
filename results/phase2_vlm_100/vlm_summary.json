@@ -1,0 +1,33 @@
+{
+  "total": 100,
+  "tp": 50,
+  "fp": 50,
+  "vlm_is_organoid": {
+    "tp_median": 0.8,
+    "fp_median": 0.7,
+    "mann_whitney_p": 0.00014067131008527688,
+    "roc_auc": 0.7126,
+    "best_f1": 0.6923076923076923,
+    "best_threshold": 0.7000000000000001
+  },
+  "rfdetr_confidence": {
+    "tp_median": 0.6624237596988678,
+    "fp_median": 0.41336528956890106,
+    "roc_auc": 0.8712000000000001,
+    "best_f1": 0.8,
+    "best_threshold": 0.5
+  },
+  "combined_avg": {
+    "roc_auc": 0.8343999999999999
+  },
+  "vlm_morphology_typical": {
+    "tp_median": 0.6,
+    "fp_median": 0.5,
+    "mann_whitney_p": 0.00011554922657208934
+  },
+  "crown_defense": {
+    "AGREE": 91,
+    "VLM_HALLUCINATION": 9,
+    "VLM_MISSED": 0
+  }
+}
