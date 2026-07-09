@@ -230,9 +230,9 @@ def analyze(primitives, output_dir):
     
     summary = {
         "phase": "Phase 1 MultiOrg: 形态学特征提取与 TP/FP 可分性分析",
-        "total_primitives": len(y),
-        "tp": n_tp,
-        "fp": n_fp,
+        "total_primitives": int(len(y)),
+        "tp": int(n_tp),
+        "fp": int(n_fp),
         "features": features,
         "p_values": dict(zip(features, [f"{p:.4f}" for p in p_values])),
         "tp_medians": dict(zip(features, [f"{m:.3f}" for m in tp_medians])),
