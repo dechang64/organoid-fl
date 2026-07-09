@@ -437,14 +437,6 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     crops_dir.mkdir(parents=True, exist_ok=True)
 
-    # 加载 z-ai config (提前检查，避免跑完裁剪才发现没配置)
-    try:
-        zai_config = load_zai_config()
-        print(f"z-ai config loaded: {zai_config.get('baseUrl', '')}")
-    except FileNotFoundError as e:
-        print(f"[ERROR] {e}")
-        sys.exit(1)
-
     # 加载 SAM2 results
     print(f"Loading: {args.json}")
     sam2_data = load_sam2_results(args.json)
@@ -546,7 +538,7 @@ def main():
 
             # 调用 VLM
             vlm_output_path = output_dir / f"vlm_response_{cache_key}.json"
-            content, error = call_vlm(crop_path, VLM_PROMPT, vlm_output_path, zai_config=zai_config)
+            content, error = call_vlm(crop_path, VLM_PROMPT, vlm_output_path)
 
             if error:
                 print(f"  [VLM ERROR] {error}")
