@@ -1,0 +1,26 @@
+{
+  "phase": "Phase 2 VLM Verification (MultiOrg, 10 TP + 10 FP)",
+  "vlm_model": "glm-4.6v",
+  "total": 20,
+  "tp": 10,
+  "fp": 10,
+  "vlm_is_organoid": {
+    "tp_median": 0.8500000000000001,
+    "fp_median": 0.5,
+    "mann_whitney_p": 0.024588330292337236,
+    "roc_auc": 0.795
+  },
+  "rfdetr_confidence": {
+    "tp_median": 0.6102994084358215,
+    "fp_median": 0.43821991980075836,
+    "roc_auc": 0.8300000000000001
+  },
+  "combined_avg": {
+    "roc_auc": 0.8300000000000001
+  },
+  "vlm_morphology_typical": {
+    "tp_median": 0.7,
+    "fp_median": 0.3,
+    "mann_whitney_p": 0.024023869566769628
+  }
+}

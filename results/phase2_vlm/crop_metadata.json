@@ -1,0 +1,302 @@
+[
+  {
+    "image": "Macros/Plate_23/image_4",
+    "det_idx": 247,
+    "bbox": [
+      2940.05753326416,
+      5179.938323974609,
+      2975.21150970459,
+      5213.893737792969
+    ],
+    "confidence": 0.35568180680274963,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_23_image_4_247.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_23_image_4_247"
+  },
+  {
+    "image": "Macros/Plate_15/image_2",
+    "det_idx": 4,
+    "bbox": [
+      1804.941650390625,
+      4466.3565673828125,
+      2023.1587524414062,
+      4643.701416015625
+    ],
+    "confidence": 0.8647168874740601,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_15_image_2_4.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_15_image_2_4"
+  },
+  {
+    "image": "Normal/Plate_15/image_1",
+    "det_idx": 36,
+    "bbox": [
+      5894.493911743164,
+      2647.991973876953,
+      5986.060791015625,
+      2742.5350341796875
+    ],
+    "confidence": 0.8462019562721252,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Normal_Plate_15_image_1_36.png",
+    "crop_exists": true,
+    "cache_key": "Normal_Plate_15_image_1_36"
+  },
+  {
+    "image": "Macros/Plate_4/image_8",
+    "det_idx": 135,
+    "bbox": [
+      4345.2947998046875,
+      493.5251007080078,
+      4388.694183349609,
+      541.9588165283203
+    ],
+    "confidence": 0.5687952041625977,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_4_image_8_135.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_4_image_8_135"
+  },
+  {
+    "image": "Macros/Plate_4/image_6",
+    "det_idx": 139,
+    "bbox": [
+      5590.652740478516,
+      2019.1623840332031,
+      5632.844665527344,
+      2058.9180297851562
+    ],
+    "confidence": 0.3660864233970642,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_4_image_6_139.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_4_image_6_139"
+  },
+  {
+    "image": "Macros/Plate_4/image_1",
+    "det_idx": 100,
+    "bbox": [
+      2746.694610595703,
+      829.1861114501953,
+      2786.869842529297,
+      863.3860626220703
+    ],
+    "confidence": 0.5950125455856323,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_4_image_1_100.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_4_image_1_100"
+  },
+  {
+    "image": "Macros/Plate_23/image_3",
+    "det_idx": 108,
+    "bbox": [
+      4214.271331787109,
+      1115.5067749023438,
+      4247.481842041016,
+      1149.8007202148438
+    ],
+    "confidence": 0.5359838604927063,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_23_image_3_108.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_23_image_3_108"
+  },
+  {
+    "image": "Normal/Plate_4/image_0",
+    "det_idx": 4,
+    "bbox": [
+      1440.0404243469238,
+      3975.1031188964844,
+      1541.1036834716797,
+      4060.403533935547
+    ],
+    "confidence": 0.8559024333953857,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Normal_Plate_4_image_0_4.png",
+    "crop_exists": true,
+    "cache_key": "Normal_Plate_4_image_0_4"
+  },
+  {
+    "image": "Macros/Plate_23/image_1",
+    "det_idx": 70,
+    "bbox": [
+      1794.2844543457031,
+      949.974609375,
+      1828.2897644042969,
+      981.6034851074219
+    ],
+    "confidence": 0.6255862712860107,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_23_image_1_70.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_23_image_1_70"
+  },
+  {
+    "image": "Normal/Plate_31/image_0",
+    "det_idx": 26,
+    "bbox": [
+      3660.314765930176,
+      4571.634765625,
+      3692.646598815918,
+      4604.126281738281
+    ],
+    "confidence": 0.7008742094039917,
+    "matched": true,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Normal_Plate_31_image_0_26.png",
+    "crop_exists": true,
+    "cache_key": "Normal_Plate_31_image_0_26"
+  },
+  {
+    "image": "Macros/Plate_15/image_2",
+    "det_idx": 225,
+    "bbox": [
+      4694.434509277344,
+      2282.4447631835938,
+      4729.379455566406,
+      2314.771209716797
+    ],
+    "confidence": 0.46377861499786377,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_15_image_2_225.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_15_image_2_225"
+  },
+  {
+    "image": "Macros/Plate_15/image_2",
+    "det_idx": 174,
+    "bbox": [
+      1997.3995208740234,
+      1706.8676452636719,
+      2057.186798095703,
+      1760.9587707519531
+    ],
+    "confidence": 0.5404431223869324,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_15_image_2_174.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_15_image_2_174"
+  },
+  {
+    "image": "Macros/Plate_23/image_0",
+    "det_idx": 103,
+    "bbox": [
+      2015.0235595703125,
+      2996.3235626220703,
+      2085.9129638671875,
+      3040.420181274414
+    ],
+    "confidence": 0.5183647274971008,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_23_image_0_103.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_23_image_0_103"
+  },
+  {
+    "image": "Macros/Plate_4/image_10",
+    "det_idx": 139,
+    "bbox": [
+      5324.7135009765625,
+      1511.9375915527344,
+      5359.211608886719,
+      1541.3985290527344
+    ],
+    "confidence": 0.456342488527298,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_4_image_10_139.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_4_image_10_139"
+  },
+  {
+    "image": "Macros/Plate_4/image_11",
+    "det_idx": 148,
+    "bbox": [
+      945.7922058105469,
+      2913.8996353149414,
+      984.599609375,
+      2939.058578491211
+    ],
+    "confidence": 0.3553040027618408,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_4_image_11_148.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_4_image_11_148"
+  },
+  {
+    "image": "Normal/Plate_31/image_1",
+    "det_idx": 210,
+    "bbox": [
+      3737.5866088867188,
+      1173.8030395507812,
+      3818.0805053710938,
+      1228.7772216796875
+    ],
+    "confidence": 0.32743875548480866,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Normal_Plate_31_image_1_210.png",
+    "crop_exists": true,
+    "cache_key": "Normal_Plate_31_image_1_210"
+  },
+  {
+    "image": "Normal/Plate_37/image_0",
+    "det_idx": 88,
+    "bbox": [
+      3881.564666748047,
+      4051.16064453125,
+      3911.045379638672,
+      4080.579818725586
+    ],
+    "confidence": 0.5781772136688232,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Normal_Plate_37_image_0_88.png",
+    "crop_exists": true,
+    "cache_key": "Normal_Plate_37_image_0_88"
+  },
+  {
+    "image": "Macros/Plate_15/image_1",
+    "det_idx": 326,
+    "bbox": [
+      4662.313346862793,
+      2460.8910522460938,
+      4871.42529296875,
+      2597.1784057617188
+    ],
+    "confidence": 0.31271907687187195,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_15_image_1_326.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_15_image_1_326"
+  },
+  {
+    "image": "Normal/Plate_31/image_5",
+    "det_idx": 210,
+    "bbox": [
+      4716.460609436035,
+      2482.451202392578,
+      4754.411567687988,
+      2525.629364013672
+    ],
+    "confidence": 0.42009735107421875,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Normal_Plate_31_image_5_210.png",
+    "crop_exists": true,
+    "cache_key": "Normal_Plate_31_image_5_210"
+  },
+  {
+    "image": "Macros/Plate_4/image_0",
+    "det_idx": 107,
+    "bbox": [
+      796.9798278808594,
+      2738.5086517333984,
+      853.4513244628906,
+      2784.7180786132812
+    ],
+    "confidence": 0.4141882658004761,
+    "matched": false,
+    "crop_path": "/home/z/my-project/organoid-fl/results/phase2_vlm/crops/Macros_Plate_4_image_0_107.png",
+    "crop_exists": true,
+    "cache_key": "Macros_Plate_4_image_0_107"
+  }
+]
