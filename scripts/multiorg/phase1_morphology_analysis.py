@@ -241,7 +241,7 @@ def analyze(primitives, output_dir):
     }
     
     with open(output_dir / 'phase1_multiorg_summary.json', 'w', encoding='utf-8') as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False)
+        json.dump(summary, f, indent=2, ensure_ascii=False, default=lambda o: int(o) if isinstance(o, np.integer) else float(o) if isinstance(o, np.floating) else str(o))
     print(f"\nSaved: {output_dir / 'phase1_multiorg_summary.json'}")
 
 
