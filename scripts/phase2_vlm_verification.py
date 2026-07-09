@@ -3,26 +3,17 @@ Phase 2: VLM 语义确认 — GLM-4V 评估 detection 质量
 
  Usage (MultiOrg):
      cd C:\Users\decha\organoid-fl
-     python scripts\phase2_vlm_verification.py ^
-         --json results\multiorg_sam2_zeroshot\multiorg_sam2_results.json ^
-         --src D:\datasets\mutliorg\MultiOrg_v2\test ^
-         --dst results\phase2_vlm ^
-         --dataset multiorg ^
-         --max-tp 10 --max-fp 10
-
- Usage (Mouse Liver B2):
-     python scripts\phase2_vlm_verification.py ^
-         --json runs\mouse_liver_phase1\phase1_results.json ^
-         --src C:\Users\decha\mouse_liver_correct\B2\原始 ^
-         --dst results\phase2_vlm_mouse ^
-         --dataset mouse_liver ^
-         --max-tp 6 --max-fp 3
+     python scripts\phase2_vlm_verification.py --json results\multiorg_sam2_zeroshot\multiorg_sam2_results.json --src D:\datasets\mutliorg\MultiOrg_v2\test --dst results\phase2_vlm --dataset multiorg --max-tp 10 --max-fp 10
 
  Output:
      results/phase2_vlm/vlm_results.json  — per-detection VLM scores
      results/phase2_vlm/vlm_summary.json  — TP/FP separation analysis
      results/phase2_vlm/crops/            — 临时裁剪图 (可删除)
      results/phase2_vlm/vlm_cache.json    — VLM 响应缓存
+
+ Requires:
+     .z-ai-config file in CWD, HOME, or /etc/ with:
+     {"baseUrl": "...", "apiKey": "...", "token": "..."}
 
  Literature:
      - CTM (Sakana AI, NeurIPS 2025 Spotlight): internal ticks = iterative refinement
@@ -32,9 +23,9 @@ Phase 2: VLM 语义确认 — GLM-4V 评估 detection 质量
 """
 
 import argparse
+import base64
 import json
 import os
-import subprocess
 import sys
 import time
 import numpy as np
@@ -50,6 +41,11 @@ try:
     import cv2
 except ImportError:
     cv2 = None
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 
 # ============================================================
@@ -102,8 +98,6 @@ def load_image(path, dataset='multiorg'):
             arr = np.stack([arr] * 3, axis=-1)
         return arr
     else:
-        # PIL for regular images (JPG, PNG, BMP)
-        # PIL.Image.open supports Chinese paths on Windows
         img = Image.open(path).convert('RGB')
         return np.array(img)
 
@@ -113,16 +107,7 @@ def load_image(path, dataset='multiorg'):
 # ============================================================
 
 def crop_detection(img_arr, bbox, padding=0.1):
-    """从原图裁剪 bbox 区域 (带 padding)
-
-    Args:
-        img_arr: numpy array (H, W, 3) uint8 RGB
-        bbox: [x1, y1, x2, y2] 原图坐标
-        padding: 边缘扩展比例 (0.1 = 10%)
-
-    Returns:
-        crop: numpy array (H', W', 3) uint8 RGB
-    """
+    """从原图裁剪 bbox 区域 (带 padding)"""
     x1, y1, x2, y2 = [float(v) for v in bbox]
     w, h = x2 - x1, y2 - y1
     px, py = int(w * padding), int(h * padding)
@@ -134,44 +119,35 @@ def crop_detection(img_arr, bbox, padding=0.1):
 
 
 def draw_bbox_on_crop(crop, bbox, padding=0.1):
-    """在裁剪图上画 bbox 框 (红色)
-
-    因为裁剪图已经是 bbox 区域+padding，需要计算 bbox 在裁剪图中的位置
-    """
+    """在裁剪图上画 bbox 框 (红色)"""
     if cv2 is None:
-        return crop  # cv2 not available, skip drawing
+        return crop
 
     x1, y1, x2, y2 = [float(v) for v in bbox]
     w, h = x2 - x1, y2 - y1
     px, py = int(w * padding), int(h * padding)
 
-    # bbox 在裁剪图中的坐标 (padding 区域后)
     bx1, by1 = px, py
     bx2, by2 = px + int(w), py + int(h)
 
-    # clip to crop bounds
     bx1 = max(0, min(bx1, crop.shape[1] - 1))
     by1 = max(0, min(by1, crop.shape[0] - 1))
     bx2 = max(0, min(bx2, crop.shape[1] - 1))
     by2 = max(0, min(by2, crop.shape[0] - 1))
 
-    # draw red rectangle (BGR for cv2)
     crop_bgr = cv2.cvtColor(crop, cv2.COLOR_RGB2BGR)
     cv2.rectangle(crop_bgr, (bx1, by1), (bx2, by2), (0, 0, 255), 2)
     return cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
 
 
 def save_crop(crop, path):
-    """保存裁剪图为 PNG
-
-    使用 PIL 而非 cv2.imwrite，避免中文路径问题
-    """
+    """保存裁剪图为 PNG (用 PIL 避免中文路径问题)"""
     img = Image.fromarray(crop)
     img.save(path, format='PNG')
 
 
 # ============================================================
-# 3. VLM 调用
+# 3. VLM 调用 (Python requests 直调 GLM-4V API)
 # ============================================================
 
 VLM_PROMPT = (
@@ -184,74 +160,107 @@ VLM_PROMPT = (
 )
 
 
-def call_vlm(crop_path, prompt, output_path, timeout=60):
-    """调用 z-ai vision CLI，返回 VLM 响应文本
+def load_zai_config():
+    """加载 z-ai 配置文件
+
+    查找顺序: CWD/.z-ai-config → HOME/.z-ai-config → /etc/.z-ai-config
+    格式: {"baseUrl": "...", "apiKey": "...", "token": "...", "chatId": "...", "userId": "..."}
+    """
+    config_paths = [
+        os.path.join(os.getcwd(), '.z-ai-config'),
+        os.path.join(os.path.expanduser('~'), '.z-ai-config'),
+        '/etc/.z-ai-config',
+    ]
+    for p in config_paths:
+        if os.path.exists(p):
+            with open(p, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            if config.get('baseUrl') and config.get('apiKey'):
+                return config
+    raise FileNotFoundError(
+        ".z-ai-config not found or invalid. Create it in CWD, HOME, or /etc/ "
+        "with: {\"baseUrl\": \"...\", \"apiKey\": \"...\", \"token\": \"...\"}"
+    )
+
+
+def call_vlm(crop_path, prompt, output_path, timeout=60, zai_config=None):
+    """调用 GLM-4V API (Python requests，不依赖 z-ai CLI)
 
     Args:
         crop_path: 裁剪图 PNG 路径
         prompt: VLM 提示词
         output_path: VLM 响应 JSON 保存路径
         timeout: 超时秒数
+        zai_config: 配置 dict (baseUrl, apiKey, token, chatId, userId)
 
     Returns:
         (content_str, error_str): 成功返回 (content, None)，失败返回 (None, error)
     """
-    # 直接用 'z-ai'，靠 PATH 查找
-    # Windows 上 z-ai 可能是 .cmd 脚本，subprocess.run 会自动找到
-    cmd = [
-        'z-ai',
-        'vision',
-        '-p', prompt,
-        '-i', str(crop_path),
-        '-o', str(output_path),
-    ]
+    if requests is None:
+        return None, "requests library required: pip install requests"
+    if zai_config is None:
+        zai_config = load_zai_config()
+
+    base_url = zai_config.get('baseUrl', '')
+    api_key = zai_config.get('apiKey', '')
+    token = zai_config.get('token', '')
+    chat_id = zai_config.get('chatId', '')
+    user_id = zai_config.get('userId', '')
+
+    # 读取图片 → base64 data URL
+    with open(crop_path, 'rb') as f:
+        img_b64 = base64.b64encode(f.read()).decode()
+    data_url = f"data:image/png;base64,{img_b64}"
+
+    url = f"{base_url}/chat/completions/vision"
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}',
+        'X-Z-AI-From': 'Z',
+    }
+    if chat_id:
+        headers['X-Chat-Id'] = chat_id
+    if user_id:
+        headers['X-User-Id'] = user_id
+    if token:
+        headers['X-Token'] = token
+
+    payload = {
+        'model': 'glm-4.6v',
+        'messages': [{
+            'role': 'user',
+            'content': [
+                {'type': 'text', 'text': prompt},
+                {'type': 'image_url', 'image_url': {'url': data_url}},
+            ]
+        }],
+        'thinking': {'type': 'disabled'},
+    }
 
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            encoding='utf-8',
-            shell=False,
-        )
-    except FileNotFoundError:
-        # z-ai not in PATH, try npx z-ai
-        cmd = ['npx', 'z-ai', 'vision', '-p', prompt, '-i', str(crop_path), '-o', str(output_path)]
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                encoding='utf-8',
-            )
-        except (FileNotFoundError, subprocess.TimeoutExpired) as e:
-            return None, f"z-ai not found in PATH. Install with: npm install -g z-ai-web-dev-sdk. Error: {e}"
-    except subprocess.TimeoutExpired:
-        return None, f"VLM call timed out after {timeout}s"
+        resp = requests.post(url, json=payload, headers=headers, timeout=timeout)
+    except requests.exceptions.Timeout:
+        return None, f'VLM call timed out after {timeout}s'
+    except Exception as e:
+        return None, f'Connection error: {e}'
 
-    if result.returncode != 0:
-        return None, f"z-ai vision failed (code {result.returncode}): {result.stderr}"
+    if resp.status_code != 200:
+        return None, f'API returned {resp.status_code}: {resp.text[:200]}'
 
-    # 读取输出 JSON
-    try:
-        with open(output_path, 'r', encoding='utf-8') as f:
-            response = json.load(f)
-        content = response.get('choices', [{}])[0].get('message', {}).get('content', '')
-        return content, None
-    except (FileNotFoundError, json.JSONDecodeError, IndexError) as e:
-        return None, f"Failed to parse VLM response: {e}"
+    resp_json = resp.json()
+
+    # 保存完整响应 (调试用)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(resp_json, f, indent=2, ensure_ascii=False)
+
+    content = resp_json.get('choices', [{}])[0].get('message', {}).get('content', '')
+    return content, None
 
 
 def parse_vlm_response(text):
     """解析 VLM 响应文本为评分字典
 
-    Expected format:
-        {"is_organoid": 0.8, "morphology_typical": 0.7, "confidence": 0.9, "reason": "..."}
-
-    Returns:
-        dict or None (if parsing fails)
+    Expected: {"is_organoid": 0.8, "morphology_typical": 0.7, "confidence": 0.9, "reason": "..."}
     """
     if text is None:
         return None
@@ -271,20 +280,13 @@ def parse_vlm_response(text):
     except (json.JSONDecodeError, ValueError, TypeError):
         pass
 
-    # 如果 JSON 解析失败，尝试从文本中提取数值
-    # 例如 "is_organoid: 0.8"
+    # 降级：从文本中提取数值
     import re
     scores = {}
     for key in ['is_organoid', 'morphology_typical', 'confidence']:
         match = re.search(rf'{key}["\']?\s*[:=]\s*([0-9.]+)', text, re.IGNORECASE)
-        if match:
-            try:
-                scores[key] = float(match.group(1))
-            except ValueError:
-                scores[key] = 0.5
-        else:
-            scores[key] = 0.5
-    scores['reason'] = text[:200]  # 保留前 200 字符
+        scores[key] = float(match.group(1)) if match else 0.5
+    scores['reason'] = text[:200]
     return scores
 
 
@@ -300,21 +302,14 @@ def crown_defense(vlm_scores, rfdetr_conf):
         rfdetr_conf: RF-DETR confidence (0-1)
 
     Returns:
-        dict with defense flags:
-            - vlm_hallucination: VLM 说 yes 但 RF-DETR 不确定
-            - vlm_missed: VLM 说 no 但 RF-DETR 很确定
-            - adjusted_score: 调整后的 is_organoid 分数
+        dict: vlm_hallucination, vlm_missed, adjusted_score
     """
     vlm_organoid = vlm_scores.get('is_organoid', 0.5)
-    vlm_conf = vlm_scores.get('confidence', 0.5)
 
     vlm_hallucination = vlm_organoid > 0.7 and rfdetr_conf < 0.4
     vlm_missed = vlm_organoid < 0.3 and rfdetr_conf > 0.7
 
-    # 简单调整：冲突时取两者的平均
-    if vlm_hallucination:
-        adjusted = (vlm_organoid + rfdetr_conf) / 2
-    elif vlm_missed:
+    if vlm_hallucination or vlm_missed:
         adjusted = (vlm_organoid + rfdetr_conf) / 2
     else:
         adjusted = vlm_organoid
@@ -331,15 +326,9 @@ def crown_defense(vlm_scores, rfdetr_conf):
 # ============================================================
 
 def evaluate(results, output_dir):
-    """评估 VLM 评分的 TP/FP 区分能力
-
-    Metrics:
-        - Mann-Whitney U test (TP vs FP scores)
-        - ROC-AUC
-        - Precision-Recall at different thresholds
-        - Compare with RF-DETR confidence
-    """
+    """评估 VLM 评分的 TP/FP 区分能力"""
     from scipy.stats import mannwhitneyu
+    from sklearn.metrics import roc_auc_score
 
     tp_scores = [r['vlm']['is_organoid'] for r in results if r['matched'] and r.get('vlm')]
     fp_scores = [r['vlm']['is_organoid'] for r in results if not r['matched'] and r.get('vlm')]
@@ -353,8 +342,7 @@ def evaluate(results, output_dir):
     else:
         p_vlm, p_conf = 1.0, 1.0
 
-    # ROC-AUC (简单计算)
-    from sklearn.metrics import roc_auc_score
+    # ROC-AUC
     y_true = [1] * len(tp_scores) + [0] * len(fp_scores)
     y_vlm = tp_scores + fp_scores
     y_conf = tp_conf + fp_conf
@@ -362,7 +350,7 @@ def evaluate(results, output_dir):
     auc_vlm = roc_auc_score(y_true, y_vlm) if len(set(y_true)) > 1 else 0.5
     auc_conf = roc_auc_score(y_true, y_conf) if len(set(y_true)) > 1 else 0.5
 
-    # CROWN defense stats
+    # CROWN stats
     n_hallucination = sum(1 for r in results if r.get('crown', {}).get('vlm_hallucination', False))
     n_missed = sum(1 for r in results if r.get('crown', {}).get('vlm_missed', False))
 
@@ -388,15 +376,16 @@ def evaluate(results, output_dir):
             "vlm_missed_count": n_missed,
         },
         "literature": {
-            "ctm": "Sakana AI, NeurIPS 2025 Spotlight — internal ticks for iterative refinement",
-            "generate_but_verify": "arXiv 2504.13169 — VLM 生成后验证减少幻觉",
-            "vlm_hallucination": "arXiv 2503.23573 — VLM 幻觉是系统性的",
+            "ctm": "Sakana AI, NeurIPS 2025 Spotlight",
+            "generate_but_verify": "arXiv 2504.13169",
+            "vlm_hallucination": "arXiv 2503.23573",
         },
     }
 
     summary_path = output_dir / 'vlm_summary.json'
     with open(summary_path, 'w', encoding='utf-8') as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False, default=lambda o: float(o) if isinstance(o, (np.floating, np.integer)) else str(o))
+        json.dump(summary, f, indent=2, ensure_ascii=False,
+                  default=lambda o: float(o) if isinstance(o, (np.floating, np.integer)) else str(o))
     print(f"\nSaved: {summary_path}")
 
     # 打印关键结果
@@ -448,12 +437,19 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     crops_dir.mkdir(parents=True, exist_ok=True)
 
+    # 加载 z-ai config (提前检查，避免跑完裁剪才发现没配置)
+    try:
+        zai_config = load_zai_config()
+        print(f"z-ai config loaded: {zai_config.get('baseUrl', '')}")
+    except FileNotFoundError as e:
+        print(f"[ERROR] {e}")
+        sys.exit(1)
+
     # 加载 SAM2 results
     print(f"Loading: {args.json}")
     sam2_data = load_sam2_results(args.json)
 
     # 收集 TP 和 FP detections
-    # 兼容 MultiOrg (per_image list) 和 Mouse Liver (results dict) 格式
     per_image = sam2_data.get('per_image', [])
     if isinstance(per_image, dict):
         per_image = list(per_image.values())
@@ -507,7 +503,7 @@ def main():
 
     # 逐个处理
     results = []
-    image_cache = {}  # 缓存已加载的图片
+    image_cache = {}
 
     for idx, det in enumerate(all_detections):
         cache_key = f"{det['image']}_{det['det_idx']}".replace('/', '_').replace('\\', '_')
@@ -550,16 +546,17 @@ def main():
 
             # 调用 VLM
             vlm_output_path = output_dir / f"vlm_response_{cache_key}.json"
-            content, error = call_vlm(crop_path, VLM_PROMPT, vlm_output_path)
+            content, error = call_vlm(crop_path, VLM_PROMPT, vlm_output_path, zai_config=zai_config)
 
             if error:
                 print(f"  [VLM ERROR] {error}")
                 vlm_scores = None
             else:
                 vlm_scores = parse_vlm_response(content)
-                print(f"  VLM: is_organoid={vlm_scores['is_organoid']:.2f}, "
-                      f"typical={vlm_scores['morphology_typical']:.2f}, "
-                      f"conf={vlm_scores['confidence']:.2f}")
+                if vlm_scores:
+                    print(f"  VLM: is_organoid={vlm_scores['is_organoid']:.2f}, "
+                          f"typical={vlm_scores['morphology_typical']:.2f}, "
+                          f"conf={vlm_scores['confidence']:.2f}")
 
             # 缓存
             cache[cache_key] = vlm_scores
@@ -570,7 +567,6 @@ def main():
             if vlm_output_path.exists():
                 vlm_output_path.unlink()
 
-            # 限速 (避免 API rate limit)
             time.sleep(1)
 
         # CROWN 防御
@@ -591,7 +587,8 @@ def main():
     # 保存完整结果
     results_path = output_dir / 'vlm_results.json'
     with open(results_path, 'w', encoding='utf-8') as f:
-        json.dump(results, f, indent=2, ensure_ascii=False, default=lambda o: float(o) if isinstance(o, (np.floating, np.integer)) else str(o))
+        json.dump(results, f, indent=2, ensure_ascii=False,
+                  default=lambda o: float(o) if isinstance(o, (np.floating, np.integer)) else str(o))
     print(f"\nSaved: {results_path}")
 
     # 评估
