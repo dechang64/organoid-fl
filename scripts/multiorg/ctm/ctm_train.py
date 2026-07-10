@@ -324,7 +324,11 @@ def main():
         n_ticks=args.n_ticks,
         d_internal=args.d_internal,
         n_heads=args.n_heads,
+        n_classes=2,
         mem_len=args.mem_len,
+        n_action_pairs=args.n_action_pairs,
+        n_output_pairs=args.n_output_pairs,
+        d_hidden=args.d_hidden,
         img_size=args.img_size,
     ).to(device)
     
