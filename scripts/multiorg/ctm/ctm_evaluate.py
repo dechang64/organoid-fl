@@ -41,6 +41,16 @@ def load_model(checkpoint_path: str, device: str = 'cpu',
     
     # Get model config from checkpoint
     config = ckpt.get('config', {})
+    
+    # Infer d_hidden from checkpoint state_dict if not in config
+    sd = ckpt['model_state_dict']
+    if 'ctm.nlms.weights_1' in sd:
+        # weights_1 shape: [mem_len, d_hidden, d_internal]
+        inferred_d_hidden = sd['ctm.nlms.weights_1'].shape[1]
+        if 'd_hidden' not in config:
+            config['d_hidden'] = inferred_d_hidden
+            print(f"  [inferred] d_hidden={inferred_d_hidden} from checkpoint")
+    
     model = OrganoidCTM(
         n_ticks=config.get('n_ticks', n_ticks),
         d_internal=config.get('d_internal', d_internal),
@@ -51,7 +61,7 @@ def load_model(checkpoint_path: str, device: str = 'cpu',
         d_hidden=config.get('d_hidden', d_hidden),
         img_size=img_size,
     )
-    model.load_state_dict(ckpt['model_state_dict'])
+    model.load_state_dict(sd)
     model.to(device)
     model.eval()
     
