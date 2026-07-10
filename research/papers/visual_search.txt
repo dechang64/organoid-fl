@@ -1,0 +1,768 @@
+ 
+ 
+The Design and Implementation of a Real Time Visual Search 
+System on JD E-commerce Platform 
+ 
+Jie Li, Haifeng Liu, Chuanghua Gui, Jianyu Chen, Zhenyun Ni, Ning Wang                             Yuan Chen 
+                                                              JD.com Inc.                                                                                  JD.com Silicon Valley R&D Center 
+                                                           Beijing, China                                                                                         Mountain View, CA, USA 
+ 
+ABSTRACT 
+We present the design and implementation of a visual 
+search system for real time image retrieval on JD.com, 
+the world’s third largest and China’s largest e-commerce 
+site. We demonstrate that our system can support real 
+time visual search with hundreds of billions of product 
+images at sub-second timescales and handle frequent 
+image 
+updates 
+through 
+distributed 
+hierarchical 
+architecture and efficient indexing methods. We hope 
+that sharing our practice with our real production 
+system will inspire the middleware community’s 
+interest and appreciation for building practical large 
+scale systems for emerging applications, such as e-
+commerce visual search.  
+KEYWORDS  
+Visual Search, Real Time, Image Retrieval, Scalability, 
+Distributed Systems, E-commerce , Indexing 
+1 Introduction 
+Visual search or image content based retrieval [1-8, 24-
+30] is a very active area driven by the rapid progress of 
+deep natural network technology for image recognition 
+[5-7].  It is particularly useful for both online and in-
+store shopping for it can greatly improve customers’ 
+experience and engagement. Although signi^icant 
+progress has been made, such as Google Similar Images 
+and  Amazon Flows for Internet search, and Pinterest 
+Lens and Google Lens for similar product search, 
+building 
+end-to-end 
+Internet-scale 
+visual 
+search 
+systems for retailing services is still a very challenging 
+task for the following reasons. 
+First, the product image collection on e-commerce 
+sites is rapidly and continuously growing. There are 
+more than 100 billion product images at JD.com. The 
+visual search system must be able to handle a very large 
+volume of images in a scalable way.   
+Second, as products are updated very frequently on e-
+commerce sites, the associated image collection needs to 
+be updated accordingly in a timely and effective matter. 
+At JD, there are about one billion image updates every 
+day. Data freshness becomes an important requirement. 
+The search results should re^lect the most recent 
+updates in products or images. Unlike typical internet or 
+web visual search, which  builds and updates indexes in 
+minutes, hours or days, and for which relatively 
+outdated information is acceptable, e-commerce visual 
+search has a much more stringent requirement on real 
+time and consistency.  This is a critical and unique 
+challenge for our work. 
+In this paper, we present a scalable real time visual 
+search system on JD.com’s e-commerce platform. We 
+make three main contributions.  
+1. We design and implement a distributed hierarchical 
+system that provides scalable image feature 
+extraction, indexing and retrieval for very large 
+scale image-content based search in real time. 
+2. We propose a high performance real time image 
+indexing method that utilizes various optimization 
+techniques to support sub-second image update and 
+retrieval.  
+3. We evaluate the performance of the proposed visual 
+search system on JD.com.  
+The rest of the paper is organized as follows. Section 2 
+describes the design and implementation of the 
+proposed visual search system. Section 3 presents the 
+operation and performance data and search examples 
+from the production system. Section 4 reviews the 
+related work and ^inally Section 5 concludes the paper. 
+ 
+Figure 1.  System Architecture  
+ 
+ 
+ 
+2  Design and Implementation 
+2.1 Overview  
+The architecture of the proposed  visual search system is 
+shown in Figure 1. It consists of two subsystems:  
+indexing and search.  
+Indexing. The indexing sub-system is the core of our 
+visual search system. It extracts image features and 
+builds indexes for image search. To ensure data 
+completeness and freshness, both periodic full indexing 
+and real time incremental indexing are performed. The 
+full indexing periodically builds indexes for all the 
+images. The real time indexing is immediately triggered 
+upon receiving a product update event such as addition, 
+deletion and modi^ication of a product. Real time 
+indexing is very critical for good user experience by 
+making sure the search results re^lect the most recent 
+product information at the time of reporting. Our real 
+time indexing introduces ef^icient index structures and 
+optimization methods for image lookup, update, 
+insertion and deletion to improve the performance. The 
+design and implementation detail is discussed in 
+Section 2.2 and 2.3. 
+E-commerce sites often remove a product from the 
+market and put it back later. The reuse of the product 
+and 
+image’s 
+information 
+is 
+critical 
+for 
+good 
+performance, especially for image feature exaction, 
+which is an expensive operation. Our system always 
+checks if an image’s features have been previously 
+extracted to avoid the repeated feature extraction.  A 
+bitmap is used to indicate if a product or image is valid 
+or not. When a product is removed from the market (e.g., 
+out of stock or other reasons),  it is marked invalid and 
+excluded from the indexing and search processes. It’s 
+status changes to valid if it hits the market again. By 
+reusing the product’s information and image features, 
+the indexing’s performance is signi^icantly improved.  
+Search. The search sub-system uses a distributed 
+hierarchical architecture for scalability (Figure 1). It has 
+three key components: Blender, Broker and Searcher, 
+each of which has multiple instances for parallel 
+processing and fault tolerance. The general work^low 
+can be described as follows. Upon receiving a query from 
+the user, a front end (i.e., load balancer) forwards the 
+query to one of the blenders. The blender then sends the 
+query to all brokers and each broker asks a subset of 
+searchers to perform search in parallel. Each searcher is 
+responsible for searching similar images from a 
+partition of the entire image set. The searcher returns 
+the top k most similar images to the requesting broker. 
+The broker then combines the results from its subset of 
+searchers and sends it back to the blender. The blender 
+ranks the results and returns them to the user. The three 
+level architecture offers scalability to large numbers of 
+images, indexes and searches.  
+2.2  Full Indexing  
+The full indexing is performed periodically to ensure the 
+data completeness. The process is shown in Figure 2.  
+All product update messages of a day are buffered in a 
+message log. At the end of  the day, each message in the 
+log is processed in order. The images of new added 
+products during the day are pulled from an image store 
+and their high dimensional features are extracted. The 
+ 
+Figure 2. Full Indexing 
+ 
+Figure 4. Real Time Indexing   
+ 
+ 
+Figure 3.  Building Full Index   
+ 
+ 
+ 
+ 
+ 
+3 
+feature extraction process ^irst checks if the image’s 
+features have been extracted through a distributed key-
+value store. If it is a new image, the features are 
+extracted and stored in the feature database. The feature 
+database contains each image’s high dimensional 
+features and its corresponding product’s attributes. The 
+product attributes such as product ID, sales, prices and 
+image URL are used to search and rank results. A bitmap 
+^ile is used to indicate if an image URL is valid and hence 
+determines if the image is indexable or not. The bitmap 
+is updated according to the product information that is 
+received from the message queue. For example, 
+removing a product off the market makes its images 
+invalid and vice versa. Only the valid images are used to 
+create the full index. This optimization can signi^icantly 
+improve the indexing and search’s performance.  
+Building the full index for all images is performed 
+every week. The process is shown in Figure 3. During the 
+process, a forward index and an inverted index are 
+created.  
+  Each image is numbered sequentially and the 
+product attributes of the image are stored in a forward 
+index, which is a custom array and each element in the 
+array contains the corresponding product’s attribute 
+information. The numeric attributes such as product ID, 
+sales, price are stored in the ^ixed-length ^ields in the 
+array. The variable length attributes like URL are stored 
+in an additional buffer, and the offset of the attribute in 
+the buffer is recorded in the array.  
+The inverted index is composed of N inverted lists. 
+Each inverted list represents a class of images with 
+similar 
+high-dimensional 
+features. 
+The 
+k-mean 
+algorithm on a set of training data set (i.e., image 
+features) is used to generate the classi^ication.  During 
+the indexing process, the class that an image belongs to 
+is calculated based on the similarity using the nearest 
+neighbor algorithm and the image ID is appended to the 
+corresponding inverted list.   
+2.3  Real Time Indexing  
+Figure 4 shows the real time indexing process. Messages 
+about product or image updates are received from a 
+message queue and processed instantly. In order to 
+support real time update, there is an auxiliary array for 
+storing the position of the last element in each inverted 
+list (Figure 5). According to the message types, different 
+operations are conducted as shown in Figure 6.  
+Update. If the message is about a product’s numeric 
+attributes changes, the associated images’ attributes in 
+the forward index are updated (Figure 7). This operation 
+is atomic and there is no con^lict between search and 
+update processes for maximum concurrency. For an 
+attribute with varying length, the value is added at the 
+end of the buffer and the offset value is updated in the 
+forward index. If the availability of the product changes, 
+for each image of the product, a flag in a bitmap 
+indicating the image’s validity is updated accordingly.   
+Insertion. If  the message is about adding a product, 
+we ^irst check if the product already exists. If it is, we 
+simply update its validity in the bitmap and reuse its 
+images’ features. If it is a new product, for each image of 
+the product, a new index element plus the product’s 
+attributes are created in the forward index. The image 
+URL is then inserted to the buffer and the offset is 
+recorded in the forward index. To update the inverted 
+index, the image’s features are extracted and the 
+ 
+Figure 7. Real Time Indexing: Update 
+ 
+Figure 6.  Real Time Index Update  Process 
+ 
+ Figure 5.  Real Time Inverted Index Lists 
+ 
+ 
+ 
+inverted index list that the image belongs to is calculated 
+based on its high-dimensional features. The image ID is 
+then added to the end of the inverted list and the last 
+element position of the inverted list is updated in the 
+auxiliary array. The process is shown in Figure 8.  
+Deletion. Removing a product is as simple as changing 
+the corresponding validity ^lag in the bitmap  from 1 
+(valid) to 0 (invalid). 
+Memory Management. To accelerate the query, the 
+memory of an inverted list is pre-allocated. When the 
+current memory capacity is reached,  a new inverted list 
+of double size is created. The new image ID is added to 
+the new created inverted list. The current inverted list 
+continues to serve the requests until a background 
+process ^inishes copying all the content of the current 
+list to the new list. When the copy operation completes, 
+the newly created inverted list becomes the current one 
+and the old one is deleted.  It ensures an lock-free and 
+fast index update. Figure 9 shows the entire process. 
+2.4  Online Search 
+To search a picture, an item in the picture is detected and 
+the product category of the item is identi^ied. The high-
+dimensional features of the item’s image is extracted. 
+The most similar items (e.g., top k) are identi^ied by 
+traversing the inverted lists and calculating its Euclidean 
+distance to each image in the inverted lists. Finally, the 
+similar products are ranked according to their sales, 
+praise, price and other attributes. 
+Figure 10 depicts the detailed design of the online 
+search sub-systems consisting of Blenders, Brokers and 
+Searchers. The entire image index data is divided into 
+multiple partitions by hashing the image’s URL. Each 
+partition can have multiple copies for availability. A 
+partition is handed by  a single searcher node.  A broker 
+connects to a subset of searchers. The 3-level structure 
+ensures the system’s scalability with a massive amount 
+of data and a huge number of searcher nodes.  
+When a blender receives an image query request., it 
+extracts the features and sends them to all the brokers. 
+The blender also combines and ranks the results and 
+returns to the user. A broker forwards the query to all 
+the searchers it connects to and collects the partial 
+search results from each searcher. Each broker has 
+multiple identical instances for load balancing and fault 
+tolerance.  
+There is a searcher for each index data partition. A 
+searcher is responsible for searching and updating the 
+corresponding 
+index 
+partition. 
+Speci^ically, 
+each 
+searcher node identi^ies the cluster that is most similar 
+to the queried image based on its features. It then scans 
+the cluster’s  inverted list and calculates the similarity as 
+each image in the inverted list. The top N most similar 
+images are returned. A searcher is also responsible for 
+processing messages from the message queue and 
+performs real time indexing as described in Section 2.3.  
+3 Evaluation 
+3.1  Operation Data 
+The visual search system has been deployed on JD.com 
+e-commerce site and used by JD’s 300 million active 
+ 
+ 
+Figure 8.  Real Time Indexing: Insertion   
+ 
+Figure 10. Online Search Architecture 
+ 
+Figure 9.  Inverted List Expansion 
+ 
+ 
+ 
+ 
+5 
+users every day. Table 1 summarizes the operation data 
+on August 4, 2018 collected from the production 
+environment. 
+The system contains about 100 billion images and 
+their feature indexes. The visual search system 
+processed a total of 977 millions of image updates on 
+that day. Among them, 315 millions were attribute 
+updates, 521 millions were image additions, and 141 
+millions were image removals. Among the 521 millions 
+of image additions, about 513 millions belong to the 
+products which were removed from the market and put 
+back again. These images’ features were extracted 
+before. We hence reused them to update the real index 
+and signi^icantly improved the response time. For the 
+rest of the images, the feature extraction operations 
+were performed.  
+Figure 11(a) shows the hourly rates of different types 
+of real time index updates on August 4, 2018. The peak 
+rate is about 80 millions/hour at 11am. The latency is 
+shown in Figure 11(b). The average latency over 24 hour 
+is 132ms. The average 99 percentile and 90 percentile 
+latency are 816ms and 223ms  perceptively.  
+3.2 Performance Evaluation  
+We run performance experiments to evaluate the 
+effectiveness of the design and implementation. The 
+testbed consists of  1 server as the client machine for 
+ 
+(a) Throughput 
+ 
+(b) Response Time 
+Figure 12. Performance W/ and W/O Real Time 
+I d
+0
+0.5
+1
+50
+100
+200
+QPS (Normalized)
+W/O Real Time Index
+With Real Time Index
+0
+0.05
+0.1
+0.15
+50
+100
+200
+Number of Concurrent Threads
+Reponse  Time (seconds)
+W/O Real Time Index
+With Real Time Index
+ 
+(a) Hourly Rate of Real Time Indexing 
+ 
+ 
+(b) Performance of Real Time Indexing 
+Figure 11.  Operation Data on August 4, 2018 
+0
+20
+40
+60
+80
+100
+ Time…
+0:00
+1:00
+2:00
+3:00
+4:00
+5:00
+6:00
+7:00
+8:00
+9:00
+10:00
+11:00
+12:00
+13:00
+14:00
+15:00
+16:00
+17:00
+18:00
+19:00
+20:00
+21:00
+22:00
+Millions
+Time (hour) 
+Number of Real Time Index Updates
+Update
+Deletion
+Addition
+Total
+0
+500
+1000
+1500
+2000
+2500
+0:00
+1:00
+2:00
+3:00
+4:00
+5:00
+6:00
+7:00
+8:00
+9:00
+10:00
+11:00
+12:00
+13:00
+14:00
+15:00
+16:00
+17:00
+18:00
+19:00
+20:00
+21:00
+22:00
+23:00
+Latency of Real Time Index Updates (ms)
+99%
+90%
+Average
+Time (hour)
+ 
+(a) Throughput 
+ 
+(b) Query Response Time Distribution 
+Figure 13. Query Performance Scalability 
+1200
+1300
+1400
+1500
+1600
+1700
+1800
+1900
+1
+3
+5
+7
+9
+11 13 15 17 19 21 23 25 27 29 31 33 35
+# of Threads
+QPS
+0
+0.2
+0.4
+0.6
+0.8
+1
+0
+0.5
+1
+1.5
+2
+2.5
+Response Time (seconds)
+CDF of the Response Time 
+Total  
+Attribute 
+Update 
+Image 
+Addition 
+Image 
+Deletion 
+977 
+million 
+315 
+million 
+521 
+million 
+141 
+Million 
+Table 1.  Number of Image Updates on 8/4/2018 
+ 
+ 
+ 
+workload generation, 1 Nginx server as the front end, 6 
+servers as blenders and brokers, and 20 servers as 
+searchers. Each server has 24 CPU cores and 256GB 
+memory. A total of 100,000 images are used. The client 
+machine emulates a different number of concurrent 
+users by sending image query requests to the visual 
+search system.  
+A key requirement of e-commerce visual search is data 
+freshness, which is achieved via real time update and 
+index in our system. Figure 12 compares the 
+performance using real time index and without using 
+real time index. As shown in the Figure 12(a), the  
+throughput with real time index is comparable with that 
+without real time index and the performance overhead 
+introduced by real time index is less than 10%. The 
+query response times with and without real time index 
+are similar too shown in Figure 12(b). The average 
+latency is less than 100ms, which is good enough for real 
+time image search in practice. These results clearly 
+demonstrate the effectiveness of the proposed real time 
+indexing. 
+Figure 13 shows the scalability of the system. Figure 
+13(a) shows that the setup can support up to 1800 
+queries per second or 155-million search requests per 
+day, which is more than enough to serve the visual 
+search demand of most e-commerce sites. Figure 13(b) 
+shows the query response time distribution at the 
+maximum throughput. The maximum response time is 
+2.1 seconds and the 99 percentile response time is 0.3 
+seconds. The results demonstrate the system’s ability to 
+support real time visual search with the real production 
+system. 
+3.3  Search Examples 
+The visual search system has been implemented and 
+deployed as part of JD.com shopping application. Figure 
+14 shows three real search examples on a mobile phone 
+application, which returns the top 6 similar products for 
+three different searches. 
+4    Related Work 
+Image 
+content-based 
+search 
+has 
+been 
+studied 
+extensively in the last 10 years. A considerable number 
+of algorithms have been developed [5,8,14-17,23-30].  
+Similar algorithms are used in our system, but the focus 
+of 
+this 
+paper 
+is 
+on 
+the 
+system 
+design 
+and 
+implementation. Many image web search systems aimed 
+to address the scalability challenges [9-13], but real time 
+update and data freshness are often not their focus. The 
+visual search systems at Pinterest, Alibaba and eBay [1-
+4] are similar to ours in terms of performing product 
+image search. However, they mainly looked at the 
+algorithm design and optimization, and didn’t address 
+the system issues such as real time indexing and update 
+as our work. Ef^icient indexing was studied in [21,22], 
+but neither addressed the real time issues.  
+5   Conclusion and Future Work  
+In this papers, we demonstrate how to design and 
+implement a real time visual search system on JD’s 
+Internet-scale e-commerce site through distributed 
+architecture and efficient indexing. We plan on 
+integrating advanced search and ranking algorithms 
+into our visual search system in the future work.  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+Figure 14. Real Search Examples on a Mobile Application 
+ 
+ 
+ 
+ 
+7 
+References 
+1. 
+Lin, Xiaofan, et al. "Visual search engine for product 
+images." Multimedia Content Access: Algorithms and 
+Systems II. Vol. 6820. International Society for Optics 
+and Photonics, 2008. 
+2. 
+Jing, Yushi, et al. "Visual search at Pinterest." 
+Proceedings of the 21th ACM SIGKDD International 
+Conference on Knowledge Discovery and Data Mining. 
+ACM, 2015. 
+3. 
+Zhang, Yanhao, et al. "Visual Search at Alibaba." 
+Proceedings of the 24th ACM SIGKDD International 
+Conference on Knowledge Discovery & Data Mining. 
+ACM, 2018. 
+4. 
+Yang, Fan, et al. "Visual search at EBay." Proceedings of 
+the 23rd ACM SIGKDD International Conference on 
+Knowledge Discovery and Data Mining. ACM, 2017. 
+5. 
+Johnson, Jeff, Matthijs Douze, and Hervé Jégou. "Billion-
+scale similarity search with gpus." arXiv preprint 
+arXiv:1702.08734 (2017). 
+6. 
+Busch, Michael, et al. "Earlybird: Real-time search at 
+twitter." Data Engineering (ICDE), 2012 IEEE 28th 
+International Conference on. IEEE, 2012. 
+7. 
+Ahmed, Gul^ishan Firdose, and Raju Barskar. "A study on 
+different 
+image 
+retrieval 
+techniques 
+in 
+image 
+processing." International Journal of Soft Computing 
+and Engineering 1.4 (2011): 247-251. 
+8. 
+Carlo C. del Mundo. “Voogle: A Visual Search Engine,” 
+https://homes.cs.washington.edu/~cdel/papers/cse5
+76_paper.pdf.  
+9. 
+Hu, Houdong, et al. "Web-Scale Responsive Visual 
+Search at Bing." Proceedings of the 24th ACM SIGKDD 
+International Conference on Knowledge Discovery & 
+Data Mining. ACM, 2018. 
+10. Batko, Michal, et al. "Building a web-scale image 
+similarity search system." Multimedia Tools and 
+Applications 47.3 (2010): 599-629. 
+11. Jing, Yushi, and Shumeet Baluja. "Visualrank: Applying 
+pagerank 
+to 
+large-scale 
+image 
+search." 
+IEEE 
+Transactions on Pattern Analysis and Machine 
+Intelligence 30.11 (2008): 1877-1890. 
+12. Sclaroff, Stan, Leonid Taycher, and Marco La Cascia. 
+"Imagerover: A content-based image browser for the 
+world wide web." Content-Based Access of Image and 
+Video Libraries, 1997. Proceedings. IEEE Workshop on. 
+IEEE, 1997. 
+13. Novak, David, Michal Batko, and Pavel Zezula. "Web-
+scale system for image similarity search: When the 
+dreams are coming true." Content-Based Multimedia 
+Indexing, 2008. CBMI 2008. International Workshop on. 
+IEEE, 2008. 
+14. Budikova, Petra, Michal Batko, and Pavel Zezula. 
+"Evaluation platform for content-based image retrieval 
+systems." International Conference on Theory and 
+Practice 
+of 
+Digital 
+Libraries. 
+Springer, 
+Berlin, 
+Heidelberg, 2011. 
+15. Wan, Ji, et al. "Deep learning for content-based image 
+retrieval: A comprehensive study." Proceedings of the 
+22nd ACM international conference on Multimedia. 
+ACM, 2014. 
+16. Jing, Yushi, and Shumeet Baluja. "Pagerank for product 
+image search." Proceedings of the 17th international 
+conference on World Wide Web. ACM, 2008. 
+17. Jing, Yushi, and Shumeet Baluja. "Visualrank: Applying 
+pagerank 
+to 
+large-scale 
+image 
+search," 
+IEEE 
+Transactions on Pattern Analysis and Machine 
+Intelligence 30.11 (2008): 1877-1890. 
+18. Artem, Babenko and Victor Lempitsky. “The Inverted 
+Multi-Index,” IEEE Conference on Computer Vision and 
+Pattern Recognition, 2012.   
+19. Hervé Jégou,Matthijs Douze, Cordelia Schmid. “Product 
+quantization for nearest neighbor search,” IEEE 
+Transactions on Pattern Analysis and Machine 
+Intelligence, 2011.  
+20. J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei. 
+“Imagenet: A large-scale hierarchical image database,” 
+In CVPR, pages 248–255, 2009. 16  
+21. Q. Lv, W. Josephson, Z. Wang, M. Charikar, and K. Li. 
+“Multi-probe 
+LSH: 
+Ef^icient 
+indexing 
+for 
+high-
+dimensional similarity search,” in VLDB,  2007.   
+22. A. Gionis, P. Indyk, R. Motwani, et al. “Similarity search 
+in high dimensions via hashing,” In VLDB, volume 
+99, pages 518–529, 1999. 1  
+23. Kevin Lin, Huei-fang Yang, Jen-hao Hsiao, and Chu-song 
+Chen. 2015. “Deep Learning of Binary Hash Codes for 
+Fast Image Retrieval,” In IEEE Conference on Computer 
+Vision and Pa ern Recognition Workshops (CVPRW). 
+27–35.  
+24. K. 
+Simonyan 
+and 
+A. 
+Zisserman. 
+“Very 
+deep 
+convolutional 
+networks 
+for 
+large-scale 
+image 
+recognition,” In ICLR, 2015.  
+25. Jiang Wang, Yang Song, Thomas Leung, Chuck 
+Rosenberg, Jing- bin Wang, James Philbin, Bo Chen, and 
+Ying Wu. 2014. Learning Fine-Grained Image Similarity 
+with Deep Ranking. In IEEE Conference on Computer 
+Vision and Pattern Recognition(CVPR). 1386–1393. 
+26. Matthew D Zeiler and Rob Fergus. 2014. “Visualizing 
+and 
+understanding 
+convolutional 
+networks,” 
+In 
+European Conference on Computer Vision(ECCV). 818–
+833. 
+27. Alex Krizhevsky, Ilya Sutskever, and Geo rey E Hinton. 
+2012. “Imagenet classi^ication with deep convolutional 
+neural networks,” In Advances in neural information 
+processing systems(NIPS). 1097–1105. 
+28. Christian Szegedy, Wei Liu, Yangqing Jia, Pierre 
+Sermanet, S cott E. Reed, Dragomir Anguelov, Dumitru 
+Erhan, Vincent Vanhoucke, and Andrew Rabinovich. 
+2015. “Going deeper with convolutions,” In IEEE 
+Conference 
+on 
+Computer 
+Vision 
+and 
+Pattern 
+Recognition(CVPR). 1–9. 
+29. Han Zhu, Mingsheng Long, Jianmin Wang, and Yue Cao. 
+2016. “Deep Hashing Network for Ef^icient Similarity 
+Retrieval,” In 30th AAAI Conference on Arti^icial 
+Intelligence. 2415–2421. 
+30. Lianli Gao, Jingkuan Song, Fuhao Zou, Dongxiang Zhang, 
+and Jie Shao. 2015. “Scalable Multimedia Retrieval by 
+Deep Learning Hashing with Relative Similarity 
+Learning,” In 23rd Annual ACM Conference on 
+Multimedia Conference (MM). 903– 906. 
+ 
+ 

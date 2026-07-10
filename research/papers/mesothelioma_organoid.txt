@@ -1,0 +1,444 @@
+A novel malignant mesothelioma 
+organoids-T cell co-culture 
+platform for personalized 
+immunochemotherapy testing
+Yang Liu1,4, Yang Yang2,4, Songlin An3, Hua Wan2, Minghao Zhang2, Ruihong Yin2, 
+Weiting Zhao2, Li Huang2, Yunshan Zhao2 & Chenggang Li1
+Malignant mesothelioma (MM) is a rare, aggressive cancer with poor outcomes due to its 
+heterogeneity and therapy resistance. Patient-derived organoids (PDOs) have emerged as a promising 
+tool for precision medicine, as they faithfully recapitulate key tumor characteristics. This study 
+aimed to establish MM PDOs and develop a PDO-T cell co-culture system to evaluate their utility 
+in guiding personalized MM treatment. MM PDOs were generated from malignant ascites, pleural 
+effusions, fine-needle biopsies, and surgical tissues. Organoids were characterized using H&E staining, 
+immunohistochemistry (IHC), and next-generation sequencing (NGS). PBMC-derived T cells were co-
+cultured with PDOs to assess immunotherapy and chemotherapy responses. Drug sensitivity testing 
+was performed to evaluate treatment efficacy. 11 MM PDOs were successfully established, which 
+recapitulated the histological features and genomic profiles of their parental tumors. Drug sensitivity 
+testing revealed heterogeneous responses of PDOs, with sensitivity to anlotinib but resistance to 
+cisplatin plus pemetrexed plus bevacizumab. Notably, PDOs established from the same patient at 
+different time points displayed dynamic changes in genetic profiles and drug sensitivities, mirroring 
+in vivo tumor progression. In the PDO-T cell co-culture system, anti-PD-1 immunotherapy, especially 
+combined with chemotherapy, significantly reduced organoids viability of patient PM002. MM PDOs 
+and the PDO-T cell co-culture system constitute robust models for investigating tumor progression, 
+drug responses, and immunotherapy efficacy. These tools highlight their potential in advancing 
+personalized medicine for MM.
+Keywords  Organoid, Mesothelioma, Immunotherapy, Chemotherapy, Drug sensitivity
+Malignant mesothelioma (MM) is a rare and highly aggressive cancer that arises from the mesothelial lining of 
+the pleura, peritoneum, or other serosal surfaces. It is notoriously difficult to treat due to its late diagnosis, high 
+heterogeneity, and resistance to conventional therapies. Approximately 80% of MM cases are associated with 
+occupational or environmental asbestos exposure1. The pleura is the most common site of MM (73 to 85%), 
+followed by the peritoneum (7 to 18%)2. A large study of the SEER database showed an overall 5-year survival 
+rate of 20.3% in patients with malignant peritoneal mesothelioma (MPeM)3. In contrast, the 5-year survival rate 
+of malignant pleural mesothelioma (MPM) is only 5%−10%4,5, highlighting the urgent need for more effective 
+treatment strategies.
+Despite advances in chemotherapy and immunotherapy, the clinical outcomes for MM patients remain poor. 
+Platinum-based chemotherapy remains the standard first-line treatment for advanced MM6, but the high degree 
+of histological and molecular heterogeneity in MM results in highly variable responses to therapy. Immune 
+checkpoint inhibitors (ICIs), either alone or in combination with chemotherapy, have shown promise in subsets 
+of patients, yet predicting which patients will benefit remains a major clinical challenge7,8. This variability 
+underscores the need for more accurate models to predict treatment responses and guide personalized therapy.
+Traditional models for studying MM, such as animal models (PDX) and 2D cell cultures, have significant 
+limitations. Animal models are time-consuming, expensive, and often fail to fully recapitulate the complexity 
+1Senior Department of Hepato-Pancreato-Biliary Surgery, the First Medical Center of PLA General Hospital, Beijing 
+100853, China. 2Darkjade Sciences, Inc, Beijing 100095, China. 3Department of Peritoneal Oncology Surgery, 
+Beijing Shijitan Hospital Affiliated to Capital Medical University, Beijing 100038, China. 4Yang Liu and Yang Yang 
+contributed equally to this work. email: zzgc2004@163.com; lichenggang301@126.com
+OPEN
+Scientific Reports |        (2025) 15:41305 
+1
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports
+of human tumors. In contrast, 2D cell cultures lack the three-dimensional (3D) architecture and tumor 
+microenvironment interactions that are critical for understanding tumor biology and treatment responses. 
+These limitations emphasize the need for more accurate and patient-specific models.
+Patient-derived organoids (PDOs) have emerged as a promising tool for cancer research and personalized 
+medicine. These 3D cultures faithfully recapitulate the genomic and phenotypic characteristics of the patient’s 
+primary tumor, can be established rapidly, and have a high success rate. PDOs have been successfully derived 
+from various cancers, including colorectal9 and ovarian10 cancers, and have been used in drug sensitivity testing 
+to predict clinical responses11,12. However, while mesothelioma organoids have been reported13–16, models for 
+tumor-immune cell interactions for preclinical evaluation of immunotherapy in vitro have not been developed.
+In this study, we established MM PDOs from diverse clinical specimens and developed a PDO-T cell co-
+culture system. We validated that these PDOs recapitulate the histopathological and molecular features of 
+parental tumors and demonstrated their utility in testing responses to chemotherapy and immunotherapy. These 
+models provide a valuable platform for advancing personalized MM treatment.
+Materials and methods
+Source of MM specimens
+A total of 11 samples were obtained from nine patients. Informed consent was obtained from all participants. 
+This study was approved by the Ethics Committee of Darkjade Sciences-Starlite International Science and 
+Technology (Beijing) (S2022-148-01), and was performed in accordance with the Declaration of Helsinki. All 
+experiments were performed in accordance with relevant guidelines and regulations.
+Organoid cultures
+Organoids were culture as previously described with minor modification15,16. All the samples were transported 
+to the laboratory in cold within 4 h after collection. Surgical tumor tissues and fine-needle aspiration specimen 
+were washed with phosphate buffered saline (PBS) with 2% penicillin-streptomycin (Gibco, USA) for 15 min, 
+and then minced and placed into a dish containing advanced DMEM (Gibco, USA) with TrypLE (Gibco, USA) 
+and 2% penicillin-streptomycin in 37 °C for 30 min. The dissociated tumor was then filtered through a 70 
+μm cell filter and centrifuged to remove debris. Cell pellets was resuspended in advanced DMEM, and red 
+blood cells were lysed with RBC lysis buffer (Invitrogen eBioscience, USA) for 5 min. Tumor cells were washed, 
+resuspended in cold MM organoid culture medium with 5% Matrigel (Corning, USA). Then, 200 µL of the cell 
+suspension was added into 24-well ultra-low attachment plates. Plates were incubated at 37 °C with 5% CO₂ for 
+30 min to allow Matrigel gelation, after which 300 µL of MM organoid medium was added.
+For malignant effusion samples, samples were centrifuged at 300 g for 5 min, and the cell pellets were washed 
+two times in advanced DMEM/F12 with 2% penicillin-streptomycin. Following centrifuged at 300 g for 5 min, 
+cells were resuspended in a cold MM organoid culture medium with 5% Matrigel. Subsequent steps were 
+identical to those for tissue specimens.
+The MM organoid culture medium was consists of Advanced DMEM/F12 cell culture medium (Gibco) 
+supplemented with 1% GlutaMAX (Gibco), EGF (20 ng/mL), 1x N-2 supplement (Thermo Fisher Scientific), 1x 
+B-27™ Supplement (Thermo Fisher Scientific, 100 µg/mL of Transferrin human (Sigma), 100 ng/mL of Noggin 
+(Peprotech) and 100 ng/mL R-spondin (Peprotech). Medium was refreshed every 2–3 days.
+When MM PDOs reach 100–150 μm, passage was possible. The culture medium containing organoids was 
+collected into a 15 mL centrifuge tube and centrifuged at 300 g for 3 min. Organoid pellets were resuspended 
+in 1 ml of TrypLE and incubated at 37 ° C for 3 min. Dissociated cells were centrifuged at 300 g for 3 min to 
+remove the supernatant. The cells were resuspended in organoid medium with 5% Matrigel, and plated at a 1:2 
+or 1:3 dilution.
+To preserve MM PDOs via cryopreservation, organoids were collected and digested into masses with TrypLE, 
+and resuspended in 500 µL fetal bovine serum (FBS) containing 10% dimethyl sulfoxide (DMSO). Suspensions 
+were transferred to 1.5 mL cryovials, placed in a freezing container, and stored at − 80 °C overnight. Samples 
+were then transferred to liquid nitrogen for long-term storage.
+Cryopreserved organoids were rapidly thawed in a 37 °C water bath, transferred to 15 mL tubes containing 
+5 mL Advanced DMEM/F12, and centrifuged at 300×g for 3 min. Organoid pellets were resuspended in cold 
+organoid medium with 5% Matrigel and plated as described above.
+Histological study and immunohistochemistry
+Tumor tissues were fixed in 4% paraformaldehyde for 24  h, dehydrated, and embedded in paraffin blocks. 
+Organoids were collected by centrifugation at 300 g for 3 min, and fixed in 4% paraformaldehyde, dehydrated, 
+and embedded in paraffin blocks. Paraffin sections were stained with hematoxylin and eosin using standard 
+protocols and imaged under a light microscope. Immunohistochemistry (IHC) was performed using antibodies 
+targeting the Cytokeratin 5/6 (CK5/6), Cytokeratin 7 (CK7), Calretinin (CR), D2-40, WT-1, Ki67.
+Genomic analysis
+DNA was extracted from organoids and original tumour samples using the DNeasy Blood & Tissue Kit (Qiagen, 
+Germany) according to the manufacturer’s protocol. Genomic DNA (200 ng) was fragmented to an average 
+of 300 bp, and then subjected to library construction and hybrid capture using a custom-designed panel. The 
+custom-designed panel, containing 673 genes, covering 1.1  Mb of the human genomes. The libraries were 
+sequenced with 2 × 150 bp paired-end reads on the NovaSeq 6000 (Illumina, Inc., USA) platform.
+The raw reads containing adaptor sequence and the reads with low quality (> 50% of bases whose Q scores were 
+≤ 10%) were filtered. The clean data were mapped to human reference genome hg19/GRCh37 using Burrows-
+Wheeler Aligner (BWA, version: v0.7.17, https://github.com/1h3/bwa.git). Variant calling and annotation 
+Scientific Reports |        (2025) 15:41305 
+2
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/
+were performed using ensembl-vep (version 97.4, https://github.com/Ensembl/ensembl-vep). Variants with a 
+population frequency over 1% were grouped as single nucleotide polymorphisms and excluded from further 
+analysis. Only mutation sites in exons and indirect regions were retained.
+Drug sensitivity testing
+MM PDOs were used for drug sensitivity testing 7 days after passage. Organoids were dissociated and 
+resuspended in MM organoid culture medium with 5% Matrigel and plated into 96-well plates (50 µl/well, 
+4 × 103 cells/well; Corning, USA). After Matrigel gelation, 40 µL MM organoid medium was added per well. 
+Organoids were cultured for 48  h, and then treated with serial of concentrations of clinical chemotherapy 
+regimens: cisplatin + pemetrexed + bevacizumab (60 µM: 180 µM: 6 µg/mL), cisplatin + gemcitbine (60 µM: 80 
+µM), apatinib + etoposide (20 µM: 100 µM), anlotinib (20 µM). All regimens were diluted with dilution factor of 
+3 (a total of 10 concentrations). DMSO and Staurosporine were set as the negative control and positive control, 
+respectively. The cell viability was assayed using CellTiter-Glo (Promega, USA) after 3 days of drug incubation 
+according to instructions by the manufacturer. Results were normalized to the negative control and expressed as 
+percentage cell viability. The half-maximal inhibitory concentration (IC50) value was conducted using nonlinear 
+regression analysis of the dose–response curve in GraphPad Prism 7.0 (GraphPad Software, USA).
+Co-culture of MM PDOs and T cells
+To evaluate the effect of anti-PD-1 immunotherapy, we conducted co-culture assays of MM PDOs with T cells. 
+T cell derived from PBMC was established as previously described with minor modification17. The PBMC 
+fraction was isolated from peripheral blood using Ficoll (Corning), and was cultured in RPMI 1640 (Corning), 
+supplemented with 2 mM ultraglutamine I, 25 mM HEPES (pH 7.2), 5.5 × 10−5 M β-mercaptoethanol, IL-2 
+(6000 IU/ml; Sigma), and 10% inactivated serum (Gibco). CD3 monoclonal antibody and CD28 antibody 
+(eBioscience) were added for T cell activation at least 48 h before co-culture.
+For co-culture, T cells were firstly treated with nivolumab (100 µg/mL; anti–PD-1 antibody) or isotype control 
+(100 µg/mL, IgG) in 96-well ultralow attachment plates (Corning) for 2 h. PDOs were digested into small cell 
+clumps or single cells, and were mixed with T cells at an effector-to-target ratio of 10:1 (5 × 105 : 5 × 104). After 
+co-culture for 24 h, the co-cultures were treated with or without chemotherapy drugs (cisplatin + pemetrexed, 15 
+µM : 45 µM) for three days. T cells alone were cultured and treated in the same way. T cells cultured alone (with 
+identical treatments) served as a control to subtract T cell viability from co-culture viability, enabling accurate 
+quantification of PDO viability. The cell viability was assayed using CellTiter-Glo (Promega). Untreated PDO-T 
+cell co-cultures served as the negative control.
+Statistical analysis
+Assays were conducted in technical triplicates across three independent experiments. Statistical analyses were 
+performed using GraphPad Prism software. For two-group comparisons, IC50 values were analyzed via T-test. 
+For multi-group comparisons of relative differences in cell viability, one-way analysis of variance (ANOVA) 
+followed by Tukey’s post-hoc test was applied. A P-value ≤ 0.05 was considered statistically significant.
+Ethics approval.  This study was approved by the Ethics Committee of Darkjade Sciences-Starlite International 
+Science and Technology (Beijing) (approval number: S2022-148-01).
+Consent to participate.  Written informed consent was obtained from participants in the study.
+Results
+MM PDOs were established from diverse types of samples collected in clinical scenarios
+To establish as many MM PDOs as possible, we collected potential samples in a variety of clinical scenarios, 
+including effusion, fine-needle aspiration biopsy, and surgical tissue samples. 11 MM PDOs were successfully 
+established (Fig. 1 and Table S1), with a 100% success rate across all specimen types. Organoids were formed after 
+5–14 days of culture, with slight inter-patient variation in expansion rates. All organoids could be passaged for 
+more than three generations, and maintained their original characteristics after freezing and thawing (Fig. 1c). 
+MM PDOs exhibited diverse morphologies, ranging from cystic to dense structures with varying circularity and 
+cellular cohesion. The morphology of organoids seemed to be unrelated to sample types, suggesting our culture 
+method was suitable for samples obtained in various clinical settings.
+Notably, we collected effusions from the same patient at different time points (reflecting distinct disease 
+stages), enabling the establishment of paired PDO lines: PM002-1O/PM002-2O and PM004-1O/PM004-2O 
+(Fig. 1b). These paired lines provide a unique resource for studying tumor evolution and dynamic changes in 
+drug sensitivity.
+MM PDOs maintained the histological features of parental tumors
+To validate the histological fidelity of MM PDOs, we compared H&E staining and IHC assay of PDOs with 
+matched parental tumor tissues. H&E staining confirmed that PDOs retained key histological features of MM, 
+including polygonal cells with abundant eosinophilic cytoplasm and glandular/sheet-like arrangements (Fig. 2, 
+Fig. S1).
+IHC analysis (Fig.  2) showed that PDOs preserved the expression pattern of MM-specific biomarkers: 
+positive staining for CK5/6, D2-40, WT-1, and CR (pan-MM markers) and CK7 (epithelioid MM marker). 
+Additionally, Ki67 staining confirmed significant proliferative activity in PDOs, consistent with the malignant 
+nature of parental tumors. Collectively, these results demonstrate that MM PDOs faithfully recapitulate the 
+histological characteristics of their parental tumors.
+Scientific Reports |        (2025) 15:41305 
+3
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/
+MM PDOs retained the genomic profiles of parental tumor
+To assess genomic fidelity, we performed targeted NGS on three PDO lines and their matched parental tissues 
+(PM004, PM005, PM006). We analyzed the top 30 most frequently mutant genes in MM, and generated mutation 
+heatmaps (Fig. 3a). Key MM-associated mutations, including those in BAP1, CDKN2A, and MUTYH8, were 
+detected in both PDOs and matched patient samples. Comparative analysis of variants revealed a high degree 
+of concordance between PDOs and parental tissues: 75% (PM004), 41.2% (PM005), and 53.3% (PM006) shared 
+mutations (Fig. 3b). These results confirm that MM PDOs retain the core genomic features of parental tumors.
+We further investigated genomic evolution using paired PDO lines from patients PM002 and PM004. PDO 
+PM002-2O retained 45% (9/20) of the variants present in PM002-1O, with few new variants emerging (Fig. 3c 
+and d). In contrast, PDO PM004-2O shared 75% (6/8) of variants with PM004-1O but acquired additional 
+mutations, likely reflecting clonal evolution of the primary tumor. These findings highlight the utility of paired 
+PDO lines for studying intra-tumor heterogeneity and tumor evolution.
+Drug sensitivity of MM PDOs correlates with clinical therapeutic responses
+Given that organoid drug sensitivity has been reported representing the clinical response of anti-cancer therapy 
+in other cancers, we evaluated the drug response of MM PDOs with four chemotherapy regimens. Specifically, 
+organoids were dissociated into small clumps and seeded into 96-well plates. Cell viability of the PDOs was 
+examined after treatment with serial concentrations of drugs. IC50 values were calculated to quantify the drug 
+response of different MM PDOs to each test drug.
+Drug sensitivity assays revealed both significant similarities and variations in response to the assayed agents. 
+Most MM PDOs demonstrated relative sensitive towards anlotinib, but resistant to the standard first-line 
+cisplatin + pemetrexed + bevacizumab regimen (Fig. 4a and b). PM001O was more sensitive to most drugs, while 
+PM004-2O displayed higher resistance.
+We further correlated MM PDO drug sensitivity results with the clinical responses of their matched 
+patients. PM004, a 53-year-old male, was diagnosed as peritoneal MPeM, Stage III. He received first-line 
+cisplatin + pemetrexed + bevacizumab therapy, and was assessed stable disease (SD) at the sixth and 12th week 
+after treatment. But progressive disease (PD) was confirmed by computed tomography (CT) at the 7th month, 
+accompanied by increased ascites. Ascites collected at this time was used to establish the PM004-1O organoid. 
+Three weeks later, ascites further increased, and a second organoid (PM004-2O) was established from the newly 
+collected ascites. Consistent with the patient’s clinical progression, both PM004-1O and PM004-2O showed 
+resistance to cisplatin + pemetrexed + bevacizumab. Notably, PM004-2O had higher IC50 values across multiple 
+regimens than PM004-1O, reflecting progressive chemoresistance (Fig. 4c).
+Patient PM002, a 48-year-old male, was diagnosed as MPeM, stage IV (TxN2M1). Ascites from the patients 
+was collected o establish PM002-1O. He received first-line immunotherapy with nivolumab + ipilimumab as the 
+treatment, achieving a sustained partial response (PR) for 10 months. Then ascites increased, and PM002-2O 
+was established from the new ascites. The patient was then switched to cisplatin + pemetrexed + bevacizumab 
+Fig. 1.  Successful establishment of MM PDOs from diverse clinical specimens. (a) Bright-field images of MM 
+PDOs derived from different MM subtypes and specimen types. (b) Bright-field images of MM PDOs derived 
+from samples of the same patients at different time points. (c) Bright-field images of MM PDOs after passage.
+ 
+Scientific Reports |        (2025) 15:41305 
+4
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/
+chemotherapy. Ultimately, the treatment failed, and the patient opted for home palliative care. Correspondingly, 
+PM002-2O exhibited a higher IC50 value for cisplatin + pemetrexed + bevacizumab, which was consistent with 
+the suboptimal clinical therapeutic efficacy.
+Collectively, these results demonstrate that the drug sensitivity of MM PDOs reflects the clinical therapeutic 
+response of their matched patients.
+ A PDO-T cell co-culture system for evaluating immunochemotherapy responses
+To enable in vitro evaluation of anti-PD-1 immunotherapy (alone or in combination with chemotherapy), we 
+developed a MM PDO-T cell co-culture system.
+In this co-culture system, the cytotoxic effects of anti-PD-1 immunotherapy was confirmed by comparing 
+with isotype control (Fig. S2). For PM002-derived MM PDOs, the cytotoxic effect of anti-PD-1 immunotherapy 
+Fig. 2.  MM PDOs recapitulated the histological features of parental tumors. H&E staining and IHC (CK5/6, 
+D2-40, WT-1, CR, CK7, Ki67) of MM PDOs and matched parental tumor tissues. Scale bar: 50 μm.
+ 
+Scientific Reports |        (2025) 15:41305 
+5
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/
+and its combination with chemotherapy on organoid viability were first visualized via microscopy (Fig. 5a). 
+Subsequent CellTiter-Glo further verified that anti-PD-1 treatment (nivolumab) reduced PDOs viability, 
+while the combination of immunotherapy and chemotherapy (cisplatin + pemetrexed) exhibited enhanced 
+killing efficacy (p < 0.001 for PM002-1O, and P < 0.001 for PM002-2O; Fig. 5b). However, despite their ability 
+to eliminate tumor cells, chemotherapy agents concomitantly exerted substantial cytotoxicity toward T cells 
+(Fig. S3). This non-selective targeting of T cells posed a potential detriment to the overall therapeutic efficacy 
+of antineoplastic regimens. Thus, further optimization of combination therapeutic strategies is needed prior to 
+translational application in clinical settings.
+Overall, we established an MM PDO-T cell co-culture platform that enables evaluation of the therapeutic 
+efficacy of immunochemotherapy regimens.
+Discussion
+In this study, we successfully generated MM PDOs from diverse clinical specimens (effusions, biopsies, surgical 
+tissues) that faithfully recapitulate the histological and genomic features of parental tumors. By generating paired 
+PDO lines from the same patient at different time points, we characterized the dynamic changes in genomic 
+alterations and drug responses during tumor progression. Furthermore, we developed a PDO-T cell co-culture 
+system to evaluate responses to immunotherapy and chemotherapy. These tools address key limitations of 
+traditional preclinical models and provide a valuable platform for advancing personalized MM treatment.
+Immune checkpoint inhibitors have emerged as a promising therapeutic option for MM, but response rates 
+remain variable, highlighting the need for models that recapitulate tumor-immune interactions. The interplay 
+between immune cells and tumor cells plays a pivotal role in determining tumor initiation, progression, and 
+response to external influences such as treatment18. Conventional PDOs lack immune components, limiting 
+their utility for immunotherapy research. To address this, we co-cultured MM PDOs with PBMC-derived T 
+cells, an approach validated in other cancers. For example, co-culture of colorectal cancer organoids with PBMCs 
+showed that anti-PD-1 treatment impaired the proliferation of immune-sensitive PDOs19, and co-culturing 
+pancreatic tumor organoids with PBMCs induced patient-specific T cell-mediated cytotoxicity20. In our 
+system, the anti-PD-1 + chemotherapy combination treatment exhibited enhanced efficacy against MM PDOs, 
+mirroring potential clinical benefits. This co-culture model not only advances immunotherapy research but also 
+provides a tool for predicting patient-specific responses. However, we also acknowledge the impairment of T 
+Fig. 3.  MM PDOs captured tumor genomic heterogeneity. Heat-map of the top 30 mutant genes in MM PDOs 
+and matched parental specimens. Venn diagrams showing the concordance of variants between MM PDOs 
+and parental tissues. Heatmap of mutations in paired PDO lines from patients PM002 and PM004 (established 
+at different time points). Venn diagrams showing the concordance of variants between paired PDO lines 
+(PM002-1O/PM002-2O and PM004-1O/PM004-2O).
+ 
+Scientific Reports |        (2025) 15:41305 
+6
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/
+cells induced by chemotherapy. Prior to translational application in clinical settings, combination therapeutic 
+strategies require further optimization to improve the efficacy of combination treatments.
+Tumor organoids are a promising tool in precision medicine for predicting the clinical response to 
+treatment21–23. Yao et al. found that the patient’s chemoradiotherapy response was highly matched with the 
+rectal cancer organoid (RCO) response, with an accuracy of 84.43%, a sensitivity of 78.01%, and a specificity of 
+91.97%24. Currently, the majority of organoids are derived from surgical or biopsy tissue. However, for patients 
+who cannot obtain surgical tissue due to advanced stage, metastasis, or unsuitability to surgery, establishing 
+organoids through malignant effusion as well as fine-needle aspiration specimen samples will offer invaluable 
+personalized treatment opportunities25. Malignant pleural effusion and ascites are the main clinical manifestation 
+of MM and are easy to collect. More importantly, such samples are minimally invasive and repeatable. They are 
+becoming an attractive source for PDO establishment. Interestingly, it has been reported that the success rate 
+of lung cancer organoids derived from malignant effusion was significantly higher than that from tumor tissue 
+(81.4% vs. 57.8%)11. These findings indicate that trace samples and liquid samples are suitable for organoid 
+Fig. 4.  Heterogeneous response of MM PDOs to drugs. (a) Dose-effect curve of MM PDOs treated with four 
+chemotherapy regimens. (b) Heatmap of MM PDO drug sensitivity. The summed IC50 values of all drugs 
+in each combination regimen were used to generate the heatmap. Colors represent log₁₀-transformed IC50 
+values (lower values indicate higher sensitivity). (c) IC50 values of paired PDO lines (PM002-1O/PM002-
+2O and PM004-1O/PM004-2O) treated with the four regimens. The Student’s t-test was used for two-group 
+comparisons. *, P < 0.05; **, P < 0.01; ***, P < 0.001. C + P + B, cisplatin + pemetrexed + bevacizumab; C + G, 
+cisplatin + gemcitabine; A + E, apatinib + etoposide.
+ 
+Scientific Reports |        (2025) 15:41305 
+7
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/
+establishment26–29. Furthermore, organoids derived from different sample types can mutually support and 
+complement each other16,30.
+Due to the diversity in collection sites and time points, these organoids can reflect common tumor 
+characteristics, as well as distinct features. As showed in this study, MM PDOs from different sample types 
+showed little difference in morphology and histology, whereas PDOs from malignant effusion samples showed 
+more genomic variation than those from tissue samples. The emergence of new variants found in PDOs may be 
+due to the overgrowth of rare clones or differences in sampling sites. By establishing a diverse range of organoids, 
+the tumor progression could be monitored and analyzed from multiple perspectives, thereby enhancing the 
+options and possibilities for disease research and treatment. Additionally, a comprehensive sample bank would 
+opens up more avenues for medical research and disease therapy.
+Our study also provides insights into MM tumor progression. Paired PDO lines from patients PM002 and 
+PM004 revealed dynamic changes in genomic profiles and drug sensitivity over time. PM004-2O (established at 
+a later disease stage) acquired new mutations and exhibited increased chemoresistance, likely reflecting clonal 
+selection under therapeutic pressure. These findings highlight the utility of serial PDO lines for studying intra-
+tumor heterogeneity and guiding adaptive treatment strategies.
+There are some limitations in this study. First, due to the rarity of MM, the number of samples analyzed 
+in this study was relatively limited. Larger cohorts are needed to validate our findings. Second, the absence of 
+paired tissue and effusion samples from the same patient prevented a direct comparison of organoids derived 
+from different sample types. Future studies should address this to optimize PDO establishment protocols. Third, 
+further longitudinal studies are needed to confirm the predictive value of PDO drug sensitivity for long-term 
+clinical outcomes, which will accelerate the translation of PDOs into clinical practice.
+In conclusion, we have established a comprehensive platform of MM PDOs and a PDO-T cell co-
+culture system. These models faithfully recapitulate tumor biology, enable evaluation of chemotherapy and 
+immunotherapy responses, and hold significant potential for personalized MM treatment.
+Data availability
+The raw sequence data reported in this paper have been deposited in the Genome Sequence Archive in National 
+Genomics Data Center, China National Center for Boinformation/Beijing Institute of Genomics, Chinese Acad­
+emy of Sciences (GSA-Human: HRA011843) that are publicly accessible at https://ngdc.cncb.ac.cn/gsa-human.
+Received: 17 March 2025; Accepted: 17 October 2025
+References
+	 1.	 Marinaccio, A. et al. Pleural malignant mesothelioma epidemic: incidence, modalities of asbestos exposure and occupations 
+involved from the Italian National register. Int. J. Cancer. 130 (9), 2146–2154 (2012).
+	 2.	 Hajj, G. N. M. et al. Malignant pleural mesothelioma: an update. Jornal Brasileiro De Pneumologia: Publicacao Oficial Da Sociedade 
+Brasileira De Pneumologia E Tisilogia. 47 (6), e20210129 (2021).
+	 3.	 Alaklabi, S., Roy, A. M., Skitzki, J. J. & Iyer, R. Immunotherapy in malignant peritoneal mesothelioma (Review). Mol. Clin. Oncol. 
+18 (4), 31 (2023).
+	 4.	 Perera, N. D. & Mansfield, A. S. The evolving therapeutic landscape for malignant pleural mesothelioma. Curr. Oncol. Rep. 24 (11), 
+1413–1423 (2022).
+Fig. 5.  MM PDO-T cell co-culture system for evaluating immunotherapy responses. (a) Microscopic images 
+of PM002-derived PDOs in co-culture with T cells, treated with anti-PD-1, chemotherapy drugs, or the 
+combination. Scale bar, 200 μm. (b) Cell viability of PM002-derived PDOs in co-culture following treatment 
+with anti-PD-1 antibody, chemotherapy drugs, or their combination. Equal amounts of T cells were treated 
+in the same way to subtract the activity of the T cells in the co-culture. Assays were conducted in technical 
+triplicates across three independent experiments. One-way analysis of variance (ANOVA) followed by 
+Tukey’s post-hoc test was applied for multi-group comparisons. *, P < 0.05; **, P < 0.01; ***, P < 0.001. Chemo, 
+chemotherapeutic agents.
+ 
+Scientific Reports |        (2025) 15:41305 
+8
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/
+	 5.	 Milano, M. T. & Zhang, H. Malignant pleural mesothelioma: a population-based study of survival. J. Thorac. Oncology: Official 
+Publication Int. Association Study Lung Cancer. 5 (11), 1841–1848 (2010).
+	 6.	 Wang, Q. et al. Chinese expert consensus on the diagnosis and treatment of malignant pleural mesothelioma. Thorac. Cancer. 14 
+(26), 2715–2731 (2023).
+	 7.	 Hmeljak, J. et al. Integrative molecular characterization of malignant pleural mesothelioma. Cancer Discov. 8 (12), 1548–1565 
+(2018).
+	 8.	 Dagogo-Jack, I. et al. Molecular characterization of mesothelioma: impact of histologic type and site of origin on molecular 
+landscape. JCO Precision Oncol. 6, e2100422 (2022).
+	 9.	 van de Wetering, M. et al. Prospective derivation of a living organoid biobank of colorectal cancer patients. Cell 161 (4), 933–945 
+(2015).
+	10.	 Kopper, O. et al. An organoid platform for ovarian cancer captures intra- and interpatient heterogeneity. Nat. Med. 25 (5), 838–849 
+(2019).
+	11.	 Wang, H. M. et al. Using patient-derived organoids to predict locally advanced or metastatic lung cancer tumor response: A real-
+world study. Cell. Rep. Med. 4 (2), 100911 (2023).
+	12.	 Tang, Y. et al. Cutoff value of IC(50) for drug sensitivity in patient-derived tumor organoids in colorectal cancer. iScience 26 (7), 
+107116 (2023).
+	13.	 Mazzocchi, A. R., Rajan, S. A. P., Votanopoulos, K. I., Hall, A. R. & Skardal, A. In vitro patient-derived 3D mesothelioma tumor 
+organoids facilitate patient-centric therapeutic screening. Sci. Rep. 8 (1), 2886 (2018).
+	14.	 Forsythe, S. D. et al. Cisplatin exhibits superiority over MMC as a perfusion agent in a peritoneal mesothelioma patient specific 
+organoid HIPEC platform. Sci. Rep. 13 (1), 11640 (2023).
+	15.	 Fang, X. et al. Organoids derived from patients provide a new opportunity for research and individualized treatment of malignant 
+peritoneal mesothelioma. Mol. Cancer. 23 (1), 12 (2024).
+	16.	 Hocking, A. J., Mortimer, L. A., Farrall, A. L., Russell, P. A. & Klebe, S. Establishing mesothelioma patient-derived organoid models 
+from malignant pleural effusions. Lung Cancer (Amsterdam Netherlands). 191, 107542 (2024).
+	17.	 Sun, L. et al. A human mucosal melanoma organoid platform for modeling tumor heterogeneity and exploring immunotherapy 
+combination options. Sci. Adv. 9 (43), eadg6686 (2023).
+	18.	 Cattaneo, C. M. et al. Tumor organoid-T-cell coculture systems. Nat. Protoc. 15 (1), 15–39 (2020).
+	19.	 Li, D. et al. An immune subtype classification system enables the development of strategies to predict and enhance immunotherapy 
+responses in colorectal cancer. Cancer Research (2025).
+	20.	 Wang, X. et al. Antigen/HLA-agnostic strategies for characterizing Tumor-responsive T cell receptors in PDAC patients via single-
+cell sequencing and autologous organoid application. Cancer Lett. 588, 216741 (2024).
+	21.	 Xu, H., Jiao, D., Liu, A. & Wu, K. Tumor organoids: applications in cancer modeling and potentials in precision medicine. J. 
+Hematol. Oncol. 15 (1), 58 (2022).
+	22.	 Kim, M. et al. Patient-derived lung cancer organoids as in vitro cancer models for therapeutic screening. Nat. Commun. 10 (1), 
+3991 (2019).
+	23.	 Jin, M. Z. et al. Organoids: an intermediate modeling platform in precision oncology. Cancer Lett. 414, 174–180 (2018).
+	24.	 Yao, Y. et al. Patient-Derived organoids predict chemoradiation responses of locally advanced rectal cancer. Cell. Stem cell. 26 (1), 
+17–26e16 (2020).
+	25.	 Seghers, S. et al. A systematic review of patient-derived tumor organoids generation from malignant effusions. Crit. Rev. Oncol. 
+Hematol. 195, 104285 (2024).
+	26.	 Liu, Y. et al. Combining organoid models with next-generation sequencing to reveal tumor heterogeneity and predict therapeutic 
+response in breast cancer. J. Oncol. 2022, 9390912 (2022).
+	27.	 Schutgens, F. et al. Tubuloids derived from human adult kidney and urine for personalized disease modeling. Nat. Biotechnol. 37 
+(3), 303–313 (2019).
+	28.	 Walz, S. et al. A protocol for organoids from the urine of bladder cancer patients. Cells 12(17) (2023).
+	29.	 De Angelis, M. L. et al. An organoid model of colorectal Circulating tumor cells with stem cell features, hybrid EMT state and 
+distinctive therapy response profile. J. Experimental Clin. Cancer Research: CR. 41 (1), 86 (2022).
+	30.	 Choi, W. et al. Establishment of Patient-Derived organoids using ascitic or pleural fluid from cancer patients. Cancer Res. Treat. 55 
+(4), 1077–1086 (2023).
+Acknowledgements
+We acknowledge each participant for their consent to participate in this study.
+Author contributions
+YZ and CL conceived and designed the study; YY, YL, SA, MZ, RY, WZ, LH contributed data or analysis tools; 
+YL and YZ performed the analysis; HW, YL, YZ and CL wrote the paper; All authors reviewed the manuscript.
+Funding
+None.
+Declarations
+Competing interests
+The authors declare no competing interests.
+Additional information
+Supplementary Information The online version contains supplementary material available at ​h​t​t​p​s​:​/​/​d​o​i​.​o​r​g​/​1​
+0​.​1​0​3​8​/​s​4​1​5​9​8​-​0​2​5​-​2​5​0​8​7​-​0​.​
+Correspondence and requests for materials should be addressed to Y.Z. or C.L.
+Reprints and permissions information is available at www.nature.com/reprints.
+Publisher’s note  Springer Nature remains neutral with regard to jurisdictional claims in published maps and 
+institutional affiliations.
+Scientific Reports |        (2025) 15:41305 
+9
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/
+Open Access   This article is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 
+4.0 International License, which permits any non-commercial use, sharing, distribution and reproduction in 
+any medium or format, as long as you give appropriate credit to the original author(s) and the source, provide 
+a link to the Creative Commons licence, and indicate if you modified the licensed material. You do not have 
+permission under this licence to share adapted material derived from this article or parts of it. The images or 
+other third party material in this article are included in the article’s Creative Commons licence, unless indicated 
+otherwise in a credit line to the material. If material is not included in the article’s Creative Commons licence 
+and your intended use is not permitted by statutory regulation or exceeds the permitted use, you will need to 
+obtain permission directly from the copyright holder. To view a copy of this licence, visit ​h​t​t​p​:​/​/​c​r​e​a​t​i​v​e​c​o​m​m​o​
+n​s​.​o​r​g​/​l​i​c​e​n​s​e​s​/​b​y​-​n​c​-​n​d​/​4​.​0​/​.​
+© The Author(s) 2025, corrected publication 2026 
+Scientific Reports |        (2025) 15:41305 
+10
+| https://doi.org/10.1038/s41598-025-25087-0
+www.nature.com/scientificreports/

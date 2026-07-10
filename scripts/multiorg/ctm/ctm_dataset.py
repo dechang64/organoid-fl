@@ -1,0 +1,246 @@
+"""
+CTM Dataset v2: Proper crop matching via cache_key.
+
+Two modes:
+1. Phase 2 mode: Load from vlm_mask_results.json (100 entries, cloud VM testing)
+2. Full mode: Load from SAM2 results + crop metadata JSON (16198 entries, 冬生's machine)
+
+Crop naming: {cache_key}.png where cache_key = {Class}_{Plate}_{image}_{det_idx}
+"""
+import json
+import os
+import torch
+from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+import numpy as np
+from torchvision import transforms
+
+
+class OrganoidCTMDataset(Dataset):
+    """
+    Dataset for CTM training/eval.
+    
+    Each item:
+        image: [3, 224, 224] tensor (DINOv2 input)
+        label: 0 (FP) or 1 (TP)
+        confidence: RF-DETR confidence score
+        metadata: dict with bbox, image_name, etc.
+    """
+    def __init__(
+        self,
+        metadata_path: str,
+        crops_dir: str,
+        split: str = 'train',
+        train_ratio: float = 0.7,
+        val_ratio: float = 0.15,
+        img_size: int = 224,
+        augment: bool = False,
+        balance: bool = True,
+        seed: int = 42,
+    ):
+        self.img_size = img_size
+        self.augment = augment
+        
+        # Load metadata (either Phase 2 vlm_mask_results.json or full SAM2 results)
+        with open(metadata_path, encoding='utf-8') as f:
+            if 'vlm_mask_results' in metadata_path or 'vlm_results' in metadata_path:
+                # Phase 2 mode: already has cache_key, matched, etc.
+                raw_data = json.load(f)
+                all_dets = []
+                for entry in raw_data:
+                    crop_file = f"{entry['cache_key']}.png"
+                    crop_path = os.path.join(crops_dir, crop_file)
+                    if os.path.exists(crop_path):
+                        all_dets.append({
+                            'crop_path': crop_path,
+                            'cache_key': entry['cache_key'],
+                            'label': 1 if entry.get('matched', False) else 0,
+                            'confidence': entry.get('rfdetr_conf', 0.5),
+                            'bbox': entry.get('bbox', [0, 0, 0, 0]),
+                            'image_name': entry.get('image', ''),
+                            'det_idx': entry.get('det_idx', 0),
+                        })
+            else:
+                # Full mode: SAM2 results, need to generate cache_keys
+                data = json.load(f)
+                per_img = data['per_image']
+                all_dets = []
+                for img_info in per_img:
+                    image_name = img_info['image']
+                    for det_idx, det in enumerate(img_info['detections']):
+                        # Build cache_key matching crop naming convention
+                        cache_key = f"{image_name.replace('/', '_')}_{det_idx}"
+                        crop_file = f"{cache_key}.png"
+                        crop_path = os.path.join(crops_dir, crop_file)
+                        if os.path.exists(crop_path):
+                            all_dets.append({
+                                'crop_path': crop_path,
+                                'cache_key': cache_key,
+                                'label': 1 if det.get('matched', False) else 0,
+                                'confidence': det.get('confidence', 0.5),
+                                'bbox': det.get('bbox', [0, 0, 0, 0]),
+                                'image_name': image_name,
+                                'det_idx': det_idx,
+                            })
+        
+        n_total = len(all_dets)
+        
+        if n_total == 0:
+            # Debug info
+            available = os.listdir(crops_dir) if os.path.isdir(crops_dir) else []
+            raise ValueError(
+                f"No crops matched! crops_dir={crops_dir}, "
+                f"available={len(available)} crops, "
+                f"first_available={available[:3] if available else 'none'}"
+            )
+        
+        # Split train/val/test
+        n = n_total
+        rng = np.random.RandomState(seed)
+        indices = rng.permutation(n)
+        n_train = int(n * train_ratio)
+        n_val = int(n * val_ratio)
+        
+        if split == 'train':
+            self.indices = indices[:n_train]
+        elif split == 'val':
+            self.indices = indices[n_train:n_train + n_val]
+        else:  # test
+            self.indices = indices[n_train + n_val:]
+        
+        self.dets = all_dets
+        
+        # Balance classes for training (undersample majority)
+        if balance and split == 'train':
+            labels = [self.dets[i]['label'] for i in self.indices]
+            tp_indices = [i for i, l in zip(self.indices, labels) if l == 1]
+            fp_indices = [i for i, l in zip(self.indices, labels) if l == 0]
+            n_min = min(len(tp_indices), len(fp_indices))
+            if len(tp_indices) > n_min:
+                tp_indices = rng.choice(tp_indices, n_min, replace=False).tolist()
+            if len(fp_indices) > n_min:
+                fp_indices = rng.choice(fp_indices, n_min, replace=False).tolist()
+            self.indices = tp_indices + fp_indices
+            rng.shuffle(self.indices)
+        
+        # Print stats
+        labels = [self.dets[i]['label'] for i in self.indices]
+        n_tp = sum(labels)
+        n_fp = len(labels) - n_tp
+        print(f"[Dataset] {split}: {len(self.indices)} samples "
+              f"({n_tp} TP + {n_fp} FP), "
+              f"from {n_total} total available crops")
+        
+        # Transforms
+        if augment:
+            self.transform = transforms.Compose([
+                transforms.Resize((img_size, img_size)),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomRotation(15),
+                transforms.ColorJitter(0.2, 0.2, 0.2),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                   std=[0.229, 0.224, 0.225]),
+            ])
+        else:
+            self.transform = transforms.Compose([
+                transforms.Resize((img_size, img_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                   std=[0.229, 0.224, 0.225]),
+            ])
+    
+    def __len__(self):
+        return len(self.indices)
+    
+    def __getitem__(self, idx):
+        det = self.dets[self.indices[idx]]
+        
+        try:
+            img = Image.open(det['crop_path']).convert('RGB')
+        except Exception:
+            img = Image.new('RGB', (self.img_size, self.img_size), (128, 128, 128))
+        
+        img_tensor = self.transform(img)
+        
+        return {
+            'image': img_tensor,
+            'label': torch.tensor(det['label'], dtype=torch.long),
+            'confidence': torch.tensor(det['confidence'], dtype=torch.float32),
+            'image_name': det['image_name'],
+            'cache_key': det['cache_key'],
+        }
+
+
+def get_dataloaders(
+    metadata_path: str,
+    crops_dir: str,
+    img_size: int = 224,
+    batch_size: int = 32,
+    num_workers: int = 4,
+    augment: bool = True,
+    balance: bool = True,
+):
+    """Get train/val/test dataloaders."""
+    train_ds = OrganoidCTMDataset(
+        metadata_path, crops_dir, 'train',
+        img_size=img_size, augment=augment, balance=balance
+    )
+    val_ds = OrganoidCTMDataset(
+        metadata_path, crops_dir, 'val',
+        img_size=img_size, augment=False, balance=False
+    )
+    test_ds = OrganoidCTMDataset(
+        metadata_path, crops_dir, 'test',
+        img_size=img_size, augment=False, balance=False
+    )
+    
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
+                             num_workers=num_workers, pin_memory=True)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False,
+                           num_workers=num_workers, pin_memory=True)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False,
+                            num_workers=num_workers, pin_memory=True)
+    
+    return train_loader, val_loader, test_loader
+
+
+if __name__ == '__main__':
+    print("=" * 60)
+    print("Dataset Test (Phase 2 mode: 100 crops)")
+    print("=" * 60)
+    
+    metadata_path = '/home/z/my-project/organoid-fl/results/phase2_vlm_100_mask/vlm_mask_results.json'
+    crops_dir = '/home/z/my-project/organoid-fl/results/phase2_vlm_100_mask/crops'
+    
+    train_ds = OrganoidCTMDataset(
+        metadata_path, crops_dir, 'train',
+        img_size=224, augment=False, balance=True
+    )
+    val_ds = OrganoidCTMDataset(
+        metadata_path, crops_dir, 'val',
+        img_size=224, augment=False, balance=False
+    )
+    test_ds = OrganoidCTMDataset(
+        metadata_path, crops_dir, 'test',
+        img_size=224, augment=False, balance=False
+    )
+    
+    print(f"\nTrain: {len(train_ds)}, Val: {len(val_ds)}, Test: {len(test_ds)}")
+    
+    # Get one sample
+    sample = train_ds[0]
+    print(f"\nSample 0:")
+    print(f"  image: {sample['image'].shape}")
+    print(f"  label: {sample['label'].item()}")
+    print(f"  confidence: {sample['confidence'].item():.3f}")
+    print(f"  cache_key: {sample['cache_key']}")
+    
+    # Test dataloader
+    from torch.utils.data import DataLoader
+    loader = DataLoader(train_ds, batch_size=4, shuffle=False)
+    batch = next(iter(loader))
+    print(f"\nBatch: images {batch['image'].shape}, labels {batch['label']}")
+    
+    print("\n✓ Dataset test passed!")
