@@ -42,14 +42,22 @@ def load_model(checkpoint_path: str, device: str = 'cpu',
     # Get model config from checkpoint
     config = ckpt.get('config', {})
     
-    # Infer d_hidden from checkpoint state_dict if not in config
+    # Always infer all dims from state_dict (config may be wrong)
     sd = ckpt['model_state_dict']
     if 'ctm.nlms.weights_1' in sd:
-        # weights_1 shape: [mem_len, d_hidden, d_internal]
-        inferred_d_hidden = sd['ctm.nlms.weights_1'].shape[1]
-        if 'd_hidden' not in config:
-            config['d_hidden'] = inferred_d_hidden
-            print(f"  [inferred] d_hidden={inferred_d_hidden} from checkpoint")
+        # weights_1: [mem_len, d_hidden, d_internal]
+        config['d_hidden'] = sd['ctm.nlms.weights_1'].shape[1]
+        config['mem_len'] = sd['ctm.nlms.weights_1'].shape[0]
+        config['d_internal'] = sd['ctm.nlms.weights_1'].shape[2]
+        print(f"  [inferred] d_hidden={config['d_hidden']}, mem_len={config['mem_len']}, d_internal={config['d_internal']}")
+    if 'ctm.attention.in_proj_weight' in sd:
+        # attention: in_proj_weight is [3*d_model, d_model]
+        full_dim = sd['ctm.attention.in_proj_weight'].shape[0]
+        config['n_heads'] = config.get('n_heads', 8)  # can't infer n_heads from weights
+    if 'ctm.synch_action.pair_indices' in sd:
+        config['n_action_pairs'] = sd['ctm.synch_action.pair_indices'].shape[0]
+    if 'ctm.synch_output.pair_indices' in sd:
+        config['n_output_pairs'] = sd['ctm.synch_output.pair_indices'].shape[0]
     
     model = OrganoidCTM(
         n_ticks=config.get('n_ticks', n_ticks),
