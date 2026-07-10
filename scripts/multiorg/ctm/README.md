@@ -34,7 +34,6 @@ python scripts\multiorg\ctm\ctm_generate_crops.py ^
 python scripts\multiorg\ctm\ctm_train.py ^
     --metadata data\ctm_crops\ctm_metadata.json ^
     --crops-dir data\ctm_crops ^
-    --output-dir results\ctm ^
     --epochs 50 ^
     --batch-size 32 ^
     --device cuda:0 ^
@@ -44,17 +43,28 @@ python scripts\multiorg\ctm\ctm_train.py ^
     --n-heads 8 ^
     --lr 1e-4
 ```
+输出自动生成到 `results\ctm_20ticks_d256_20260710_HHMMSS\`，**不会覆盖之前结果**。
+如果目录已存在有 .pt 文件，自动追加 `_v2` `_v3` 后缀。
+
 预期：~2M 参数 CTM head + 86M DINOv2(冻结)，3060 上 ~8h
+
+### 快速测试（用 100 已 commit 的 crops）
+```powershell
+python scripts\multiorg\ctm\ctm_train.py ^
+    --metadata results\phase2_vlm_100\vlm_results.json ^
+    --crops-dir results\phase2_vlm_100\crops ^
+    --device cuda:0 --epochs 50
+```
 
 ### 第4步：评估
 ```powershell
 python scripts\multiorg\ctm\ctm_evaluate.py ^
-    --checkpoint results\ctm\best.pt ^
+    --checkpoint results\ctm_20ticks_d256_YYYYMMDD_HHMMSS\best.pt ^
     --metadata data\ctm_crops\ctm_metadata.json ^
     --crops-dir data\ctm_crops ^
-    --output-dir results\ctm_eval ^
     --device cuda:0
 ```
+输出自动放到 checkpoint 目录下的 `eval\` 子目录，不覆盖其他结果。
 产出：
 - `tick_wise_auc.png` — AUC 随 tick 变化（应上升=在思考）
 - `certainty_evolution.png` — 确定性演化

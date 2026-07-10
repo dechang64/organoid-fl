@@ -234,8 +234,8 @@ def main():
                         help='Path to metadata JSON (vlm_mask_results.json or SAM2 results)')
     parser.add_argument('--crops-dir', type=str, required=True,
                         help='Directory containing crop PNGs')
-    parser.add_argument('--output-dir', type=str, default='results/ctm',
-                        help='Output directory for checkpoints')
+    parser.add_argument('--output-dir', type=str, default=None,
+                        help='Output directory. If None, auto-generates: results/ctm_{n_ticks}ticks_d{d_internal}_{date}')
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--lr', type=float, default=1e-4)
@@ -266,8 +266,27 @@ def main():
         print(f"GPU: {torch.cuda.get_device_name(0)}")
         print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
     
-    # Create output directory
+    # Create output directory (auto-generate if not specified)
+    if args.output_dir is None:
+        from datetime import datetime
+        date_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+        args.output_dir = f'results/ctm_{args.n_ticks}ticks_d{args.d_internal}_{date_str}'
+    
+    # Safety check: don't overwrite existing results
+    if os.path.exists(args.output_dir):
+        existing = os.listdir(args.output_dir)
+        if any(f.endswith('.pt') for f in existing):
+            print(f"⚠️  WARNING: {args.output_dir} already has checkpoints!")
+            print(f"   Existing files: {[f for f in existing if f.endswith('.pt')]}")
+            # Auto-append _v2, _v3, etc.
+            v = 2
+            while os.path.exists(f'{args.output_dir}_v{v}'):
+                v += 1
+            args.output_dir = f'{args.output_dir}_v{v}'
+            print(f"   Using {args.output_dir} instead to avoid overwrite")
+    
     os.makedirs(args.output_dir, exist_ok=True)
+    print(f"Output: {args.output_dir}")
     
     # Save args
     with open(os.path.join(args.output_dir, 'args.json'), 'w', encoding='utf-8') as f:

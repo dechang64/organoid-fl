@@ -280,14 +280,21 @@ def main():
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--metadata', type=str, required=True)
     parser.add_argument('--crops-dir', type=str, required=True)
-    parser.add_argument('--output-dir', type=str, default='results/ctm_eval')
+    parser.add_argument('--output-dir', type=str, default=None,
+                        help='Output directory. If None, auto-generates from checkpoint dir + _eval')
     parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--device', type=str, default='cuda:0' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--img-size', type=int, default=224)
     parser.add_argument('--num-workers', type=int, default=4)
     args = parser.parse_args()
     
+    # Auto-generate output dir from checkpoint path
+    if args.output_dir is None:
+        ckpt_dir = os.path.dirname(args.checkpoint)
+        args.output_dir = os.path.join(ckpt_dir, 'eval')
+    
     os.makedirs(args.output_dir, exist_ok=True)
+    print(f"Output: {args.output_dir}")
     
     # Load model
     model, config = load_model(args.checkpoint, args.device, img_size=args.img_size)
