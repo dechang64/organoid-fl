@@ -100,19 +100,30 @@ class OrganoidCTMDataset(Dataset):
                 f"first_available={available[:3] if available else 'none'}"
             )
         
-        # Split train/val/test
-        n = n_total
+        # Split train/val/test — BY IMAGE, not by detection
+        # (prevents data leakage: crops from same image in different splits)
+        unique_images = sorted(set(d['image_name'] for d in all_dets))
+        n_images = len(unique_images)
         rng = np.random.RandomState(seed)
-        indices = rng.permutation(n)
-        n_train = int(n * train_ratio)
-        n_val = int(n * val_ratio)
-        
-        if split == 'train':
-            self.indices = indices[:n_train]
-        elif split == 'val':
-            self.indices = indices[n_train:n_train + n_val]
-        else:  # test
-            self.indices = indices[n_train + n_val:]
+        img_perm = rng.permutation(n_images)
+        n_train_img = int(n_images * train_ratio)
+        n_val_img = int(n_images * val_ratio)
+
+        train_images = set(unique_images[i] for i in img_perm[:n_train_img])
+        val_images = set(unique_images[i] for i in img_perm[n_train_img:n_train_img + n_val_img])
+        test_images = set(unique_images[i] for i in img_perm[n_train_img + n_val_img:])
+
+        image_to_split = {}
+        for img in train_images:
+            image_to_split[img] = 'train'
+        for img in val_images:
+            image_to_split[img] = 'val'
+        for img in test_images:
+            image_to_split[img] = 'test'
+
+        all_indices = [i for i, d in enumerate(all_dets)
+                       if image_to_split.get(d['image_name']) == split]
+        self.indices = all_indices
         
         self.dets = all_dets
         

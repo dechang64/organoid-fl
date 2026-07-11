@@ -69,7 +69,10 @@ def load_model(checkpoint_path: str, device: str = 'cpu',
         d_hidden=config.get('d_hidden', d_hidden),
         img_size=img_size,
     )
-    model.load_state_dict(sd)
+    # New checkpoints only save trainable params (no backbone.* keys).
+    # Need strict=False for backward compat with old full-state checkpoints
+    # and for new trainable-only checkpoints alike.
+    model.load_state_dict(sd, strict=False)
     model.to(device)
     model.eval()
     

@@ -11,7 +11,7 @@ This script:
 Usage (on 冬生's Windows machine with original MultiOrg images):
     python ctm_generate_crops.py \
         --sam2-results results/multiorg_sam2_zeroshot/multiorg_sam2_results.json \
-        --images-root "D:\datasets\mutliorg\MultiOrg_v2" \
+        --images-root "D:\\datasets\\mutliorg\\MultiOrg_v2" \
         --output-dir data/ctm_crops \
         --pad-ratio 0.2
 
@@ -197,14 +197,27 @@ def main():
         for det_idx, det in enumerate(detections):
             cache_key = f"{image_name.replace('/', '_')}_{det_idx}"
             crop_path = os.path.join(args.output_dir, f'{cache_key}.png')
+            bbox = det['bbox']  # [x1, y1, x2, y2] — extract before any branch
             
-            # Skip if exists and not overwriting
+            # Skip if exists and not overwriting — but still add to metadata
             if os.path.exists(crop_path) and not args.overwrite:
                 n_skipped += 1
+                metadata.append({
+                    'cache_key': cache_key,
+                    'image': image_name,
+                    'det_idx': det_idx,
+                    'bbox': bbox,
+                    'rfdetr_conf': det.get('confidence', 0.0),
+                    'matched': det.get('matched', False),
+                    'match_iou': det.get('match_iou', 0.0),
+                    'area': det.get('area', 0),
+                    'circularity': det.get('circularity', 0),
+                    'solidity': det.get('solidity', 0),
+                    'aspect_ratio': det.get('aspect_ratio', 0),
+                })
                 continue
             
             # Crop
-            bbox = det['bbox']  # [x1, y1, x2, y2]
             try:
                 crop = crop_bbox(image, bbox, pad_ratio=args.pad_ratio)
                 

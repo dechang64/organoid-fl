@@ -117,7 +117,8 @@ class OrganoidCTM(nn.Module):
 def evaluate(model, loader, device, n_classes=2):
     """Evaluate model on a dataloader."""
     model.eval()
-    all_logits = []
+    all_final_probs = []
+    all_certain_probs = []
     all_certs = []
     all_labels = []
     all_confs = []
@@ -129,23 +130,25 @@ def evaluate(model, loader, device, n_classes=2):
             confs = batch['confidence'].numpy()
             
             logits_hist, cert_hist, _ = model(images)
+            B = labels.shape[0]
             
-            # Use last tick for evaluation
+            # Final tick predictions
             final_logits = logits_hist[:, :, -1]  # [B, C]
             final_probs = F.softmax(final_logits, dim=-1)
             
-            # Also get most certain tick
-            cert_per_sample = cert_hist.max(dim=1)[0]  # [B]
+            # Most certain tick predictions (per sample)
             best_tick = cert_hist.argmax(dim=1)  # [B]
-            certain_logits = logits_hist[torch.arange(len(best_tick)), :, best_tick]
+            certain_logits = logits_hist[torch.arange(B), :, best_tick]  # [B, C]
             certain_probs = F.softmax(certain_logits, dim=-1)
             
-            all_logits.append(final_probs.cpu().numpy())
+            all_final_probs.append(final_probs.cpu().numpy())
+            all_certain_probs.append(certain_probs.cpu().numpy())
             all_certs.append(cert_hist.cpu().numpy())
             all_labels.append(labels)
             all_confs.append(confs)
     
-    all_logits = np.concatenate(all_logits)
+    all_final_probs = np.concatenate(all_final_probs)
+    all_certain_probs = np.concatenate(all_certain_probs)
     all_labels = np.concatenate(all_labels)
     all_confs = np.concatenate(all_confs)
     
@@ -154,13 +157,13 @@ def evaluate(model, loader, device, n_classes=2):
     
     # Final tick AUC
     try:
-        results['auc_final_tick'] = roc_auc_score(all_labels, all_logits[:, 1])
+        results['auc_final_tick'] = roc_auc_score(all_labels, all_final_probs[:, 1])
     except:
         results['auc_final_tick'] = 0.5
     
-    # Most certain tick AUC
+    # Most certain tick AUC (uses per-sample best-certainty tick, NOT final tick)
     try:
-        results['auc_certain_tick'] = roc_auc_score(all_labels, all_logits[:, 1])
+        results['auc_certain_tick'] = roc_auc_score(all_labels, all_certain_probs[:, 1])
     except:
         results['auc_certain_tick'] = 0.5
     
@@ -170,15 +173,11 @@ def evaluate(model, loader, device, n_classes=2):
     except:
         results['auc_rfdetr'] = 0.5
     
-    # F1 at threshold 0.5
-    preds = (all_logits[:, 1] > 0.5).astype(int)
+    # F1 at threshold 0.5 (final tick)
+    preds = (all_final_probs[:, 1] > 0.5).astype(int)
     results['f1'] = f1_score(all_labels, preds, zero_division=0)
     results['precision'] = precision_score(all_labels, preds, zero_division=0)
     results['recall'] = recall_score(all_labels, preds, zero_division=0)
-    
-    # Accuracy at each tick (tick-wise analysis)
-    # This requires re-running to get per-tick predictions
-    # For now, just report final tick
     
     return results
 
@@ -214,12 +213,26 @@ def train_epoch(model, loader, optimizer, loss_fn, device, n_classes=2):
         total_loss += loss.item()
         n_batches += 1
         
-        # Accuracy (use final tick predictions + info from loss)
+        # Accuracy: best tick = argmin(loss), certain tick = argmax(certainty)
         with torch.no_grad():
-            final_preds = logits_hist[:, :, -1].argmax(dim=-1)  # final tick
-            correct_best += (final_preds == targets).sum().item()
-            correct_certain += (final_preds == targets).sum().item()
-            total += targets.size(0)
+            B = targets.size(0)
+            # Per-sample per-tick loss (same as CTMLoss computes)
+            log_probs = F.log_softmax(logits_hist, dim=-1)  # [B, n_classes, T]
+            losses_per_tick = -log_probs[torch.arange(B), targets, :]  # [B, T]
+
+            # Best tick: argmin(loss) per sample
+            best_ticks = losses_per_tick.argmin(dim=-1)  # [B]
+            best_logits = logits_hist[torch.arange(B), :, best_ticks]  # [B, n_classes]
+            best_preds = best_logits.argmax(dim=-1)
+            correct_best += (best_preds == targets).sum().item()
+
+            # Certain tick: argmax(certainty) per sample
+            certain_ticks = cert_hist.argmax(dim=-1)  # [B]
+            certain_logits = logits_hist[torch.arange(B), :, certain_ticks]  # [B, n_classes]
+            certain_preds = certain_logits.argmax(dim=-1)
+            correct_certain += (certain_preds == targets).sum().item()
+
+            total += B
     
     return {
         'loss': total_loss / max(n_batches, 1),
@@ -370,6 +383,7 @@ def main():
               f"Loss: {train_metrics['loss']:.4f} | "
               f"Train Acc: {train_metrics['acc_best']:.3f}/{train_metrics['acc_certain']:.3f} | "
               f"Val AUC: final={val_metrics['auc_final_tick']:.3f}, "
+              f"certain={val_metrics['auc_certain_tick']:.3f}, "
               f"rfdetr={val_metrics['auc_rfdetr']:.3f} | "
               f"Val F1: {val_metrics['f1']:.3f}")
         
@@ -380,17 +394,22 @@ def main():
             'train_acc_best': train_metrics['acc_best'],
             'train_acc_certain': train_metrics['acc_certain'],
             'val_auc_final': val_metrics['auc_final_tick'],
+            'val_auc_certain': val_metrics['auc_certain_tick'],
             'val_auc_rfdetr': val_metrics['auc_rfdetr'],
             'val_f1': val_metrics['f1'],
         })
         
-        # Save best
+        # Save best — only trainable params (CTM + kv_proj), skip frozen DINOv2
         if val_metrics['auc_final_tick'] > best_val_auc:
             best_val_auc = val_metrics['auc_final_tick']
             patience_counter = 0
+            trainable_sd = {
+                k: v for k, v in model.state_dict().items()
+                if not k.startswith('backbone.')
+            }
             torch.save({
                 'epoch': epoch,
-                'model_state_dict': model.state_dict(),
+                'model_state_dict': trainable_sd,
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_auc': best_val_auc,
                 'args': vars(args),
@@ -409,11 +428,15 @@ def main():
         else:
             patience_counter += 1
         
-        # Periodic save
+        # Periodic save — also only trainable params
         if epoch % args.save_every == 0:
+            trainable_sd = {
+                k: v for k, v in model.state_dict().items()
+                if not k.startswith('backbone.')
+            }
             torch.save({
                 'epoch': epoch,
-                'model_state_dict': model.state_dict(),
+                'model_state_dict': trainable_sd,
                 'optimizer_state_dict': optimizer.state_dict(),
                 'history': history,
             }, os.path.join(args.output_dir, f'checkpoint_ep{epoch}.pt'))
