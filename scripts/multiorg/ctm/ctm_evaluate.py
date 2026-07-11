@@ -23,7 +23,11 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_score
-import timm
+try:
+    import timm
+except ImportError:
+    print("ERROR: timm not installed. Run: pip install timm")
+    sys.exit(1)
 
 sys.path.insert(0, str(Path(__file__).parent))
 from ctm_module import CTM
@@ -395,9 +399,16 @@ def main():
     # Generate plots
     plot_results(results, args.output_dir)
     
-    # Save results JSON
+    # Save results JSON (exclude attention weights — too large for JSON)
+    results_for_json = {k: v for k, v in results.items() if k != 'all_attn_subset'}
     with open(f'{args.output_dir}/eval_results.json', 'w', encoding='utf-8') as f:
-        json.dump(results, f, indent=2)
+        json.dump(results_for_json, f, indent=2)
+    
+    # Save attention weights separately as .npy (much smaller than JSON)
+    if results.get('n_attn_samples', 0) > 0:
+        attn_arr = np.array(results['all_attn_subset'])
+        np.save(f'{args.output_dir}/attn_weights.npy', attn_arr)
+        print(f"Attention weights saved: {attn_arr.shape} → attn_weights.npy")
     
     print(f"\nResults saved to {args.output_dir}/")
 

@@ -20,7 +20,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_score
-import timm
+try:
+    import timm
+except ImportError:
+    print("ERROR: timm not installed. Run: pip install timm")
+    sys.exit(1)
 
 # Add CTM module path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -452,7 +456,7 @@ def main():
     print(f"{'='*60}")
     
     # Load best model (strict=False: checkpoint only has trainable params, no backbone)
-    ckpt = torch.load(os.path.join(args.output_dir, 'best.pt'), map_location=device)
+    ckpt = torch.load(os.path.join(args.output_dir, 'best.pt'), map_location=device, weights_only=False)
     model.load_state_dict(ckpt['model_state_dict'], strict=False)
     print(f"Loaded best model from epoch {ckpt['epoch']} (val AUC={ckpt['val_auc']:.3f})")
     
