@@ -255,9 +255,8 @@ class CTM(nn.Module):
         # Initialize pre-activation history
         pre_acts_history = self.pre_acts_init.unsqueeze(0).expand(B, -1, -1)  # [B, D, M]
         
-        # Post-activation history (grows over ticks)
-        post_acts_history = torch.zeros(B, self.D, self.T, device=device)
-        post_acts_history[:, :, 0] = z  # First tick uses z_init
+        # Post-activation history (grows over ticks — list avoids zero-padding bug)
+        post_acts_list = []  # will grow to [B, D, T] via stack
         
         # Storage
         logits_history = []
@@ -265,8 +264,15 @@ class CTM(nn.Module):
         attn_weights_history = []
         
         for t in range(self.T):
-            # 1. Compute action synchronization from post-acts history (up to tick t+1)
-            synch_a = self.synch_action(post_acts_history[:, :, :t+1])  # [B, q_dim]
+            # 1. Compute action synchronization from PAST post-activations only
+            #    (current tick hasn't been computed yet — must not include it)
+            if t == 0:
+                # First tick: use z_init as the starting "memory"
+                post_acts_for_synch = z.unsqueeze(-1)  # [B, D, 1]
+            else:
+                post_acts_for_synch = torch.stack(post_acts_list, dim=-1)  # [B, D, t]
+            
+            synch_a = self.synch_action(post_acts_for_synch)  # [B, q_dim]
             
             # 2. Project to attention Q
             q = self.q_projector(synch_a)  # [B, d_model]
@@ -290,11 +296,13 @@ class CTM(nn.Module):
             # 6. NLMs: compute post-activations
             z = self.nlms(pre_acts_history)  # [B, D]
             
-            # 7. Store post-activation
-            post_acts_history[:, :, t] = z
+            # 7. Store post-activation (append to list — no zero padding)
+            post_acts_list.append(z)
             
-            # 8. Compute output synchronization
-            synch_o = self.synch_output(post_acts_history[:, :, :t+1])  # [B, out_dim]
+            # 8. Compute output synchronization from ALL post-activations so far
+            #    (includes current tick z — output synch sees what action synch didn't)
+            post_acts_all = torch.stack(post_acts_list, dim=-1)  # [B, D, t+1]
+            synch_o = self.synch_output(post_acts_all)  # [B, out_dim]
             
             # 9. Project to class logits
             logits = self.output_proj(synch_o)  # [B, n_classes]

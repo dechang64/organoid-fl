@@ -101,12 +101,15 @@ def evaluate_tick_wise(model, loader, device):
     all_certs = []
     all_labels = []
     all_rfdetr = []
-    all_attn = []
+    all_attn = []  # Only collect first 50 samples for visualization
+    n_attn_collected = 0
+    max_attn_samples = 50
     
     for batch in loader:
         images = batch['image'].to(device)
         labels = batch['label'].numpy()
         rfdetr_conf = batch['confidence'].numpy()
+        B = len(labels)
         
         logits_hist, cert_hist, attn_hist = model(images)
         
@@ -117,13 +120,18 @@ def evaluate_tick_wise(model, loader, device):
         all_certs.append(cert_hist.cpu().numpy())
         all_labels.append(labels)
         all_rfdetr.append(rfdetr_conf)
-        all_attn.append(attn_hist.cpu().numpy())
+        
+        # Only collect attention for first max_attn_samples (avoid OOM)
+        if n_attn_collected < max_attn_samples:
+            n_take = min(B, max_attn_samples - n_attn_collected)
+            all_attn.append(attn_hist[:n_take].cpu().numpy())
+            n_attn_collected += n_take
     
     all_logits = np.concatenate(all_logits, axis=0)  # [N, T]
     all_certs = np.concatenate(all_certs, axis=0)  # [N, T]
     all_labels = np.concatenate(all_labels, axis=0)  # [N]
     all_rfdetr = np.concatenate(all_rfdetr, axis=0)  # [N]
-    all_attn = np.concatenate(all_attn, axis=0)  # [N, T, n_heads, S]
+    all_attn = np.concatenate(all_attn, axis=0) if all_attn else np.array([])  # [≤50, T, n_heads, S]
     
     N, T = all_logits.shape
     
@@ -165,6 +173,14 @@ def evaluate_tick_wise(model, loader, device):
             ticks_needed.append(T)
     ticks_needed = np.array(ticks_needed)
     
+    # Certain-tick AUC (per-sample argmax certainty tick, not global best tick)
+    certain_ticks = all_certs.argmax(axis=1)  # [N]
+    certain_scores = all_logits[np.arange(N), certain_ticks]  # [N]
+    try:
+        certain_auc = roc_auc_score(all_labels, certain_scores)
+    except:
+        certain_auc = 0.5
+    
     return {
         'auc_per_tick': auc_per_tick,
         'acc_per_tick': acc_per_tick,
@@ -172,6 +188,7 @@ def evaluate_tick_wise(model, loader, device):
         'final_auc': auc_per_tick[-1],
         'best_auc': max(auc_per_tick),
         'best_tick': int(best_tick),
+        'certain_auc': float(certain_auc),
         'rfdetr_auc': rfdetr_auc,
         'all_scores': all_logits.tolist(),
         'all_labels': all_labels.tolist(),
@@ -182,6 +199,8 @@ def evaluate_tick_wise(model, loader, device):
         'ticks_needed': ticks_needed.tolist(),
         'ticks_needed_mean': float(ticks_needed.mean()),
         'ticks_needed_median': float(np.median(ticks_needed)),
+        'all_attn_subset': all_attn.tolist() if all_attn.size > 0 else [],
+        'n_attn_samples': int(all_attn.shape[0]) if all_attn.size > 0 else 0,
     }
 
 
@@ -345,6 +364,7 @@ def main():
     print(f"  RF-DETR AUC (baseline):  {results['rfdetr_auc']:.4f}")
     print(f"  CTM Final-tick AUC:      {results['final_auc']:.4f}")
     print(f"  CTM Best-tick AUC:       {results['best_auc']:.4f} (tick {results['best_tick']+1})")
+    print(f"  CTM Certain-tick AUC:    {results['certain_auc']:.4f} (per-sample argmax certainty)")
     print(f"")
     print(f"  Tick-wise AUC:")
     for t in range(results['n_ticks']):
