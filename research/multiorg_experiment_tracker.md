@@ -154,7 +154,7 @@ checkpoint 来源（06-24 daily notes 确认）：S6 系列用的是 **R1 (small
 | 🟢 | T6 | t1_A 标签训练 | — | 阶段3 |
 | 🟢 | T7 | CLOD 标签清洗 | — | 阶段3 |
 | 🟢 | T8 | FL 仿真 | — | — |
-| 🟢 | **T15** | **Phase 8: 小波频域原语分析 (W1-W4)** | pywt+numpy | **立即可做** |
+| 🟢 | **T15** | **Phase 8: 小波频域原语分析 (W1-W4)** | pywt+numpy | ✅ 完成，小波单独无效 |
 | 🟢 | **T16** | **Phase 9: Slot Attention 原语提取 (S1-S4)** | T15 决策 | 需云VM GPU |
 | 🟢 | **T17** | **Phase 10: 联邦原语聚合 (F1-F4)** | T16 | 需 FedCtx 集成 |
 | 🟢 | **T18** | **Phase 11: 对比原语学习 (C1-C4)** | T16 | 突破80%门槛关键 |
@@ -372,3 +372,4 @@ checkpoint 来源（06-24 daily notes 确认）：S6 系列用的是 **R1 (small
 | 2026-07-03 | yolo12s+MPCA identity init 43.88%/44.47%，Orga-Dete 三模块全面失败，停止该方向 |
 | 2026-07-10 | CTM 实现（DINOv2冻结+3.64M），62样本 val AUC 0.907 峰值超 RF-DETR |
 | 2026-07-11 | 新增 Phase 8-11 视觉原语实验设计（WIPES/FORLA/对比学习），基于文献调研 |
+| 2026-07-11 | Phase 8 完成：小波单独无效（PR-AUC 0.45<0.50），W3 morph+wavelet 0.645 为 baseline |
