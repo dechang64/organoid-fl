@@ -192,8 +192,189 @@ SAHI/NMS/Soft-NMS/Ensemble/Orga-Dete 迁移均无法突破。**bbox 对不规则
 | Phase 5 | Step 6 FL 聚合 primitive 分布 | 2 周 | Phase 1 |
 | Phase 6 | 端到端集成 + 跨域验证 | 2 周 | Phase 3-5 |
 | Phase 7 | 论文撰写 + 专利申请 | 2 周 | Phase 6 |
+| **Phase 8** | **小波频域原语分析（WIPES 路线）** | **1 周** | **Phase 1** |
+| **Phase 9** | **Slot Attention 原语提取（FORLA 路线）** | **2 周** | **Phase 8** |
+| **Phase 10** | **联邦原语聚合（FORLA + FedCtx）** | **2 周** | **Phase 9** |
+| **Phase 11** | **对比原语学习（TP/FP contrastive）** | **1 周** | **Phase 9** |
 
-## 7. 已有技术基础
+---
+
+## 7. 新增：基于文献调研的原语实验设计（Phase 8-11）
+
+> 2026-07-11 新增，基于视觉原语文献调研
+> 背景：Phase 1 形态学特征 + DINOv2 embedding 均无法区分 TP/FP（PR-AUC 0.29-0.50），需要换一个特征空间
+
+### 7.1 调研发现的关键论文
+
+| 论文 | 会议 | 核心贡献 | 与我们的关联 |
+|------|------|---------|-------------|
+| **FORLA** | NeurIPS 2025 | 联邦 slot attention，无监督 object-centric 跨域表征 | 直接命中：FL + object-centric + slot attention |
+| **TwVP (DeepSeek)** | 2025 (撤稿) | 点/bbox 作为推理链中的空间原语 | CTM 的 cross-attention 已接近此理念 |
+| **WIPES** | ICCV 2025 | 小波频域视觉原语，低频=全局结构+高频=局部细节 | 零成本验证：TP/FP 频域特征是否可分 |
+| **Neurosymbolic Ambiguity Resolution** | AAAI 2025 | 混合 CV + 逻辑推理消歧 | TP/FP 视觉消歧的神经符号方法 |
+| **CZSL Survey** | 2025 | 属性×物体原语组合，seen→unseen 泛化 | organoid 类型 = 属性原语组合 |
+
+### 7.2 核心问题
+
+当前所有 TP/FP 区分方案在**全局特征空间**失败：
+- 形态学特征（circ/solidity/ar）：TP/FP 都 0.8-0.9，不可分
+- DINOv2 768维 CLS token：cosine distance TP/FP = TP/TP = 0.150，完全重叠
+- HNM（FP 空标签重训）：灾难性遗忘 -40pp
+
+**新假设**：TP/FP 在全局特征空间不可分，但在**原语分解空间**可能可分——因为原语是 object-centric 的分解，不是 global embedding
+
+### 7.3 Phase 8: 小波频域原语分析（WIPES 路线）
+
+**动机**：WIPES (ICCV 2025) 证明小波分解能同时捕获低频（全局结构）和高频（局部细节），而 TP/FP 可能在频域有差异——TP 有 organoid 内部纹理（高频周期性），FP 是背景碎片（高频随机噪声）
+
+**输入**：SAM2 mask 裁剪的 crop（TP + FP，MultiOrg 全量 16198 个）
+**输出**：每个 crop 的小波系数原语向量
+
+**方法**：
+1. 对每个 crop 做 2D 离散小波变换（Haar / Daubechies-4，2-3 层分解）
+2. 提取子带统计量：LL/LH/HL/HH 每层的均值、方差、能量、熵
+3. 拼成原语向量（~24-36 维）
+4. 评估 TP/FP 可分性：PR-AUC + t-SNE 可视化
+
+**实验**：
+
+| 编号 | 实验 | 数据 | 评估 | 预期 |
+|------|------|------|------|------|
+| W1 | Haar 2层分解 | MultiOrg 全量 TP/FP | PR-AUC | >0.50? |
+| W2 | Daubechies-4 3层 | 同上 | PR-AUC | >0.50? |
+| W3 | 最优小波 + 形态学特征拼接 | 同上 | PR-AUC | >0.60? |
+| W4 | 鼠肝 B2/B3 TP/FP 交叉验证 | 鼠肝 | PR-AUC | 跨域泛化? |
+
+**成本**：零（纯 numpy + pywt，CPU 可跑，30 分钟内完成）
+**决策点**：如果 PR-AUC > 0.60，小波原语有效，进入 Phase 9 用 slot attention 进一步提升；如果 < 0.50，频域也不可分，直接进 Phase 9
+
+### 7.4 Phase 9: Slot Attention 原语提取（FORLA 路线）
+
+**动机**：FORLA (NeurIPS 2025) 证明 slot attention 在联邦跨域场景学到 object-centric 表征，比 DINOv2 全局 embedding 更有区分力——因为 slot 学的是"图片里有什么物体"（分解），不是"整张图长什么样"（全局）
+
+**输入**：SAM2 mask 裁剪的 crop（TP + FP）
+**输出**：每个 crop 的 K 个 slot 向量（K=4-8，每个 64-128 维）
+
+**方法**：
+1. 在 DINOv2 ViT-B/14 backbone 上接 slot attention 模块（不冻结 backbone，端到端训练）
+2. 输入 224×224 crop → DINOv2 spatial tokens (256×768) → slot attention → K 个 slot (K×128)
+3. 训练目标：重建 + 对比（TP slots 正样本对，FP slots 负样本对）
+4. 评估：slot 空间的 TP/FP PR-AUC
+
+**实验**：
+
+| 编号 | 实验 | Slot 数 | 训练 | 评估 | 预期 |
+|------|------|---------|------|------|------|
+| S1 | Slot attention (K=4) | 4 | 62 crops 快速验证 | PR-AUC | >0.50? |
+| S2 | Slot attention (K=8) | 8 | 62 crops | PR-AUC | >S1? |
+| S3 | 最优 slot + 全量训练 | — | 16198 crops | PR-AUC | >0.70? |
+| S4 | Slot vs DINOv2 CLS 对比 | — | 同上 | PR-AUC | S3 vs 0.29 |
+
+**关键对比**：S4 直接对比 slot attention vs DINOv2 CLS token。如果 slot PR-AUC > 0.50 而 DINOv2 CLS = 0.29，证明 object-centric 分解是关键
+
+**成本**：需要训练 slot attention 模块（~2M 参数），云 VM 可跑，预计 4-8h
+**风险**：16198 crops 的 slot attention 可能仍不够——如果 TP/FP 在所有可观测空间都不可分，需要 Phase 11 对比学习强制拉开
+
+### 7.5 Phase 10: 联邦原语聚合（FORLA + FedCtx）
+
+**动机**：FORLA 的核心贡献是联邦 slot attention——各 client 本地训练 slot 模块，通过共享 adapter + slot attention 对齐 object-centric 表征跨域。这和我们的"数据不动，知识动"理念完全一致
+
+**输入**：各 client（鼠肝 B1/B2/B3 或 MultiOrg 不同 Plate）的 slot 向量集合
+**输出**：全局 slot 分布（FedCtx HNSW 索引）
+
+**方法**：
+1. 各 client 本地跑 Phase 9 的 slot attention 提取 slot 向量
+2. 上传 slot 向量到 FedCtx HNSW（不共享原图/权重，只共享 slot）
+3. 全局分布：HNSW k-NN 检索 + 范围查询
+4. 下发全局 slot 分布 → 各 client 用全局分布校准本地检测
+
+**实验**：
+
+| 编号 | 实验 | Client | 聚合 | 评估 | 对比 |
+|------|------|--------|------|------|------|
+| F1 | 各 client 独立 slot | B1/B2/B3 | 无 | 本地 mask F1 | baseline |
+| F2 | 联邦 slot (FedAvg adapter) | B1/B2/B3 | adapter 参数 | mask F1 | vs F1 |
+| F3 | 联邦 slot (FedCtx HNSW) | B1/B2/B3 | slot 向量分布 | mask F1 | vs F2 |
+| F4 | FORLA teacher-student | B1/B2/B3 | 双分支 | mask F1 | vs F3 |
+
+**关键对比**：
+- F2 vs F1：联邦 adapter 是否提升各 client
+- F3 vs F2：分布聚合（FedCtx HNSW）vs 参数聚合（FedAvg）
+- F4 vs F3：FORLA teacher-student 架构是否优于直接 HNSW 聚合
+
+**成本**：需要 FedCtx 集成 slot attention（2-3 天代码），训练 3-5 轮联邦
+**论文价值**：FORLA 是 NeurIPS 2025 新方法，我们是首个将其应用到 organoid 检测 + 医学图像的
+
+### 7.6 Phase 11: 对比原语学习（TP/FP Contrastive）
+
+**动机**：如果 Phase 9 的 slot attention 无监督训练仍然无法区分 TP/FP（slot 空间仍重叠），需要用**监督对比学习**强制拉开——TP slots 和 FP slots 在对比 loss 下被推向空间两侧
+
+**输入**：TP/FP 标注的 crops（matched=True/False）
+**输出**：对比训练后的 slot encoder
+
+**方法**：
+1. 用 Phase 9 的 slot attention encoder
+2. InfoNCE loss：TP-TP 正样本对拉近，TP-FP 负样本对推远
+3. 训练 50-100 epochs
+4. 评估：slot 空间 TP/FP PR-AUC + 下游检测 mAP 提升
+
+**实验**：
+
+| 编号 | 实验 | Loss | 评估 | 预期 |
+|------|------|------|------|------|
+| C1 | 无监督 slot (Phase 9 baseline) | 重建 | PR-AUC | ~0.50 |
+| C2 | InfoNCE 对比 | 对比 | PR-AUC | >0.70 |
+| C3 | 合成负样本增强 | 对比 | PR-AUC | >0.80? |
+| C4 | 对比 slot → 检测 mAP | — | mAP50 | >77.8%? |
+
+**C4 关键验证**：如果对比训练的 slot encoder 能提升 MultiOrg 检测 mAP 从 77.8% 到 80%+，突破门槛
+
+**与 HNM 的区别**：HNM 失败因为用 FP 空标签重训检测器 → 灾难性遗忘。对比学习不改检测器，只训 slot encoder 做后置过滤——检测器和 encoder 解耦
+
+### 7.7 新增评估指标
+
+| 层面 | 指标 | 目标 | 现有 baseline |
+|------|------|------|--------------|
+| 小波原语 | TP/FP PR-AUC | >0.60 | 无 |
+| Slot 原语 | TP/FP PR-AUC | >0.50 | DINOv2 CLS=0.29 |
+| 对比原语 | TP/FP PR-AUC | >0.70 | 无 |
+| 联邦 slot | 全局 k-NN 召回率 | >0.9 | 无 |
+| 端到端 | MultiOrg mAP50 | >80% | RF-DETR 77.8% |
+
+### 7.8 决策树
+
+```
+Phase 8 (小波)
+  ├── PR-AUC > 0.60 → 有效，进 Phase 9 提升
+  └── PR-AUC < 0.50 → 无效，直接进 Phase 9
+
+Phase 9 (Slot Attention)
+  ├── PR-AUC > 0.50 → object-centric 分解有效
+  │   ├── 无监督足够 → 进 Phase 10 联邦
+  │   └── 无监督不够 → 进 Phase 11 对比学习
+  └── PR-AUC < 0.50 → slot 也不可分，进 Phase 11 对比学习
+
+Phase 10 (联邦 slot)
+  └── F3 (FedCtx HNSW) vs F2 (FedAvg) → 分布聚合 vs 参数聚合
+
+Phase 11 (对比学习)
+  └── C4: 对比 slot → 检测 mAP > 80%? → 突破门槛
+```
+
+### 7.9 与现有 Phase 1-7 的关系
+
+| 现有 Phase | 内容 | 新 Phase 关系 |
+|-----------|------|-------------|
+| Phase 1 | 形态学特征提取 | Phase 8 小波是频域版，Phase 1 是空间域版，两者互补 |
+| Phase 2 | VLM 语义确认 | 不变，VLM 仍是可选的语义层 |
+| Phase 3 | CTM 持续思考 | CTM 可用 Phase 9 的 slot 替代 DINOv2 token 做输入 |
+| Phase 4 | Diffusion 生成 | 不变 |
+| Phase 5 | FL 聚合 primitive | Phase 10 是 Phase 5 的 FORLA 实现版 |
+| Phase 6-7 | 集成 + 论文 | 不变，最终都汇入 |
+
+**核心改变**：Phase 1-5 用**形态学特征 + DINOv2 CLS**（全局特征，已证明无效），Phase 8-11 用**小波 + Slot Attention + 对比学习**（object-centric 分解特征，新方向）
+
+## 8. 已有技术基础
 
 | 组件 | 项目 | 状态 |
 |------|------|------|
@@ -204,7 +385,7 @@ SAHI/NMS/Soft-NMS/Ensemble/Orga-Dete 迁移均无法突破。**bbox 对不规则
 | 五层幻觉防御 | NeuroSync | ✓ 可复用为 VLM 质量评估 |
 | z-ai LLM/VLM SDK | z-ai-web-dev-sdk | ✓ 可调用 GLM-4V |
 
-## 8. 风险与应对
+## 9. 风险与应对
 
 | 风险 | 概率 | 应对 |
 |------|------|------|
@@ -214,11 +395,13 @@ SAHI/NMS/Soft-NMS/Ensemble/Orga-Dete 迁移均无法突破。**bbox 对不规则
 | 向量空间对齐失败 | 低 | 退化到各 client 独立分布，不做全局聚合 |
 | CTM 循环不收敛 | 中 | 设最大 ticks=5，不收敛用最后一次结果 |
 
-## 9. 下一步
+## 10. 下一步
 
 1. **立即可做**：Phase 1 形态学特征提取（不需要新模型，只需要 cv2 + numpy）
-2. **需要 API**：Phase 2 VLM 调用（z-ai-web-dev-sdk）
-3. **需要 GPU**：Phase 4 Diffusion 生成（冬生 3060 或云 VM）
-4. **已有基础设施**：Phase 5 FedCtx HNSW（直接复用）
+2. **立即可做**：Phase 8 小波频域分析（pywt + numpy，CPU 可跑，30 分钟）
+3. **需要 API**：Phase 2 VLM 调用（z-ai-web-dev-sdk）
+4. **需要 GPU**：Phase 4 Diffusion 生成（冬生 3060 或云 VM）
+5. **需要 GPU**：Phase 9 Slot Attention 训练（云 VM，4-8h）
+6. **已有基础设施**：Phase 5/10 FedCtx HNSW（直接复用）
 
-先从 Phase 1 开始，用鼠肝 B1/B2/B3 的 SAM2 mask 提取 primitive 向量，UMAP 可视化看分布。
+先从 Phase 1 + Phase 8 并行开始，形态学（空间域）+ 小波（频域）同时验证 TP/FP 可分性。Phase 8 成本几乎为零，如果小波有效则直接跳到 Phase 9。
