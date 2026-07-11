@@ -451,18 +451,19 @@ def main():
     print(f"Test evaluation")
     print(f"{'='*60}")
     
-    # Load best model
+    # Load best model (strict=False: checkpoint only has trainable params, no backbone)
     ckpt = torch.load(os.path.join(args.output_dir, 'best.pt'), map_location=device)
-    model.load_state_dict(ckpt['model_state_dict'])
+    model.load_state_dict(ckpt['model_state_dict'], strict=False)
     print(f"Loaded best model from epoch {ckpt['epoch']} (val AUC={ckpt['val_auc']:.3f})")
     
     test_metrics = evaluate(model, test_loader, device)
     print(f"\nTest Results:")
-    print(f"  CTM AUC (final tick): {test_metrics['auc_final_tick']:.4f}")
-    print(f"  RF-DETR AUC:          {test_metrics['auc_rfdetr']:.4f}")
-    print(f"  F1:                   {test_metrics['f1']:.4f}")
-    print(f"  Precision:            {test_metrics['precision']:.4f}")
-    print(f"  Recall:               {test_metrics['recall']:.4f}")
+    print(f"  CTM AUC (final tick):   {test_metrics['auc_final_tick']:.4f}")
+    print(f"  CTM AUC (certain tick):{test_metrics['auc_certain_tick']:.4f}")
+    print(f"  RF-DETR AUC:            {test_metrics['auc_rfdetr']:.4f}")
+    print(f"  F1:                     {test_metrics['f1']:.4f}")
+    print(f"  Precision:              {test_metrics['precision']:.4f}")
+    print(f"  Recall:                 {test_metrics['recall']:.4f}")
     
     # Save history
     with open(os.path.join(args.output_dir, 'history.json'), 'w', encoding='utf-8') as f:
