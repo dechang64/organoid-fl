@@ -14,6 +14,7 @@ Usage:
 import os
 import sys
 import json
+import glob
 import argparse
 import numpy as np
 from pathlib import Path
@@ -327,6 +328,15 @@ def main():
     parser.add_argument('--img-size', type=int, default=224)
     parser.add_argument('--num-workers', type=int, default=4)
     args = parser.parse_args()
+    
+    # Expand glob patterns in --checkpoint (Windows doesn't auto-expand wildcards)
+    if any(c in args.checkpoint for c in '*?[]'):
+        matches = sorted(glob.glob(args.checkpoint))
+        if not matches:
+            print(f"ERROR: No files match pattern: {args.checkpoint}")
+            sys.exit(1)
+        args.checkpoint = matches[-1]  # Use latest match
+        print(f"Resolved checkpoint: {args.checkpoint}")
     
     # Auto-generate output dir from checkpoint path
     if args.output_dir is None:
