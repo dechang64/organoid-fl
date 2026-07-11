@@ -41,47 +41,53 @@ class OrganoidCTMDataset(Dataset):
         self.img_size = img_size
         self.augment = augment
         
-        # Load metadata (either Phase 2 vlm_mask_results.json or full SAM2 results)
+        # Load metadata — detect format by data type, not filename
+        # List format: flat array of {cache_key, matched, bbox, ...} (from generate_crops or Phase 2 VLM)
+        # Dict format: {per_image: [{image, detections: [...]}]} (raw SAM2 results JSON)
         with open(metadata_path, encoding='utf-8') as f:
-            if 'vlm_mask_results' in metadata_path or 'vlm_results' in metadata_path:
-                # Phase 2 mode: already has cache_key, matched, etc.
-                raw_data = json.load(f)
-                all_dets = []
-                for entry in raw_data:
-                    crop_file = f"{entry['cache_key']}.png"
+            data = json.load(f)
+
+        all_dets = []
+        if isinstance(data, list):
+            # Flat list format (ctm_metadata.json or vlm_mask_results.json)
+            for entry in data:
+                cache_key = entry.get('cache_key', '')
+                crop_file = f"{cache_key}.png"
+                crop_path = os.path.join(crops_dir, crop_file)
+                if os.path.exists(crop_path):
+                    all_dets.append({
+                        'crop_path': crop_path,
+                        'cache_key': cache_key,
+                        'label': 1 if entry.get('matched', False) else 0,
+                        'confidence': entry.get('rfdetr_conf',
+                                  entry.get('confidence', 0.5)),
+                        'bbox': entry.get('bbox', [0, 0, 0, 0]),
+                        'image_name': entry.get('image', ''),
+                        'det_idx': entry.get('det_idx', 0),
+                    })
+        elif isinstance(data, dict) and 'per_image' in data:
+            # Raw SAM2 results JSON with per_image structure
+            for img_info in data['per_image']:
+                image_name = img_info['image']
+                for det_idx, det in enumerate(img_info['detections']):
+                    cache_key = f"{image_name.replace('/', '_')}_{det_idx}"
+                    crop_file = f"{cache_key}.png"
                     crop_path = os.path.join(crops_dir, crop_file)
                     if os.path.exists(crop_path):
                         all_dets.append({
                             'crop_path': crop_path,
-                            'cache_key': entry['cache_key'],
-                            'label': 1 if entry.get('matched', False) else 0,
-                            'confidence': entry.get('rfdetr_conf', 0.5),
-                            'bbox': entry.get('bbox', [0, 0, 0, 0]),
-                            'image_name': entry.get('image', ''),
-                            'det_idx': entry.get('det_idx', 0),
+                            'cache_key': cache_key,
+                            'label': 1 if det.get('matched', False) else 0,
+                            'confidence': det.get('confidence', 0.5),
+                            'bbox': det.get('bbox', [0, 0, 0, 0]),
+                            'image_name': image_name,
+                            'det_idx': det_idx,
                         })
-            else:
-                # Full mode: SAM2 results, need to generate cache_keys
-                data = json.load(f)
-                per_img = data['per_image']
-                all_dets = []
-                for img_info in per_img:
-                    image_name = img_info['image']
-                    for det_idx, det in enumerate(img_info['detections']):
-                        # Build cache_key matching crop naming convention
-                        cache_key = f"{image_name.replace('/', '_')}_{det_idx}"
-                        crop_file = f"{cache_key}.png"
-                        crop_path = os.path.join(crops_dir, crop_file)
-                        if os.path.exists(crop_path):
-                            all_dets.append({
-                                'crop_path': crop_path,
-                                'cache_key': cache_key,
-                                'label': 1 if det.get('matched', False) else 0,
-                                'confidence': det.get('confidence', 0.5),
-                                'bbox': det.get('bbox', [0, 0, 0, 0]),
-                                'image_name': image_name,
-                                'det_idx': det_idx,
-                            })
+        else:
+            raise ValueError(
+                f"Unrecognized metadata format in {metadata_path}. "
+                f"Expected list or dict with 'per_image' key, got {type(data).__name__}"
+            )
         
         n_total = len(all_dets)
         
