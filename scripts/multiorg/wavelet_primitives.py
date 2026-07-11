@@ -25,7 +25,11 @@ import argparse
 import numpy as np
 from pathlib import Path
 from PIL import Image
-import pywt
+try:
+    import pywt
+except ImportError:
+    print("ERROR: PyWavelets not installed. Run: pip install PyWavelets")
+    sys.exit(1)
 from sklearn.metrics import roc_auc_score, precision_recall_curve, auc
 from sklearn.manifold import TSNE
 import matplotlib
@@ -149,6 +153,9 @@ def run_experiment(samples, wavelet, levels, exp_name, output_dir):
         try:
             img = np.array(Image.open(crop_path).convert('L'))
             feats, feat_names = extract_wavelet_features(img, wavelet=wavelet, levels=levels)
+            # Skip samples with NaN/inf features
+            if not np.all(np.isfinite(feats)):
+                continue
             features_list.append(feats)
             labels_list.append(label)
             confs_list.append(conf)
@@ -205,13 +212,18 @@ def run_experiment(samples, wavelet, levels, exp_name, output_dir):
     print(f"    RF-DETR PR-AUC:   {rfdetr_pr_auc:.4f}")
     print(f"    RF-DETR ROC-AUC:  {rfdetr_roc_auc:.4f}")
     
-    # t-SNE visualization
+    # t-SNE visualization (subsample if > 2000 to avoid 30+ min runtime)
     print(f"\n  Generating t-SNE...")
-    tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(labels)-1))
-    tsne_features = tsne.fit_transform(features_scaled)
+    tsne_idx = np.arange(len(labels))
+    if len(labels) > 2000:
+        rng = np.random.RandomState(42)
+        tsne_idx = rng.choice(len(labels), 2000, replace=False)
+        print(f"    (subsampled to 2000 for t-SNE speed)")
+    tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(tsne_idx)-1))
+    tsne_features = tsne.fit_transform(features_scaled[tsne_idx])
     
     fig, ax = plt.subplots(figsize=(8, 6))
-    tp_mask = labels == 1
+    tp_mask = labels[tsne_idx] == 1
     ax.scatter(tsne_features[tp_mask, 0], tsne_features[tp_mask, 1], 
               c='blue', s=5, alpha=0.3, label=f'TP (n={n_tp})')
     ax.scatter(tsne_features[~tp_mask, 0], tsne_features[~tp_mask, 1], 
@@ -299,49 +311,62 @@ def main():
             img = np.array(Image.open(crop_path).convert('L'))
             w_feats, _ = extract_wavelet_features(img, wavelet=best['wavelet'], levels=best['levels'])
             m_feats = morph_features.get(ck, [0, 0, 0, 0])
-            combined_features.append(np.concatenate([w_feats, m_feats]))
+            combined = np.concatenate([w_feats, m_feats])
+            # Skip samples with NaN/inf features (degenerate wavelet sub-bands)
+            if not np.all(np.isfinite(combined)):
+                continue
+            combined_features.append(combined)
             combined_labels.append(label)
             combined_confs.append(conf)
-        except:
-            pass
+        except Exception as e:
+            print(f"  [WARN] {ck}: {e}")
     
     combined_features = np.array(combined_features)
     combined_labels = np.array(combined_labels)
     combined_confs = np.array(combined_confs)
     
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.model_selection import cross_val_predict
-    from sklearn.preprocessing import StandardScaler
-    
-    scaler = StandardScaler()
-    combined_scaled = scaler.fit_transform(combined_features)
-    clf = LogisticRegression(max_iter=1000, random_state=42)
-    scores_cv = cross_val_predict(clf, combined_scaled, combined_labels,
-                                   method='decision_function', cv=5)
-    
-    w3_pr_auc = compute_pr_auc(combined_labels, scores_cv)
-    w3_roc_auc = roc_auc_score(combined_labels, scores_cv)
-    
-    print(f"\n{'='*60}")
-    print(f"  W3: {best['wavelet']} {best['levels']}L + morphological")
-    print(f"{'='*60}")
-    print(f"    Combined PR-AUC:  {w3_pr_auc:.4f}")
-    print(f"    Combined ROC-AUC: {w3_roc_auc:.4f}")
-    print(f"    (vs wavelet-only: {best['wavelet_pr_auc']:.4f})")
-    
-    results.append({
-        'exp': 'W3',
-        'wavelet': f"{best['wavelet']}+morph",
-        'levels': best['levels'],
-        'n_samples': len(combined_labels),
-        'n_tp': int(combined_labels.sum()),
-        'n_fp': int(len(combined_labels) - combined_labels.sum()),
-        'n_features': combined_features.shape[1],
-        'wavelet_pr_auc': float(w3_pr_auc),
-        'wavelet_roc_auc': float(w3_roc_auc),
-        'rfdetr_pr_auc': float(compute_pr_auc(combined_labels, combined_confs)),
-        'rfdetr_roc_auc': float(roc_auc_score(combined_labels, combined_confs)),
-    })
+    if len(combined_features) == 0:
+        print("  [ERROR] No valid samples after filtering. Skipping W3.")
+        results.append({
+            'exp': 'W3', 'wavelet': f"{best['wavelet']}+morph", 'levels': best['levels'],
+            'n_samples': 0, 'n_tp': 0, 'n_fp': 0, 'n_features': 0,
+            'wavelet_pr_auc': 0.5, 'wavelet_roc_auc': 0.5,
+            'rfdetr_pr_auc': 0.5, 'rfdetr_roc_auc': 0.5,
+        })
+    else:
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import cross_val_predict
+        from sklearn.preprocessing import StandardScaler
+        
+        scaler = StandardScaler()
+        combined_scaled = scaler.fit_transform(combined_features)
+        clf = LogisticRegression(max_iter=1000, random_state=42)
+        scores_cv = cross_val_predict(clf, combined_scaled, combined_labels,
+                                       method='decision_function', cv=5)
+        
+        w3_pr_auc = compute_pr_auc(combined_labels, scores_cv)
+        w3_roc_auc = roc_auc_score(combined_labels, scores_cv)
+        
+        print(f"\n{'='*60}")
+        print(f"  W3: {best['wavelet']} {best['levels']}L + morphological")
+        print(f"{'='*60}")
+        print(f"    Combined PR-AUC:  {w3_pr_auc:.4f}")
+        print(f"    Combined ROC-AUC: {w3_roc_auc:.4f}")
+        print(f"    (vs wavelet-only: {best['wavelet_pr_auc']:.4f})")
+        
+        results.append({
+            'exp': 'W3',
+            'wavelet': f"{best['wavelet']}+morph",
+            'levels': best['levels'],
+            'n_samples': len(combined_labels),
+            'n_tp': int(combined_labels.sum()),
+            'n_fp': int(len(combined_labels) - combined_labels.sum()),
+            'n_features': combined_features.shape[1],
+            'wavelet_pr_auc': float(w3_pr_auc),
+            'wavelet_roc_auc': float(w3_roc_auc),
+            'rfdetr_pr_auc': float(compute_pr_auc(combined_labels, combined_confs)),
+            'rfdetr_roc_auc': float(roc_auc_score(combined_labels, combined_confs)),
+        })
     
     # Summary
     print(f"\n{'='*60}")
