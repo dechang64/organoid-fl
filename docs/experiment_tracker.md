@@ -181,10 +181,25 @@ Per-feature global AUC：confidence=0.893 > area=0.750 > perimeter=0.740 > circu
 | DINOv2 CLS (之前) | — | 0.29 | -53.8pp |
 | VLM (Phase 2, 100 crops) | 0.713 | — | -17.5pp |
 
+### Slot + confidence 组合分析（2026-07-13, 云 VM, CPU 30s）
+| 方法 | ROC-AUC | PR-AUC | vs RF-DETR (ROC) |
+|------|---------|--------|-----------------|
+| RF-DETR confidence | 0.888 | 0.828 | baseline |
+| Slot (5-fold CV LR) | 0.842 | 0.739 | -4.5pp |
+| Avg (slot+conf)/2 | 0.887 | 0.823 | -0.0pp（无效）|
+| **LR(slot_prob, conf)** | **0.903** | **0.853** | **+1.5pp** ✅ |
+| LR(slots_1024 + conf) | 0.883 | 0.810 | -0.5pp（过拟合）|
+| **Best weighted (w=0.20)** | **0.903** | **0.854** | **+1.6pp** ✅ |
+
+- Pearson r(slot, conf) = 0.626 → 中等相关，有互补性
+- 最优权重 w_slot=0.20：80% confidence + 20% slot_prob
+- 简单平均 50/50 无效（slot 太弱拉低），需要学习权重
+- 1024 维全特征 LR 过拟合，2 维元学习最优
+
 ### 缺失/未做到位清单
 | # | 缺失项 | 优先级 | 状态 |
 |---|--------|--------|------|
-| 1 | Slot + confidence 组合 AUC | 高 | 待做 |
+| 1 | Slot + confidence 组合 AUC | 高 | ✅ 已做 |
 | 2 | Phase 3 CTM 没用 mask crop（只用 bbox）| 高 | 待做 |
 | 3 | Phase 3 CTM + confidence 组合 | 高 | 待做 |
 | 4 | Phase 11 对比学习（InfoNCE）| 高 | 待做 |
