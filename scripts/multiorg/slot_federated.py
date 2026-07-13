@@ -46,7 +46,6 @@ import argparse
 import numpy as np
 from sklearn.metrics import roc_auc_score, precision_recall_curve, auc
 from sklearn.neighbors import NearestNeighbors
-from sklearn.preprocessing import StandardScaler
 from collections import defaultdict
 
 
@@ -220,9 +219,11 @@ def main():
     all_labels = np.concatenate([c['labels'] for c in clients.values()])
     all_confs = np.concatenate([c['confs'] for c in clients.values()])
 
-    # Scale embeddings
-    scaler = StandardScaler()
-    all_emb_scaled = scaler.fit_transform(all_emb)
+    # L2 normalize embeddings for cosine distance
+    # (StandardScaler would break L2-normalized embeddings from Phase 11)
+    norms = np.linalg.norm(all_emb, axis=1, keepdims=True)
+    norms[norms == 0] = 1  # avoid division by zero
+    all_emb_scaled = all_emb / norms
 
     # Global: leave-one-out cross-validation (each sample tested against all others)
     # This simulates "global HNSW" — query in the union of all slots
@@ -273,10 +274,16 @@ def main():
         n_tp = int(data['labels'].sum())
         n_fp = n - n_tp
         if n > args.k + 1 and n_tp > 0 and n_fp > 0:
+            # L2 normalize local embeddings (consistent with global)
+            local_emb = data['embeddings'].copy()
+            local_norms = np.linalg.norm(local_emb, axis=1, keepdims=True)
+            local_norms[local_norms == 0] = 1
+            local_emb = local_emb / local_norms
+
             local_nn = NearestNeighbors(n_neighbors=min(args.k + 1, n - 1),
                                         metric='cosine', n_jobs=-1)
-            local_nn.fit(data['embeddings'])
-            _, local_indices = local_nn.kneighbors(data['embeddings'])
+            local_nn.fit(local_emb)
+            _, local_indices = local_nn.kneighbors(local_emb)
             local_neighbor_labels = data['labels'][local_indices[:, 1:]]
             local_scores = local_neighbor_labels.mean(axis=1)
 
@@ -341,15 +348,13 @@ def main():
     from sklearn.model_selection import StratifiedKFold
 
     meta_features = np.column_stack([global_scores, all_confs])
-    meta_scaler = StandardScaler()
-    meta_scaled = meta_scaler.fit_transform(meta_features)
 
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     meta_probs = np.zeros(len(all_labels))
-    for train_idx, test_idx in skf.split(meta_scaled, all_labels):
+    for train_idx, test_idx in skf.split(meta_features, all_labels):
         lr = LogisticRegression(max_iter=2000, C=1.0, solver='lbfgs')
-        lr.fit(meta_scaled[train_idx], all_labels[train_idx])
-        meta_probs[test_idx] = lr.predict_proba(meta_scaled[test_idx])[:, 1]
+        lr.fit(meta_features[train_idx], all_labels[train_idx])
+        meta_probs[test_idx] = lr.predict_proba(meta_features[test_idx])[:, 1]
 
     combined_roc = roc_auc_score(all_labels, meta_probs)
     combined_pr = compute_pr_auc(all_labels, meta_probs)

@@ -24,7 +24,11 @@ Usage (冬生's 3060, full 16198 crops):
     python slot_supcon.py --metadata data/ctm_crops/ctm_metadata.json \
         --crops-dir data/ctm_crops --device cuda:0 --epochs 50 \
         --num-slots 8 --dim-slots 128 --num-iters 3 \
-        --batch-size 64 --temperature 0.07 --supcon-weight 0.5
+        --batch-size 32 --temperature 0.07 --supcon-weight 0.5
+
+Note: SupCon ideally wants B>=64 for more positives, but 3060 12GB
+needs B=32 (same as Phase 9). With balanced 50/50, B=32 gives ~16
+TP + ~16 FP per batch, sufficient for SupCon.
 """
 import os
 import sys
@@ -361,8 +365,8 @@ def main():
     parser.add_argument('--supcon-weight', type=float, default=0.5,
                         help='β in Loss = CE + β*SupCon')
     parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--batch-size', type=int, default=64,
-                        help='Larger batch for more positives (default 64)')
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='B=32 for 12GB GPU (same as Phase 9). SupCon ideally B>=64')
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--device', type=str, default='cuda:0' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--img-size', type=int, default=224)
@@ -395,6 +399,7 @@ def main():
         num_slots=args.num_slots,
         dim_slots=args.dim_slots,
         num_iters=args.num_iters,
+        n_classes=2,  # TP/FP binary classification
         img_size=args.img_size,
         proj_dim=args.proj_dim,
     ).to(device)
