@@ -181,6 +181,27 @@ Per-feature global AUC：confidence=0.893 > area=0.750 > perimeter=0.740 > circu
 | DINOv2 CLS (之前) | — | 0.29 | -53.8pp |
 | VLM (Phase 2, 100 crops) | 0.713 | — | -17.5pp |
 
+### Phase 11: SupCon 对比学习（2026-07-13, 16198 crops, 31 epochs, 冬生 3060）
+| 指标 | Phase 11 SupCon | Phase 9 baseline | RF-DETR | Δ vs Phase 9 |
+|------|----------------|-----------------|---------|-------------|
+| Slot AUC (classifier) | 0.845 | 0.868 | 0.888 | -2.3pp ⚠️ |
+| Embedding AUC (5-fold) | 0.859 | — | — | new |
+| **Combined AUC (emb+conf)** | **0.909** | 0.903 | 0.888 | **+0.6pp** ✅ |
+| Slot PR-AUC | 0.759 | 0.788 | 0.828 | -2.9pp ⚠️ |
+| Embedding PR-AUC | 0.774 | — | — | new |
+| **Combined PR-AUC** | **0.860** | 0.853 | 0.828 | **+0.7pp** ✅ |
+| Best val combined AUC | 0.917 (ep16) | 0.890 (ep21) | — | +2.7pp |
+| Train acc ep31 | 0.870 | 0.878 | — | -0.8pp |
+| Early stop | ep31 (patience=15) | ep36 | — | — |
+| 参数量 | 0.58M | 0.48M | — | +0.10M |
+
+- **SupCon loss 下降太慢**：ep1=3.39 → ep31=3.20，temperature=0.07 可能太小
+- **β=0.5 过强**：SupCon 贡献 1.6（CE 的 3x），压制分类头
+- **Embedding > Slot classifier**（+1.4pp）→ SupCon projection head 有效
+- **但 embedding < Phase 9 slot**（0.859 < 0.868）→ SupCon 干扰了 slot attention 学习
+- **Combined ROC 0.909 是目前最高**（RF-DETR 0.888 → 0.909, +2.1pp）
+- 改进方向：β=0.1 or temperature=0.5
+
 ### Slot + confidence 组合分析（2026-07-13, 云 VM, CPU 30s）
 | 方法 | ROC-AUC | PR-AUC | vs RF-DETR (ROC) |
 |------|---------|--------|-----------------|
@@ -202,7 +223,7 @@ Per-feature global AUC：confidence=0.893 > area=0.750 > perimeter=0.740 > circu
 | 1 | Slot + confidence 组合 AUC | 高 | ✅ 已做 |
 | 2 | Phase 3 CTM 没用 mask crop（只用 bbox）| 高 | 待做 |
 | 3 | Phase 3 CTM + confidence 组合 | 高 | 待做 |
-| 4 | Phase 11 对比学习（InfoNCE）| 高 | 脚本已写，待跑 |
+| 4 | Phase 11 对比学习（InfoNCE）| 高 | ✅ 已做（+0.6pp combined）|
 | 5 | Phase 4 Diffusion 生成增强 | 中 | 完全跳过 |
 | 6 | Phase 10 联邦 slot 聚合 | 中 | PoC 已做，待真 Plate×Class |
 | 7 | Phase 5 用形态学不是原语 | 中 | 待改 |
