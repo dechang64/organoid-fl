@@ -15,7 +15,7 @@ REM ============================================================
 REM Config - modify paths here if needed
 REM ============================================================
 set CKPT=results\supcon_8s_d128_p256_t0.07_b0.1_20260713_003826\best.pt
-set DATA_ROOT=mouse_liver_data_correct
+set DATA_ROOT=D:\datasets\mouse_liver_correct
 set RUNS_ROOT=runs\mouse_liver_v2
 set OUT_ZIP=results\cross_domain_results.zip
 
