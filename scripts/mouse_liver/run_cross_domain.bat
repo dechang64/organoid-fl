@@ -15,7 +15,7 @@ REM ============================================================
 REM Config - modify paths here if needed
 REM ============================================================
 set CKPT=results\supcon_8s_d128_p256_t0.07_b0.1_20260713_003826\best.pt
-set DATA_ROOT=D:\datasets\mouse_liver_correct
+set DATA_ROOT=mouse_liver_data_correct
 set RUNS_ROOT=runs\mouse_liver_v2
 set OUT_ZIP=results\cross_domain_results.zip
 
@@ -32,10 +32,6 @@ if not exist %DATA_ROOT% (
     echo [ERROR] Data root not found: %DATA_ROOT%
     echo Current dir: %CD%
     echo Please check the path. You may need to update DATA_ROOT in this bat.
-    echo Typical locations:
-    echo   mouse_liver_data_correct  (if data is in project root)
-    echo   D:\datasets\mouse_liver    (if data is on D drive)
-    echo   scripts\mouse_liver\yolo_format  (old format)
     pause
     exit /b 1
 )
