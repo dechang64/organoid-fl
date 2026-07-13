@@ -1,8 +1,8 @@
 @echo off
 chcp 65001 >nul
 
-REM Switch to project root (3 levels up from this bat)
-cd /d %~dp0\..\..\..
+REM Switch to project root (2 levels up from this bat)
+cd /d %~dp0\..\..
 
 echo ============================================================
 echo  Cross-Domain Evaluation: MultiOrg Slot Model -> Mouse Liver
