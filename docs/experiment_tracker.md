@@ -202,9 +202,9 @@ Per-feature global AUC：confidence=0.893 > area=0.750 > perimeter=0.740 > circu
 | 1 | Slot + confidence 组合 AUC | 高 | ✅ 已做 |
 | 2 | Phase 3 CTM 没用 mask crop（只用 bbox）| 高 | 待做 |
 | 3 | Phase 3 CTM + confidence 组合 | 高 | 待做 |
-| 4 | Phase 11 对比学习（InfoNCE）| 高 | 待做 |
+| 4 | Phase 11 对比学习（InfoNCE）| 高 | 脚本已写，待跑 |
 | 5 | Phase 4 Diffusion 生成增强 | 中 | 完全跳过 |
-| 6 | Phase 10 联邦 slot 聚合 | 中 | 待做 |
+| 6 | Phase 10 联邦 slot 聚合 | 中 | PoC 已做，待真 Plate×Class |
 | 7 | Phase 5 用形态学不是原语 | 中 | 待改 |
 | 8 | Phase 8 W4 鼠肝交叉验证 | 低 | 待做 |
 | 9 | MultiOrg Phase 1 per-feature PR-AUC | 低 | 待做 |
