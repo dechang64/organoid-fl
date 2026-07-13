@@ -1,45 +1,24 @@
-"""
+r"""
 鼠肝跨域 crops 生成：RF-DETR 检测 → GT 匹配 → bbox crops + metadata
 
 生成和 MultiOrg ctm_metadata.json 格式兼容的 metadata，这样
 slot_supcon/slot_c4_eval 可以直接用 MultiOrg best.pt 做跨域评估。
 
 Usage (冬生本地):
-    cd C:\\Users\\decha\\organoid-fl
-    
-    # B1 (10 张, 2592×1944)
-    python scripts\\mouse_liver\\generate_mouse_crops.py
-        --batch b1
-        --weights runs\\mouse_liver_v2\\b1\\full\\checkpoint_best_regular.pth
-        --src mouse_liver_data_correct\\batch1\\images
-        --annot mouse_liver_data_correct\\batch1\\annotated
-        --annotations mouse_liver_data_correct\\batch1\\annotations.json
-        --dst data\\mouse_crops\\b1
-        --resolution 544
-    
-    # B2 (10 张, 4000×3000)
-    python scripts\\mouse_liver\\generate_mouse_crops.py
-        --batch b2
-        --weights runs\\mouse_liver_v2\\b2\\full\\checkpoint_best_regular.pth
-        --src mouse_liver_data_correct\\batch2\\images
-        --annot mouse_liver_data_correct\\batch2\\annotated
-        --annotations mouse_liver_data_correct\\batch2\\annotations.json
-        --dst data\\mouse_crops\\b2
-        --resolution 768
-    
-    # B3 (20 张, 4000×3000)
-    python scripts\\mouse_liver\\generate_mouse_crops.py
-        --batch b3
-        --weights runs\\mouse_liver_v2\\b3\\full\\checkpoint_best_regular.pth
-        --src mouse_liver_data_correct\\batch3\\images
-        --annot mouse_liver_data_correct\\batch3\\annotated
-        --annotations mouse_liver_data_correct\\batch3\\annotations.json
-        --dst data\\mouse_crops\\b3
-        --resolution 768
+    cd C:\Users\decha\organoid-fl
+
+    # B1 (10 张, 2592x1944)
+    python scripts\mouse_liver\generate_mouse_crops.py --batch b1 --weights runs\mouse_liver_v2\b1\full\checkpoint_best_regular.pth --src mouse_liver_data_correct\batch1\images --annotations mouse_liver_data_correct\batch1\annotations.json --dst data\mouse_crops\b1 --resolution 544
+
+    # B2 (10 张, 4000x3000)
+    python scripts\mouse_liver\generate_mouse_crops.py --batch b2 --weights runs\mouse_liver_v2\b2\full\checkpoint_best_regular.pth --src mouse_liver_data_correct\batch2\images --annotations mouse_liver_data_correct\batch2\annotations.json --dst data\mouse_crops\b2 --resolution 768
+
+    # B3 (20 张, 4000x3000)
+    python scripts\mouse_liver\generate_mouse_crops.py --batch b3 --weights runs\mouse_liver_v2\b3\full\checkpoint_best_regular.pth --src mouse_liver_data_correct\batch3\images --annotations mouse_liver_data_correct\batch3\annotations.json --dst data\mouse_crops\b3 --resolution 768
 
 Output:
     {dst}/crops/
-        {batch}_{image}_{det_idx}.png    # bbox crop (224×224 ready for DINOv2)
+        {batch}_{image}_{det_idx}.png    # bbox crop (224x224 ready for DINOv2)
     {dst}/crop_metadata.json             # 和 MultiOrg 格式兼容
 """
 import argparse
@@ -209,12 +188,19 @@ def main():
         h, w = img_np.shape[:2]
         
         # RF-DETR detection
-        if args.resolution:
-            dets = det_model.predict(
-                img_pil, threshold=args.threshold,
-                shape=(args.resolution, args.resolution)
-            )
-        else:
+        # Note: RF-DETR predict() supports 'shape' param in recent versions.
+        # If it fails, fallback to default resolution.
+        try:
+            if args.resolution:
+                dets = det_model.predict(
+                    img_pil, threshold=args.threshold,
+                    shape=(args.resolution, args.resolution)
+                )
+            else:
+                dets = det_model.predict(img_pil, threshold=args.threshold)
+        except TypeError:
+            # Older RF-DETR versions don't have 'shape' param
+            print(f"  [WARN] 'shape' param not supported, using default resolution")
             dets = det_model.predict(img_pil, threshold=args.threshold)
         
         # Get detection bboxes and confidences
@@ -244,7 +230,12 @@ def main():
             cache_key = f"{args.batch}_{img_path.stem}_{di}"
             crop = crop_and_resize(img_np, det['bbox'], args.crop_size)
             crop_path = crops_dir / f"{cache_key}.png"
-            cv2.imwrite(str(crop_path), cv2.cvtColor(crop, cv2.COLOR_RGB2BGR))
+            # cv2.imwrite 不支持中文路径，用 imencode + tofile (铁律)
+            success, buf = cv2.imencode('.png', cv2.cvtColor(crop, cv2.COLOR_RGB2BGR))
+            if success:
+                buf.tofile(str(crop_path))
+            else:
+                print(f"  [WARN] Failed to save crop: {crop_path}")
             
             # Metadata entry (compatible with MultiOrg ctm_metadata.json)
             entry = {

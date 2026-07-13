@@ -56,11 +56,17 @@ class SimpleCropDataset(Dataset):
 
     def __getitem__(self, idx):
         det = self.dets[idx]
-        # Try crop_path first, then fallback to cache_key.png
-        crop_path = det.get('crop_path', '')
-        if not crop_path or not os.path.exists(crop_path):
-            # Fallback: crops_dir / cache_key.png
-            crop_path = os.path.join(self.crops_dir, det['cache_key'] + '.png')
+        # Always use crops_dir + cache_key.png (crop_path in metadata may have
+        # Windows backslashes that don't work on Linux)
+        crop_path = os.path.join(self.crops_dir, det['cache_key'] + '.png')
+        
+        if not os.path.exists(crop_path):
+            # Fallback: try crop_path from metadata (may work on Windows)
+            alt_path = det.get('crop_path', '')
+            if alt_path and os.path.exists(alt_path):
+                crop_path = alt_path
+            else:
+                raise FileNotFoundError(f"Crop not found: {crop_path}")
         
         img = Image.open(crop_path).convert('RGB')
         img = img.resize((self.img_size, self.img_size), Image.BILINEAR)
