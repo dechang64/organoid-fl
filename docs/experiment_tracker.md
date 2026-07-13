@@ -202,6 +202,31 @@ Per-feature global AUC：confidence=0.893 > area=0.750 > perimeter=0.740 > circu
 - **Combined ROC 0.909 是目前最高**（RF-DETR 0.888 → 0.909, +2.1pp）
 - 改进方向：β=0.1 or temperature=0.5
 
+### Phase 10: 联邦 Slot 聚合（2026-07-13, 云 VM, 真 Plate×Class split）
+**6 个真实 client（按 Plate×Class 划分）：**
+
+| Client | N | TP | FP | TP率 | Local ROC | Global ROC | Δ | Conf |
+|--------|---|----|----|------|-----------|-----------|---|------|
+| Macros_Plate_23 | 328 | 74 | 254 | 23% | 0.697 | **0.754** | **+5.7pp** | 0.891 |
+| Normal_Plate_31 | 207 | 57 | 150 | 28% | 0.792 | **0.830** | **+3.8pp** | 0.900 |
+| Normal_Plate_37 | 283 | 47 | 236 | 17% | 0.836 | 0.830 | -0.6pp | 0.915 |
+| Macros_Plate_4 | 772 | 310 | 462 | 40% | 0.821 | 0.810 | -1.1pp | 0.874 |
+| Normal_Plate_15 | 597 | 231 | 366 | 39% | 0.890 | 0.887 | -0.3pp | 0.919 |
+| Normal_Plate_4 | 258 | 86 | 172 | 33% | 0.896 | 0.885 | -1.0pp | 0.903 |
+| **Mean** | — | — | — | — | **0.822** | **0.833** | **+1.1pp** | 0.900 |
+
+**全局 vs 局部：**
+- Global k-NN ROC=0.841, PR=0.769
+- Local k-NN mean ROC=0.822
+- **Global > Local +1.1pp** → 联邦聚合整体有效
+- **Combined (kNN+conf) ROC=0.907, PR=0.859** → 超过 RF-DETR +1.9pp/+3.0pp
+
+**关键洞察**：
+- 小 client / 低 TP 率 client 获益最大（Plate_23 +5.7pp, Plate_31 +3.8pp）
+- 大 client / 高 TP 率 client 不获益（本地数据已足够）
+- 符合 FORLA 理论：联邦 slot 聚合帮助数据稀缺 client
+- "数据不动，知识动"：只共享 256 维 embedding，不共享原图/权重
+
 ### Slot + confidence 组合分析（2026-07-13, 云 VM, CPU 30s）
 | 方法 | ROC-AUC | PR-AUC | vs RF-DETR (ROC) |
 |------|---------|--------|-----------------|
@@ -225,7 +250,7 @@ Per-feature global AUC：confidence=0.893 > area=0.750 > perimeter=0.740 > circu
 | 3 | Phase 3 CTM + confidence 组合 | 高 | 待做 |
 | 4 | Phase 11 对比学习（InfoNCE）| 高 | ✅ 已做（+0.6pp combined）|
 | 5 | Phase 4 Diffusion 生成增强 | 中 | 完全跳过 |
-| 6 | Phase 10 联邦 slot 聚合 | 中 | PoC 已做，待真 Plate×Class |
+| 6 | Phase 10 联邦 slot 聚合 | 中 | ✅ 已做（真 Plate×Class split）|
 | 7 | Phase 5 用形态学不是原语 | 中 | 待改 |
 | 8 | Phase 8 W4 鼠肝交叉验证 | 低 | 待做 |
 | 9 | MultiOrg Phase 1 per-feature PR-AUC | 低 | 待做 |
