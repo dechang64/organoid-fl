@@ -198,10 +198,20 @@ Per-feature global AUC：confidence=0.893 > area=0.750 > perimeter=0.740 > circu
 | Early stop | ep36 | ep31 | ep44 |
 | 参数量 | 0.48M | 0.58M | 0.58M |
 
-- **β=0.1 全面优于 β=0.5**：Slot AUC +1.5pp, Combined PR +0.2pp, Val best +0.5pp
-- β=0.5 过强（SupCon 贡献 1.6 = CE 的 3x）→ β=0.1 贡献 0.32，CE 主导
-- SupCon loss 仍下降慢（3.40→3.18）→ τ=0.5 消融待跑
-- **Combined PR 0.862 是目前最高**（RF-DETR 0.828 → 0.862, +3.4pp）
+**τ 消融**（β=0.1 固定）：
+
+| 指标 | **τ=0.07 (44ep)** | τ=0.5 (31ep) |
+|------|-------------------|--------------|
+| Slot AUC | 0.860 | **0.868** |
+| Embedding AUC | **0.868** | 0.863 |
+| Combined AUC | **0.910** | 0.908 |
+| Combined PR-AUC | **0.862** ✅ | 0.861 |
+| Val best AUC | **0.922** | 0.914 |
+| SupCon loss Δ | 3.40→3.18 | 3.38→3.20 |
+
+- **β=0.1, τ=0.07 是最优 SupCon 配置**
+- τ=0.5 没有改善（Slot AUC 追平但 Combined 更差）
+- SupCon loss 下降幅度几乎相同 → 温度对学习影响不大
 
 ### C4 闭环评估（2026-07-13, 云 VM, β=0.1 embeddings）
 **Slot 过滤能否提升检测 AP？→ 能！**
