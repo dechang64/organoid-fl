@@ -203,6 +203,22 @@ Per-feature global AUC：confidence=0.893 > area=0.750 > perimeter=0.740 > circu
 - SupCon loss 仍下降慢（3.40→3.18）→ τ=0.5 消融待跑
 - **Combined PR 0.862 是目前最高**（RF-DETR 0.828 → 0.862, +3.4pp）
 
+### C4 闭环评估（2026-07-13, 云 VM, β=0.1 embeddings）
+**Slot 过滤能否提升检测 AP？→ 能！**
+
+| 策略 | AP (PR-AUC) | Δ AP | 参数 |
+|------|------------|------|------|
+| Baseline (RF-DETR conf) | 0.829 | — | — |
+| Hard filter (thr=0.10) | 0.834 | +0.5pp | thr=0.10 |
+| Soft penalize (α=0.5) | 0.860 | +3.1pp | α=0.5 |
+| **Geometric mean (w=0.80)** | **0.861** | **+3.3pp** ✅ | conf^0.8 × slot^0.2 |
+| LR meta (5-fold) | 0.857 | +2.9pp | 5-fold |
+
+- **Geometric mean 最优**：AP 0.829 → 0.861（+3.3pp）
+- 最优权重 w_slot=0.20（和 Phase 9 组合分析一致）
+- Hard filter 最弱（+0.5pp）——简单删框太粗暴
+- **C4 验证成功**：方案 §7.6 "slot encoder 提升检测 mAP" 成立
+
 ### Phase 10: 联邦 Slot 聚合（2026-07-13, 云 VM, 真 Plate×Class split）
 **6 个真实 client（按 Plate×Class 划分）：**
 
