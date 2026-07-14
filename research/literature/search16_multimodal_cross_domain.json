@@ -1,0 +1,65 @@
+[
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S0020025525003718",
+    "name": "Multimodal cross-domain contrastive learning: A self",
+    "snippet": "To overcome the challenges associated with learning diverse data representations, we introduce Modular QCB-Learner, a novel multi-domain representation learning technique capable of effectively capturing continuous, binary, and discrete representations within a unified framework.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/abs/2503.14963",
+    "name": "[2503.14963] Continual Multimodal Contrastive Learning",
+    "snippet": "We define this problem as Continual Multimodal Contrastive Learning (CMCL), an underexplored yet crucial research direction at the intersection of multimodal and continual learning. In this paper, we formulate CMCL through two specialized principles of stability and plasticity.",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/10.1016/j.ins.2025.122239",
+    "name": "Multimodal cross-domain contrastive learning: : A self",
+    "snippet": "Proposes a novel multimodal self-supervised contrastive framework for representation learning. Learn continuous, binary, and discrete representations for various perception tasks. Introduces Multi-Domain Mixture Optimization (MiDO) to enhance heterogeneous data distribution.",
+    "host_name": "dl.acm.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2503.14963v3",
+    "name": "Continual Multimodal Contrastive Learning - arXiv.org",
+    "snippet": "This research aims to contribute positively to the machine learning and multimodal learning fields by advancing continual multimodal contrastive learning, which enables models to dynamically integrate and retain knowledge from diverse multimodal data sources over time.",
+    "host_name": "arxiv.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S2590005625000736",
+    "name": "CLORG: A contrastive learning-based framework for",
+    "snippet": "We proposed, for the first time, a contrastive learning-based model for organoid morphological representation, CLORG, which efficiently achieves multi-class classification of organoid images.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://link.springer.com/article/10.1186/s12915-025-02411-8",
+    "name": "A knowledge-driven deep learning framework for organoid",
+    "snippet": "In this paper, we present a knowledge-driven deep learning system named TransOrga-plus to automatically analyse organoid dynamics in a non-invasive manner. Given a bright-field microscopic image, TransOrga-plus detects organoids through a multi-modal transformer-based segmentation module.",
+    "host_name": "link.springer.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openaccess.thecvf.com/content/ICCV2025/papers/Huang_Bridging_Domain_Generalization_to_Multimodal_Domain_Generalization_via_Unified_Representations_ICCV_2025_paper.pdf",
+    "name": "Bridging Domain Generalization to Multimodal Domain",
+    "snippet": "Due to the inherent differences between modalities, directly transferring methods from single-modal DG to MMDG typically yields sub-optimal results. These methods often exhibit randomness during generalization due to the invisibility of target domains and fail to con-sider inter-modal consistency.",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S0895611125001685",
+    "name": "Structured chain-of-thought reasoning and evaluation for enhancing",
+    "snippet": "It aims to generate clinically accurate and context-aware answers to diagnostic questions based on medical images. Unlike general VQA, Med-VQA requires deeper ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2512.14157v1",
+    "name": "Incentivizing Tool-augmented Thinking with Images for Medical",
+    "snippet": "Recent breakthroughs in chain-of-thought (CoT) techniques (Wei et al., 2022) have further advanced the reasoning capabilities of medical MLLMs.",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openreview.net/forum?id=S7KyLgHqJf",
+    "name": "M3CoTBench: Benchmark Chain-of-Thought of MLLMs in",
+    "snippet": "This paper introduces M3CoTBench, a benchmark for evaluating Chain-of-Thought reasoning in medical image understanding MLLMs. The dataset contains 1,079 image ...",
+    "host_name": "openreview.net",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://cvpr.thecvf.com/virtual/2025/poster/34306",
+    "name": "CVPR Poster Insight-V: Exploring Long-Chain Visual Reasoning with",
+    "snippet": "Chain-of-Thought prompting , our method shows an average improvement of 7.5% across seven challenging multi-modal benchmarks requiring visual reasoning.",
+    "host_name": "cvpr.thecvf.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://neurips.cc/virtual/2025/poster/120293",
+    "name": "Latent Chain-of-Thought for Visual Reasoning - NeurIPS 2026",
+    "snippet": "Chain-of-thought (CoT) reasoning is critical for improving the interpretability and reliability of Large Vision-Language Models (LVLMs).",
+    "host_name": "neurips.cc",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.emergentmind.com/topics/medical-chain-of-thought-reasoning",
+    "name": "Medical Chain-of-Thought Reasoning - Emergent Mind",
+    "snippet": "Medical chain-of-thought reasoning is a structured, step-by-step approach that mirrors clinical diagnostic workflows using large language ...",
+    "host_name": "www.emergentmind.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openai.com/index/thinking-with-images",
+    "name": "Thinking with images | OpenAI",
+    "snippet": "For the first time, our models can think with images in their chain-of-thought—not just see them. crop, zoom in, and rotate, ing in overly long ...\nApr 16, 2025 — For the first time, our models can think with images in their chain-of -thought—not just see them. o3 and o4- helps you solve tougher problems ...",
+    "host_name": "openai.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/yaotingwangofficial/Awesome-MCoT",
+    "name": "yaotingwangofficial/Awesome-MCoT: Multimodal Chain-of  - GitHub",
+    "snippet": "We present the first systematic survey of MCoT reasoning, elucidating the foundational concepts and definitions pertinent to this area.",
+    "host_name": "github.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2227-7390/13/14/2322",
+    "name": "Analyzing Diagnostic Reasoning of Vision–Language Models via Zero",
+    "snippet": "To address this limitation, we propose a zero-shot chain-of-thought prompting framework that guides VLMs to perform multi-step reasoning before arriving at an ...",
+    "host_name": "www.mdpi.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://icml.cc/virtual/2025/poster/43761",
+    "name": "Visual and Domain Knowledge for Professional-level Graph-of",
+    "snippet": "Visual and Domain Knowledge for Professional-level Graph-of-Thought Medical Reasoning ... Chain-of-thought prompting elicits reasoning in large language models.",
+    "host_name": "icml.cc",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

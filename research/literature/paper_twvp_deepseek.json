@@ -1,0 +1,500 @@
+{
+  "code": 200,
+  "data": {
+    "description": "DeepSeek-AI researchers introduced \"Thinking with Visual Primitives,\" a framework that integrates points and bounding boxes as fundamental units of thought into Multimodal Large Language Models...",
+    "external": {
+      "alternate": {
+        "https://www.alphaxiv.org/abs/2604.visual-primitives.md": {
+          "type": "text/markdown"
+        }
+      },
+      "apple-touch-icon": {
+        "https://www.alphaxiv.org/assets/pwa/alphaxiv_app_1024.png": {
+          "sizes": "1024x1024"
+        }
+      },
+      "canonical": {
+        "https://www.alphaxiv.org/abs/2604.visual-primitives": {}
+      },
+      "icon": {
+        "https://www.alphaxiv.org/favicon.ico": {}
+      },
+      "manifest": {
+        "https://www.alphaxiv.org/manifest.json": {}
+      },
+      "modulepreload": {
+        "https://www.alphaxiv.org/assets/-paper-ui-DgU3p8Z8.js": {},
+        "https://www.alphaxiv.org/assets/AITooltip-DZBFyBMN.js": {},
+        "https://www.alphaxiv.org/assets/AlphaxivMarkdown-CkADx6R5.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/AnimatePresence-B7xXm4kd.js": {},
+        "https://www.alphaxiv.org/assets/AppleLogo-6L3FzfvV.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/BlogPost-DauzO0qb.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/ChatDropdownMenu-7vE9Dl0K.js": {},
+        "https://www.alphaxiv.org/assets/ChatMessages-DHv0Neo2.js": {},
+        "https://www.alphaxiv.org/assets/DetailView-BDcawKv6.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/ExternalBlogView-Ca8tfK0y.js": {},
+        "https://www.alphaxiv.org/assets/GoogleButton-I3nJYLRd.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/GoogleLogo-DiH-nuLi.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/InputArea-DEHAJUEA.js": {},
+        "https://www.alphaxiv.org/assets/LatexText-uMPAIu0w.js": {},
+        "https://www.alphaxiv.org/assets/LightboxImage-mkJt2H4n.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/LinkedInIcon-B4uOHtKY.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/LinkedInLogo-Bc3H334_.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/MarkdownEditor-8bzyotjb.js": {},
+        "https://www.alphaxiv.org/assets/MarkdownLink-CwNDP6Rg.js": {},
+        "https://www.alphaxiv.org/assets/Match-BS3fo3gK.js": {},
+        "https://www.alphaxiv.org/assets/MathTextRenderer-8rAixp_2.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/MutationButton-CnEYdZmZ.js": {},
+        "https://www.alphaxiv.org/assets/NavigationTop-iLAlYqEE.js": {},
+        "https://www.alphaxiv.org/assets/Panel-DTs_ERFs.js": {},
+        "https://www.alphaxiv.org/assets/PaperBlogContainer-DQFI563x.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/PaperFeedBookmarks-BEndtTp-.js": {},
+        "https://www.alphaxiv.org/assets/PaperFeedVotes-DKq-t9Cy.js": {},
+        "https://www.alphaxiv.org/assets/PaperImageWithZoom-BB2CIPHK.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/ProfilePhoto-DgwFiU1s.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/PublishPaperDialog-D03ml99p.js": {},
+        "https://www.alphaxiv.org/assets/QueryClientProvider-B_ZSZvlS.js": {},
+        "https://www.alphaxiv.org/assets/ResearcherClickCard-DolVUxZD.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/SignUpPromptModal-PNcjQLOv.js": {},
+        "https://www.alphaxiv.org/assets/SimpleTooltip-D2fIx9nT.js": {},
+        "https://www.alphaxiv.org/assets/UsageSettingsSection-CSWetrud.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/UserAvatar-BPEIwXQ-.js": {},
+        "https://www.alphaxiv.org/assets/XIcon-goIX6uyJ.js": {},
+        "https://www.alphaxiv.org/assets/abs._-viqs3MSv.js": {},
+        "https://www.alphaxiv.org/assets/admin-MK4VHu8W.js": {},
+        "https://www.alphaxiv.org/assets/alert-dialog-H1PmHpSo.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/api-client-TuNON90m.js": {},
+        "https://www.alphaxiv.org/assets/arrow-down-BM4cXyiT.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/arrow-right-AfCYdk7v.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/arrow-up-C2kBTIXw.js": {},
+        "https://www.alphaxiv.org/assets/assert-CI2mUkPl.js": {},
+        "https://www.alphaxiv.org/assets/assertClassBrand-BPR86GRP.js": {},
+        "https://www.alphaxiv.org/assets/assistant-AMooJLp6.js": {},
+        "https://www.alphaxiv.org/assets/atoms-C8fidAVt.js": {},
+        "https://www.alphaxiv.org/assets/autoresearch-implementations-DmpSbR1E.js": {},
+        "https://www.alphaxiv.org/assets/badge-CDBP9dqY.js": {},
+        "https://www.alphaxiv.org/assets/blog-D8y0-h4C.js": {},
+        "https://www.alphaxiv.org/assets/book-open-i42Yf5VN.js": {},
+        "https://www.alphaxiv.org/assets/bookmark-DZpOKwGi.js": {},
+        "https://www.alphaxiv.org/assets/calendar-C3SonXK4.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/categories-filter-options-82BtZNW4.js": {},
+        "https://www.alphaxiv.org/assets/chat-typography.atoms-CtYXr_k2.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/check-D76R6SVb.js": {},
+        "https://www.alphaxiv.org/assets/checkbox-BsUBiaCt.js": {},
+        "https://www.alphaxiv.org/assets/chevron-left-C-tzqUx4.js": {},
+        "https://www.alphaxiv.org/assets/chevron-right-DCNUbW6F.js": {},
+        "https://www.alphaxiv.org/assets/circle-Ca--AnVS.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/circle-check-D2NvQNlb.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/classPrivateFieldGet2-BkNoCZRK.js": {},
+        "https://www.alphaxiv.org/assets/classPrivateMethodInitSpec-CiQIGzcv.js": {},
+        "https://www.alphaxiv.org/assets/client-D-kBOiDm.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/client-only-lazy-CZ3uqNTU.js": {},
+        "https://www.alphaxiv.org/assets/clipboard-eSV1oLFH.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/clsx-CjueKrWZ.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/cn-B9URw_CD.js": {},
+        "https://www.alphaxiv.org/assets/code-Do4Y6n46.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/context-menu-DpW87l0_.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/conversation-tree-ChinCGcp.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/copy-Bar1KtcV.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/core-js-CpjXQgWu.js": {},
+        "https://www.alphaxiv.org/assets/cpu-C_asiPnB.js": {},
+        "https://www.alphaxiv.org/assets/createLucideIcon-BZaOM1no.js": {},
+        "https://www.alphaxiv.org/assets/createServerFn-jeBBXnR4.js": {},
+        "https://www.alphaxiv.org/assets/customizations-DWEO-0WZ.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/defineProperty-BbfpZ9Tg.js": {},
+        "https://www.alphaxiv.org/assets/dist-BAX2d9SI.js": {},
+        "https://www.alphaxiv.org/assets/dist-BlGjU4Qg.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/dist-C2J943E6.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/dist-C40sCQe7.js": {},
+        "https://www.alphaxiv.org/assets/dist-D8skdLYC.js": {},
+        "https://www.alphaxiv.org/assets/dist-DCv-BAUy.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/dist-DVJGEFq_.js": {},
+        "https://www.alphaxiv.org/assets/dist-VjhC1NpH.js": {},
+        "https://www.alphaxiv.org/assets/dropdown-menu-CZKj9tM6.js": {},
+        "https://www.alphaxiv.org/assets/ellipsis-jxqXhulL.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/error-CACx21gv.js": {},
+        "https://www.alphaxiv.org/assets/es2015-DgTKri98.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/eye-BL7PFHtZ.js": {},
+        "https://www.alphaxiv.org/assets/file-text-BL55b8ld.js": {},
+        "https://www.alphaxiv.org/assets/folders-DlWyOclI.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/format-date-ByBqOwBW.js": {},
+        "https://www.alphaxiv.org/assets/format-time-ago-DKEcv2mW.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/funnel-CCIqqz-u.js": {},
+        "https://www.alphaxiv.org/assets/git-branch-CyNyYqnI.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/global.atoms-C3dXvhFH.js": {},
+        "https://www.alphaxiv.org/assets/globe-Du0K4kJQ.js": {},
+        "https://www.alphaxiv.org/assets/headphones-CeOX7ZtX.js": {},
+        "https://www.alphaxiv.org/assets/helpers-D8Z50WmL.js": {},
+        "https://www.alphaxiv.org/assets/image-CTbPLn0G.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/index-yBnF4Zyj.js": {},
+        "https://www.alphaxiv.org/assets/input2-CgUgU3JY.js": {},
+        "https://www.alphaxiv.org/assets/jsx-runtime-BH1R-mb2.js": {},
+        "https://www.alphaxiv.org/assets/katex-B3IgKzAY.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/label-eI11ikoC.js": {},
+        "https://www.alphaxiv.org/assets/layers-BHFiN1NL.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/lightbulb-dV9J3gqD.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/link-DF87ME9x.js": {},
+        "https://www.alphaxiv.org/assets/links-CEbczIC6.js": {},
+        "https://www.alphaxiv.org/assets/live-query-DXAO5QTq.js": {},
+        "https://www.alphaxiv.org/assets/loader-circle-C1D5WxHj.js": {},
+        "https://www.alphaxiv.org/assets/mail-DlD-aPJd.js": {},
+        "https://www.alphaxiv.org/assets/markdown-C77qti1N.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/matchContext-Cdusaq3B.js": {},
+        "https://www.alphaxiv.org/assets/meo-button-BFWMJhHY.js": {},
+        "https://www.alphaxiv.org/assets/model-list-D8a_za8J.js": {},
+        "https://www.alphaxiv.org/assets/model-mA-8XIEO.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/panel-left-close-ButepY07.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/paper-comments-BaCvRTDJ.js": {},
+        "https://www.alphaxiv.org/assets/papers-EimhetIB.js": {},
+        "https://www.alphaxiv.org/assets/papers-v7XIXMtj.js": {},
+        "https://www.alphaxiv.org/assets/pdf-CvsZLTSX.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/pdf_viewer-D-qAz5Aw.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/pencil-C_iSmXPU.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/pipeline-BZ_BGoJm.js": {},
+        "https://www.alphaxiv.org/assets/platform-D2eH2aPP.js": {},
+        "https://www.alphaxiv.org/assets/play-BqNeCG7h.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/plus-CUBtCaAv.js": {},
+        "https://www.alphaxiv.org/assets/popover-CDzF0C2G.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/preload-helper-zJ_50EbN.js": {},
+        "https://www.alphaxiv.org/assets/progress-bar-4vViIlZq.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/qss-CuvTgpZA.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/react-BjcluYZV.js": {},
+        "https://www.alphaxiv.org/assets/react-CMZnHv4G.js": {},
+        "https://www.alphaxiv.org/assets/react-dom-CVYl238X.js": {},
+        "https://www.alphaxiv.org/assets/react-mutation-BWf0yPsS.js": {},
+        "https://www.alphaxiv.org/assets/react-query-client-B2JUWlQ0.js": {},
+        "https://www.alphaxiv.org/assets/react-query-helpers-CrJNxjJ0.js": {},
+        "https://www.alphaxiv.org/assets/redirect-DCb_aIiF.js": {},
+        "https://www.alphaxiv.org/assets/rehype-syntax-highlight-rewaJHhr.js": {},
+        "https://www.alphaxiv.org/assets/researcher-links-Cr4APvnn.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/rolldown-runtime-Cyuzqnbw.js": {},
+        "https://www.alphaxiv.org/assets/root-DLTE-HSj.js": {},
+        "https://www.alphaxiv.org/assets/rotate-ccw-DFD_2JtR.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/route-BACQrwxI.js": {},
+        "https://www.alphaxiv.org/assets/route-EtAOI6g6.js": {},
+        "https://www.alphaxiv.org/assets/search-Bvn-_mOa.js": {},
+        "https://www.alphaxiv.org/assets/select-DhnSDKWv.js": {},
+        "https://www.alphaxiv.org/assets/separator-BTMZj2_X.js": {},
+        "https://www.alphaxiv.org/assets/share-2-D6ApKtAj.js": {},
+        "https://www.alphaxiv.org/assets/show-alert-B_IjEB6u.js": {},
+        "https://www.alphaxiv.org/assets/skeleton-wewKMnLl.js": {},
+        "https://www.alphaxiv.org/assets/sticky-note-D9bR_AKF.js": {},
+        "https://www.alphaxiv.org/assets/sun-MJDgtb9D.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/tabs-BPXjSPI4.js": {},
+        "https://www.alphaxiv.org/assets/thumbs-up-BY69ST2h.js": {},
+        "https://www.alphaxiv.org/assets/translations-DjAr6mqu.js": {},
+        "https://www.alphaxiv.org/assets/trash-2-DpTLUxcx.js": {},
+        "https://www.alphaxiv.org/assets/upload-DwiJwYKJ.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/use-current-paper-BbqAB6iK.js": {},
+        "https://www.alphaxiv.org/assets/use-dropzone-B-OQSsHP.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/use-horizontal-overflow-indicator-GDkxthRy.js": {},
+        "https://www.alphaxiv.org/assets/use-language-options-ZnjSKkUQ.js": {},
+        "https://www.alphaxiv.org/assets/use-measure-erQF5RQB.js": {},
+        "https://www.alphaxiv.org/assets/use-moderation-visibility-DIdYZnAw.js": {},
+        "https://www.alphaxiv.org/assets/use-open-settings-modal-ccEn8uf1.js": {},
+        "https://www.alphaxiv.org/assets/use-quote-text-selection-tGSk5zdR.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/use-set-paper-vote-QlvyeqSs.js": {},
+        "https://www.alphaxiv.org/assets/use-show-pro-upgrade-cta-BnWZJ33R.js": {},
+        "https://www.alphaxiv.org/assets/useLocation-B4HG4vE4.js": {},
+        "https://www.alphaxiv.org/assets/useMatch-fodC0bks.js": {},
+        "https://www.alphaxiv.org/assets/usePopulateQuerySearchParam-DaunEDwP.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/useStore-BoDFhEZX.js": {},
+        "https://www.alphaxiv.org/assets/useSuspenseQuery-Dzga50hf.js": {},
+        "https://www.alphaxiv.org/assets/user-DkNimnNu.js": {},
+        "https://www.alphaxiv.org/assets/users-B04Du4rX.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/users-Di0ah3-U.js": {},
+        "https://www.alphaxiv.org/assets/utils-HHWs6FhE.js": {},
+        "https://www.alphaxiv.org/assets/vanilla-CoLSQ2or.js": {},
+        "https://www.alphaxiv.org/assets/with-selector-DGTc_bog.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/wrench-y1oVTmv_.js": {},
+        "https://www.alphaxiv.org/assets/x-B3lahyzy.js": {},
+        "https://www.alphaxiv.org/assets/zap-5yybNI4n.js": {
+          "as": "script",
+          "crossorigin": ""
+        },
+        "https://www.alphaxiv.org/assets/zod-CaflhDRw.js": {}
+      },
+      "preconnect": {
+        "https://fonts.googleapis.com/": {},
+        "https://fonts.gstatic.com/": {}
+      },
+      "preload": {
+        "https://fonts.gstatic.com/s/notosans/v42/o-0bIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjc5a7du3mhPy0.woff2": {
+          "as": "font",
+          "crossorigin": "anonymous",
+          "type": "font/woff2"
+        },
+        "https://fonts.gstatic.com/s/rubik/v31/iJWKBXyIfDnIV7nBrXyw023e.woff2": {
+          "as": "font",
+          "crossorigin": "anonymous",
+          "type": "font/woff2"
+        },
+        "https://www.alphaxiv.org/assets/KaTeX_Main-Regular-B22Nviop.woff2": {
+          "as": "font",
+          "crossorigin": "anonymous",
+          "type": "font/woff2"
+        }
+      }
+    },
+    "html": "<html lang=\"en\" style=\"--viewer-container-height: 1205px;\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"><link rel=\"stylesheet\" href=\"/assets/index-CCWD6y1n.css\" type=\"text/css\" data-precedence=\"default\"><link rel=\"stylesheet\" href=\"/assets/use-horizontal-overflow-indicator-BS0jPv2_.css\" type=\"text/css\" data-precedence=\"default\"><link rel=\"stylesheet\" href=\"/assets/client-only-lazy-DJD2rbkT.css\" type=\"text/css\" data-precedence=\"default\"><link rel=\"stylesheet\" href=\"/assets/pipeline-CRI7B6mV.css\" type=\"text/css\" data-precedence=\"default\"><link rel=\"stylesheet\" href=\"/assets/katex-DEcVZfaU.css\" type=\"text/css\" data-precedence=\"default\"><link rel=\"stylesheet\" href=\"/assets/PaperBlogContainer-BZliaNI2.css\" type=\"text/css\" data-precedence=\"default\"><title>Thinking with Visual Primitives | alphaXiv</title><meta name=\"theme-color\" content=\"#FFFFFF\"><meta name=\"twitter:creator\" content=\"@askalphaxiv\"><meta property=\"og:locale\" content=\"en_US\"><meta name=\"apple-itunes-app\" content=\"app-id=6782411985\"><meta name=\"naver-site-verification\" content=\"1cd501876b1329690601ea935c06dc1877da4629\"><meta name=\"description\" content=\"DeepSeek-AI researchers introduced &quot;Thinking with Visual Primitives,&quot; a framework that integrates points and bounding boxes as fundamental units of thought into Multimodal Large Language Models...\"><meta name=\"author\" content=\"Ruijie Lu\"><meta name=\"author\" content=\"Yiyang Ma\"><meta name=\"author\" content=\"Xiaokang Chen\"><meta name=\"author\" content=\"Lingxiao Luo\"><meta name=\"author\" content=\"Zhiyu Wu\"><meta name=\"author\" content=\"Zizheng Pan\"><meta name=\"author\" content=\"Xingchao Liu\"><meta name=\"author\" content=\"Yutong Lin\"><meta name=\"author\" content=\"Hao Li\"><meta name=\"author\" content=\"Wen Liu\"><meta name=\"author\" content=\"Zhewen Hao\"><meta name=\"author\" content=\"Xi Gao\"><meta name=\"author\" content=\"Shaoheng Nie\"><meta name=\"author\" content=\"Yixuan Wei\"><meta name=\"author\" content=\"Zhenda Xie\"><meta name=\"author\" content=\"Ting Chen\"><meta name=\"author\" content=\"Gang Zeng\"><meta property=\"og:type\" content=\"article\"><meta property=\"og:title\" content=\"Thinking with Visual Primitives\"><meta property=\"og:description\" content=\"DeepSeek-AI researchers introduced &quot;Thinking with Visual Primitives,&quot; a framework that integrates points and bounding boxes as fundamental units of thought into Multimodal Large Language Models...\"><meta property=\"og:image\" content=\"https://api.alphaxiv.org/open-graph/v1/paper/2604.visual-primitives.png\"><meta property=\"og:image:alt\" content=\"Thinking with Visual Primitives\"><meta property=\"og:site_name\" content=\"alphaXiv\"><meta property=\"og:url\" content=\"https://www.alphaxiv.org/abs/2604.visual-primitives\"><meta name=\"twitter:title\" content=\"Thinking with Visual Primitives\"><meta name=\"twitter:description\" content=\"DeepSeek-AI researchers introduced &quot;Thinking with Visual Primitives,&quot; a framework that integrates points and bounding boxes as fundamental units of thought into Multimodal Large Language Models...\"><meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:image\" content=\"https://api.alphaxiv.org/open-graph/v1/paper/2604.visual-primitives.png\"><meta name=\"twitter:image:alt\" content=\"Thinking with Visual Primitives\"><meta name=\"citation_title\" content=\"Thinking with Visual Primitives\"><meta name=\"citation_author\" content=\"Ruijie Lu\"><meta name=\"citation_author\" content=\"Yiyang Ma\"><meta name=\"citation_author\" content=\"Xiaokang Chen\"><meta name=\"citation_author\" content=\"Lingxiao Luo\"><meta name=\"citation_author\" content=\"Zhiyu Wu\"><meta name=\"citation_author\" content=\"Zizheng Pan\"><meta name=\"citation_author\" content=\"Xingchao Liu\"><meta name=\"citation_author\" content=\"Yutong Lin\"><meta name=\"citation_author\" content=\"Hao Li\"><meta name=\"citation_author\" content=\"Wen Liu\"><meta name=\"citation_author\" content=\"Zhewen Hao\"><meta name=\"citation_author\" content=\"Xi Gao\"><meta name=\"citation_author\" content=\"Shaoheng Nie\"><meta name=\"citation_author\" content=\"Yixuan Wei\"><meta name=\"citation_author\" content=\"Zhenda Xie\"><meta name=\"citation_author\" content=\"Ting Chen\"><meta name=\"citation_author\" content=\"Gang Zeng\"><meta name=\"citation_publication_date\" content=\"2026/4/30\"><meta name=\"citation_pdf_url\" content=\"https://www.alphaxiv.org/abs/2604.visual-primitives.pdf\"><link rel=\"modulepreload\" href=\"/assets/index-yBnF4Zyj.js\"><link rel=\"modulepreload\" href=\"/assets/assertClassBrand-BPR86GRP.js\"><link rel=\"modulepreload\" href=\"/assets/classPrivateFieldGet2-BkNoCZRK.js\"><link rel=\"modulepreload\" href=\"/assets/classPrivateMethodInitSpec-CiQIGzcv.js\"><link rel=\"modulepreload\" href=\"/assets/defineProperty-BbfpZ9Tg.js\"><link rel=\"modulepreload\" href=\"/assets/rolldown-runtime-Cyuzqnbw.js\"><link rel=\"modulepreload\" href=\"/assets/preload-helper-zJ_50EbN.js\"><link rel=\"modulepreload\" href=\"/assets/react-query-helpers-CrJNxjJ0.js\"><link rel=\"modulepreload\" href=\"/assets/helpers-D8Z50WmL.js\"><link rel=\"modulepreload\" href=\"/assets/Panel-DTs_ERFs.js\"><link rel=\"modulepreload\" href=\"/assets/atoms-C8fidAVt.js\"><link rel=\"modulepreload\" href=\"/assets/links-CEbczIC6.js\"><link rel=\"modulepreload\" href=\"/assets/react-mutation-BWf0yPsS.js\"><link rel=\"modulepreload\" href=\"/assets/react-query-client-B2JUWlQ0.js\"><link rel=\"modulepreload\" href=\"/assets/assistant-AMooJLp6.js\"><link rel=\"modulepreload\" href=\"/assets/papers-EimhetIB.js\"><link rel=\"modulepreload\" href=\"/assets/user-DkNimnNu.js\"><link rel=\"modulepreload\" href=\"/assets/cn-B9URw_CD.js\"><link rel=\"modulepreload\" href=\"/assets/live-query-DXAO5QTq.js\"><link rel=\"modulepreload\" href=\"/assets/show-alert-B_IjEB6u.js\"><link rel=\"modulepreload\" href=\"/assets/dist-DVJGEFq_.js\"><link rel=\"modulepreload\" href=\"/assets/dist-BAX2d9SI.js\"><link rel=\"modulepreload\" href=\"/assets/dist-C40sCQe7.js\"><link rel=\"modulepreload\" href=\"/assets/dist-D8skdLYC.js\"><link rel=\"modulepreload\" href=\"/assets/dist-VjhC1NpH.js\"><link rel=\"modulepreload\" href=\"/assets/Match-BS3fo3gK.js\"><link rel=\"modulepreload\" href=\"/assets/QueryClientProvider-B_ZSZvlS.js\"><link rel=\"modulepreload\" href=\"/assets/useSuspenseQuery-Dzga50hf.js\"><link rel=\"modulepreload\" href=\"/assets/useStore-BoDFhEZX.js\"><link rel=\"modulepreload\" href=\"/assets/link-DF87ME9x.js\"><link rel=\"modulepreload\" href=\"/assets/matchContext-Cdusaq3B.js\"><link rel=\"modulepreload\" href=\"/assets/useLocation-B4HG4vE4.js\"><link rel=\"modulepreload\" href=\"/assets/useMatch-fodC0bks.js\"><link rel=\"modulepreload\" href=\"/assets/redirect-DCb_aIiF.js\"><link rel=\"modulepreload\" href=\"/assets/root-DLTE-HSj.js\"><link rel=\"modulepreload\" href=\"/assets/createServerFn-jeBBXnR4.js\"><link rel=\"modulepreload\" href=\"/assets/core-js-CpjXQgWu.js\"><link rel=\"modulepreload\" href=\"/assets/react-CMZnHv4G.js\"><link rel=\"modulepreload\" href=\"/assets/vanilla-CoLSQ2or.js\"><link rel=\"modulepreload\" href=\"/assets/utils-HHWs6FhE.js\"><link rel=\"modulepreload\" href=\"/assets/createLucideIcon-BZaOM1no.js\"><link rel=\"modulepreload\" href=\"/assets/loader-circle-C1D5WxHj.js\"><link rel=\"modulepreload\" href=\"/assets/x-B3lahyzy.js\"><link rel=\"modulepreload\" href=\"/assets/react-dom-CVYl238X.js\"><link rel=\"modulepreload\" href=\"/assets/jsx-runtime-BH1R-mb2.js\"><link rel=\"modulepreload\" href=\"/assets/react-BjcluYZV.js\"><link rel=\"modulepreload\" href=\"/assets/zod-CaflhDRw.js\"><link rel=\"modulepreload\" href=\"/assets/api-client-TuNON90m.js\"><link rel=\"modulepreload\" href=\"/assets/assert-CI2mUkPl.js\"><link rel=\"modulepreload\" href=\"/assets/categories-filter-options-82BtZNW4.js\"><link rel=\"modulepreload\" href=\"/assets/model-list-D8a_za8J.js\"><link rel=\"modulepreload\" href=\"/assets/error-CACx21gv.js\"><link rel=\"modulepreload\" href=\"/assets/translations-DjAr6mqu.js\"><link rel=\"modulepreload\" href=\"/assets/route-BACQrwxI.js\"><link rel=\"modulepreload\" href=\"/assets/NavigationTop-iLAlYqEE.js\"><link rel=\"modulepreload\" href=\"/assets/UserAvatar-BPEIwXQ-.js\"><link rel=\"modulepreload\" href=\"/assets/use-open-settings-modal-ccEn8uf1.js\"><link rel=\"modulepreload\" href=\"/assets/use-show-pro-upgrade-cta-BnWZJ33R.js\"><link rel=\"modulepreload\" href=\"/assets/global.atoms-C3dXvhFH.js\"><link rel=\"modulepreload\" href=\"/assets/bookmark-DZpOKwGi.js\"><link rel=\"modulepreload\" href=\"/assets/users-Di0ah3-U.js\"><link rel=\"modulepreload\" href=\"/assets/route-EtAOI6g6.js\"><link rel=\"modulepreload\" href=\"/assets/InputArea-DEHAJUEA.js\"><link rel=\"modulepreload\" href=\"/assets/client-only-lazy-CZ3uqNTU.js\"><link rel=\"modulepreload\" href=\"/assets/AITooltip-DZBFyBMN.js\"><link rel=\"modulepreload\" href=\"/assets/ChatMessages-DHv0Neo2.js\"><link rel=\"modulepreload\" href=\"/assets/ChatDropdownMenu-7vE9Dl0K.js\"><link rel=\"modulepreload\" href=\"/assets/MarkdownLink-CwNDP6Rg.js\"><link rel=\"modulepreload\" href=\"/assets/pipeline-BZ_BGoJm.js\"><link rel=\"modulepreload\" href=\"/assets/MutationButton-CnEYdZmZ.js\"><link rel=\"modulepreload\" href=\"/assets/SimpleTooltip-D2fIx9nT.js\"><link rel=\"modulepreload\" href=\"/assets/PaperFeedVotes-DKq-t9Cy.js\"><link rel=\"modulepreload\" href=\"/assets/paper-comments-BaCvRTDJ.js\"><link rel=\"modulepreload\" href=\"/assets/SignUpPromptModal-PNcjQLOv.js\"><link rel=\"modulepreload\" href=\"/assets/use-horizontal-overflow-indicator-GDkxthRy.js\"><link rel=\"modulepreload\" href=\"/assets/PaperFeedBookmarks-BEndtTp-.js\"><link rel=\"modulepreload\" href=\"/assets/LatexText-uMPAIu0w.js\"><link rel=\"modulepreload\" href=\"/assets/input2-CgUgU3JY.js\"><link rel=\"modulepreload\" href=\"/assets/ExternalBlogView-Ca8tfK0y.js\"><link rel=\"modulepreload\" href=\"/assets/XIcon-goIX6uyJ.js\"><link rel=\"modulepreload\" href=\"/assets/MarkdownEditor-8bzyotjb.js\"><link rel=\"modulepreload\" href=\"/assets/PublishPaperDialog-D03ml99p.js\"><link rel=\"modulepreload\" href=\"/assets/badge-CDBP9dqY.js\"><link rel=\"modulepreload\" href=\"/assets/checkbox-BsUBiaCt.js\"><link rel=\"modulepreload\" href=\"/assets/dropdown-menu-CZKj9tM6.js\"><link rel=\"modulepreload\" href=\"/assets/label-eI11ikoC.js\"><link rel=\"modulepreload\" href=\"/assets/meo-button-BFWMJhHY.js\"><link rel=\"modulepreload\" href=\"/assets/select-DhnSDKWv.js\"><link rel=\"modulepreload\" href=\"/assets/separator-BTMZj2_X.js\"><link rel=\"modulepreload\" href=\"/assets/skeleton-wewKMnLl.js\"><link rel=\"modulepreload\" href=\"/assets/tabs-BPXjSPI4.js\"><link rel=\"modulepreload\" href=\"/assets/use-set-paper-vote-QlvyeqSs.js\"><link rel=\"modulepreload\" href=\"/assets/use-current-paper-BbqAB6iK.js\"><link rel=\"modulepreload\" href=\"/assets/use-language-options-ZnjSKkUQ.js\"><link rel=\"modulepreload\" href=\"/assets/use-measure-erQF5RQB.js\"><link rel=\"modulepreload\" href=\"/assets/use-moderation-visibility-DIdYZnAw.js\"><link rel=\"modulepreload\" href=\"/assets/blog-D8y0-h4C.js\"><link rel=\"modulepreload\" href=\"/assets/admin-MK4VHu8W.js\"><link rel=\"modulepreload\" href=\"/assets/autoresearch-implementations-DmpSbR1E.js\"><link rel=\"modulepreload\" href=\"/assets/papers-v7XIXMtj.js\"><link rel=\"modulepreload\" href=\"/assets/format-date-ByBqOwBW.js\"><link rel=\"modulepreload\" href=\"/assets/platform-D2eH2aPP.js\"><link rel=\"modulepreload\" href=\"/assets/rehype-syntax-highlight-rewaJHhr.js\"><link rel=\"modulepreload\" href=\"/assets/AnimatePresence-B7xXm4kd.js\"><link rel=\"modulepreload\" href=\"/assets/arrow-up-C2kBTIXw.js\"><link rel=\"modulepreload\" href=\"/assets/book-open-i42Yf5VN.js\"><link rel=\"modulepreload\" href=\"/assets/check-D76R6SVb.js\"><link rel=\"modulepreload\" href=\"/assets/chevron-left-C-tzqUx4.js\"><link rel=\"modulepreload\" href=\"/assets/chevron-right-DCNUbW6F.js\"><link rel=\"modulepreload\" href=\"/assets/cpu-C_asiPnB.js\"><link rel=\"modulepreload\" href=\"/assets/eye-BL7PFHtZ.js\"><link rel=\"modulepreload\" href=\"/assets/file-text-BL55b8ld.js\"><link rel=\"modulepreload\" href=\"/assets/funnel-CCIqqz-u.js\"><link rel=\"modulepreload\" href=\"/assets/globe-Du0K4kJQ.js\"><link rel=\"modulepreload\" href=\"/assets/headphones-CeOX7ZtX.js\"><link rel=\"modulepreload\" href=\"/assets/mail-DlD-aPJd.js\"><link rel=\"modulepreload\" href=\"/assets/plus-CUBtCaAv.js\"><link rel=\"modulepreload\" href=\"/assets/search-Bvn-_mOa.js\"><link rel=\"modulepreload\" href=\"/assets/share-2-D6ApKtAj.js\"><link rel=\"modulepreload\" href=\"/assets/sticky-note-D9bR_AKF.js\"><link rel=\"modulepreload\" href=\"/assets/thumbs-up-BY69ST2h.js\"><link rel=\"modulepreload\" href=\"/assets/trash-2-DpTLUxcx.js\"><link rel=\"modulepreload\" href=\"/assets/wrench-y1oVTmv_.js\"><link rel=\"modulepreload\" href=\"/assets/abs._-viqs3MSv.js\"><link rel=\"modulepreload\" href=\"/assets/-paper-ui-DgU3p8Z8.js\"><link rel=\"icon\" href=\"/favicon.ico\"><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\"><link rel=\"apple-touch-icon\" href=\"/assets/pwa/alphaxiv_app_1024.png\" sizes=\"1024x1024\"><link rel=\"manifest\" href=\"/manifest.json\"><link rel=\"preload\" href=\"https://fonts.gstatic.com/s/rubik/v31/iJWKBXyIfDnIV7nBrXyw023e.woff2\" as=\"font\" type=\"font/woff2\" crossorigin=\"anonymous\"><link rel=\"preload\" href=\"https://fonts.gstatic.com/s/notosans/v42/o-0bIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjc5a7du3mhPy0.woff2\" as=\"font\" type=\"font/woff2\" crossorigin=\"anonymous\"><link rel=\"preload\" href=\"/assets/KaTeX_Main-Regular-B22Nviop.woff2\" as=\"font\" type=\"font/woff2\" crossorigin=\"anonymous\"><link rel=\"canonical\" href=\"https://www.alphaxiv.org/abs/2604.visual-primitives\"><link rel=\"alternate\" type=\"text/markdown\" href=\"https://www.alphaxiv.org/abs/2604.visual-primitives.md\"><script>(() => {\n  try {\n    const themeMatch = document.cookie.match(/(?:^|;\\s*)alpha_theme=([^;]*)/);\n    const legacyMatch = document.cookie.match(/(?:^|;\\s*)alpha_dark_mode=([^;]*)/);\n    const raw = themeMatch ? decodeURIComponent(themeMatch[1]) : legacyMatch ? decodeURIComponent(legacyMatch[1]) : \"\";\n    const theme = raw === \"true\" ? \"dark\" : raw;\n    if (theme === \"dark\") document.documentElement.classList.add(\"dark\");\n    else if (theme === \"light\") document.documentElement.classList.add(\"light\");\n  } catch {}\n})();</script><style type=\"text/css\">[data-sonner-toaster][dir=ltr],html[dir=ltr]{--toast-icon-margin-start:-3px;--toast-icon-margin-end:4px;--toast-svg-margin-start:-1px;--toast-svg-margin-end:0px;--toast-button-margin-start:auto;--toast-button-margin-end:0;--toast-close-button-start:0;--toast-close-button-end:unset;--toast-close-button-transform:translate(-35%, -35%)}[data-sonner-toaster][dir=rtl],html[dir=rtl]{--toast-icon-margin-start:4px;--toast-icon-margin-end:-3px;--toast-svg-margin-start:0px;--toast-svg-margin-end:-1px;--toast-button-margin-start:0;--toast-button-margin-end:auto;--toast-close-button-start:unset;--toast-close-button-end:0;--toast-close-button-transform:translate(35%, -35%)}[data-sonner-toaster]{position:fixed;width:var(--width);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;--gray1:hsl(0, 0%, 99%);--gray2:hsl(0, 0%, 97.3%);--gray3:hsl(0, 0%, 95.1%);--gray4:hsl(0, 0%, 93%);--gray5:hsl(0, 0%, 90.9%);--gray6:hsl(0, 0%, 88.7%);--gray7:hsl(0, 0%, 85.8%);--gray8:hsl(0, 0%, 78%);--gray9:hsl(0, 0%, 56.1%);--gray10:hsl(0, 0%, 52.3%);--gray11:hsl(0, 0%, 43.5%);--gray12:hsl(0, 0%, 9%);--border-radius:8px;box-sizing:border-box;padding:0;margin:0;list-style:none;outline:0;z-index:999999999;transition:transform .4s ease}@media (hover:none) and (pointer:coarse){[data-sonner-toaster][data-lifted=true]{transform:none}}[data-sonner-toaster][data-x-position=right]{right:var(--offset-right)}[data-sonner-toaster][data-x-position=left]{left:var(--offset-left)}[data-sonner-toaster][data-x-position=center]{left:50%;transform:translateX(-50%)}[data-sonner-toaster][data-y-position=top]{top:var(--offset-top)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--offset-bottom)}[data-sonner-toast]{--y:translateY(100%);--lift-amount:calc(var(--lift) * var(--gap));z-index:var(--z-index);position:absolute;opacity:0;transform:var(--y);touch-action:none;transition:transform .4s,opacity .4s,height .4s,box-shadow .2s;box-sizing:border-box;outline:0;overflow-wrap:anywhere}[data-sonner-toast][data-styled=true]{padding:16px;background:var(--normal-bg);border:1px solid var(--normal-border);color:var(--normal-text);border-radius:var(--border-radius);box-shadow:0 4px 12px rgba(0,0,0,.1);width:var(--width);font-size:13px;display:flex;align-items:center;gap:6px}[data-sonner-toast]:focus-visible{box-shadow:0 4px 12px rgba(0,0,0,.1),0 0 0 2px rgba(0,0,0,.2)}[data-sonner-toast][data-y-position=top]{top:0;--y:translateY(-100%);--lift:1;--lift-amount:calc(1 * var(--gap))}[data-sonner-toast][data-y-position=bottom]{bottom:0;--y:translateY(100%);--lift:-1;--lift-amount:calc(var(--lift) * var(--gap))}[data-sonner-toast][data-styled=true] [data-description]{font-weight:400;line-height:1.4;color:#3f3f3f}[data-rich-colors=true][data-sonner-toast][data-styled=true] [data-description]{color:inherit}[data-sonner-toaster][data-sonner-theme=dark] [data-description]{color:#e8e8e8}[data-sonner-toast][data-styled=true] [data-title]{font-weight:500;line-height:1.5;color:inherit}[data-sonner-toast][data-styled=true] [data-icon]{display:flex;height:16px;width:16px;position:relative;justify-content:flex-start;align-items:center;flex-shrink:0;margin-left:var(--toast-icon-margin-start);margin-right:var(--toast-icon-margin-end)}[data-sonner-toast][data-promise=true] [data-icon]>svg{opacity:0;transform:scale(.8);transform-origin:center;animation:sonner-fade-in .3s ease forwards}[data-sonner-toast][data-styled=true] [data-icon]>*{flex-shrink:0}[data-sonner-toast][data-styled=true] [data-icon] svg{margin-left:var(--toast-svg-margin-start);margin-right:var(--toast-svg-margin-end)}[data-sonner-toast][data-styled=true] [data-content]{display:flex;flex-direction:column;gap:2px}[data-sonner-toast][data-styled=true] [data-button]{border-radius:4px;padding-left:8px;padding-right:8px;height:24px;font-size:12px;color:var(--normal-bg);background:var(--normal-text);margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end);border:none;font-weight:500;cursor:pointer;outline:0;display:flex;align-items:center;flex-shrink:0;transition:opacity .4s,box-shadow .2s}[data-sonner-toast][data-styled=true] [data-button]:focus-visible{box-shadow:0 0 0 2px rgba(0,0,0,.4)}[data-sonner-toast][data-styled=true] [data-button]:first-of-type{margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end)}[data-sonner-toast][data-styled=true] [data-cancel]{color:var(--normal-text);background:rgba(0,0,0,.08)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-styled=true] [data-cancel]{background:rgba(255,255,255,.3)}[data-sonner-toast][data-styled=true] [data-close-button]{position:absolute;left:var(--toast-close-button-start);right:var(--toast-close-button-end);top:0;height:20px;width:20px;display:flex;justify-content:center;align-items:center;padding:0;color:var(--gray12);background:var(--normal-bg);border:1px solid var(--gray4);transform:var(--toast-close-button-transform);border-radius:50%;cursor:pointer;z-index:1;transition:opacity .1s,background .2s,border-color .2s}[data-sonner-toast][data-styled=true] [data-close-button]:focus-visible{box-shadow:0 4px 12px rgba(0,0,0,.1),0 0 0 2px rgba(0,0,0,.2)}[data-sonner-toast][data-styled=true] [data-disabled=true]{cursor:not-allowed}[data-sonner-toast][data-styled=true]:hover [data-close-button]:hover{background:var(--gray2);border-color:var(--gray5)}[data-sonner-toast][data-swiping=true]::before{content:'';position:absolute;left:-100%;right:-100%;height:100%;z-index:-1}[data-sonner-toast][data-y-position=top][data-swiping=true]::before{bottom:50%;transform:scaleY(3) translateY(50%)}[data-sonner-toast][data-y-position=bottom][data-swiping=true]::before{top:50%;transform:scaleY(3) translateY(-50%)}[data-sonner-toast][data-swiping=false][data-removed=true]::before{content:'';position:absolute;inset:0;transform:scaleY(2)}[data-sonner-toast][data-expanded=true]::after{content:'';position:absolute;left:0;height:calc(var(--gap) + 1px);bottom:100%;width:100%}[data-sonner-toast][data-mounted=true]{--y:translateY(0);opacity:1}[data-sonner-toast][data-expanded=false][data-front=false]{--scale:var(--toasts-before) * 0.05 + 1;--y:translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)));height:var(--front-toast-height)}[data-sonner-toast]>*{transition:opacity .4s}[data-sonner-toast][data-x-position=right]{right:0}[data-sonner-toast][data-x-position=left]{left:0}[data-sonner-toast][data-expanded=false][data-front=false][data-styled=true]>*{opacity:0}[data-sonner-toast][data-visible=false]{opacity:0;pointer-events:none}[data-sonner-toast][data-mounted=true][data-expanded=true]{--y:translateY(calc(var(--lift) * var(--offset)));height:var(--initial-height)}[data-sonner-toast][data-removed=true][data-front=true][data-swipe-out=false]{--y:translateY(calc(var(--lift) * -100%));opacity:0}[data-sonner-toast][data-removed=true][data-front=false][data-swipe-out=false][data-expanded=true]{--y:translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%));opacity:0}[data-sonner-toast][data-removed=true][data-front=false][data-swipe-out=false][data-expanded=false]{--y:translateY(40%);opacity:0;transition:transform .5s,opacity .2s}[data-sonner-toast][data-removed=true][data-front=false]::before{height:calc(var(--initial-height) + 20%)}[data-sonner-toast][data-swiping=true]{transform:var(--y) translateY(var(--swipe-amount-y,0)) translateX(var(--swipe-amount-x,0));transition:none}[data-sonner-toast][data-swiped=true]{user-select:none}[data-sonner-toast][data-swipe-out=true][data-y-position=bottom],[data-sonner-toast][data-swipe-out=true][data-y-position=top]{animation-duration:.2s;animation-timing-function:ease-out;animation-fill-mode:forwards}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=left]{animation-name:swipe-out-left}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=right]{animation-name:swipe-out-right}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=up]{animation-name:swipe-out-up}[data-sonner-toast][data-swipe-out=true][data-swipe-direction=down]{animation-name:swipe-out-down}@keyframes swipe-out-left{from{transform:var(--y) translateX(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translateX(calc(var(--swipe-amount-x) - 100%));opacity:0}}@keyframes swipe-out-right{from{transform:var(--y) translateX(var(--swipe-amount-x));opacity:1}to{transform:var(--y) translateX(calc(var(--swipe-amount-x) + 100%));opacity:0}}@keyframes swipe-out-up{from{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) - 100%));opacity:0}}@keyframes swipe-out-down{from{transform:var(--y) translateY(var(--swipe-amount-y));opacity:1}to{transform:var(--y) translateY(calc(var(--swipe-amount-y) + 100%));opacity:0}}@media (max-width:600px){[data-sonner-toaster]{position:fixed;right:var(--mobile-offset-right);left:var(--mobile-offset-left);width:100%}[data-sonner-toaster][dir=rtl]{left:calc(var(--mobile-offset-left) * -1)}[data-sonner-toaster] [data-sonner-toast]{left:0;right:0;width:calc(100% - var(--mobile-offset-left) * 2)}[data-sonner-toaster][data-x-position=left]{left:var(--mobile-offset-left)}[data-sonner-toaster][data-y-position=bottom]{bottom:var(--mobile-offset-bottom)}[data-sonner-toaster][data-y-position=top]{top:var(--mobile-offset-top)}[data-sonner-toaster][data-x-position=center]{left:var(--mobile-offset-left);right:var(--mobile-offset-right);transform:none}}[data-sonner-toaster][data-sonner-theme=light]{--normal-bg:#fff;--normal-border:var(--gray4);--normal-text:var(--gray12);--success-bg:hsl(143, 85%, 96%);--success-border:hsl(145, 92%, 87%);--success-text:hsl(140, 100%, 27%);--info-bg:hsl(208, 100%, 97%);--info-border:hsl(221, 91%, 93%);--info-text:hsl(210, 92%, 45%);--warning-bg:hsl(49, 100%, 97%);--warning-border:hsl(49, 91%, 84%);--warning-text:hsl(31, 92%, 45%);--error-bg:hsl(359, 100%, 97%);--error-border:hsl(359, 100%, 94%);--error-text:hsl(360, 100%, 45%)}[data-sonner-toaster][data-sonner-theme=light] [data-sonner-toast][data-invert=true]{--normal-bg:#000;--normal-border:hsl(0, 0%, 20%);--normal-text:var(--gray1)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast][data-invert=true]{--normal-bg:#fff;--normal-border:var(--gray3);--normal-text:var(--gray12)}[data-sonner-toaster][data-sonner-theme=dark]{--normal-bg:#000;--normal-bg-hover:hsl(0, 0%, 12%);--normal-border:hsl(0, 0%, 20%);--normal-border-hover:hsl(0, 0%, 25%);--normal-text:var(--gray1);--success-bg:hsl(150, 100%, 6%);--success-border:hsl(147, 100%, 12%);--success-text:hsl(150, 86%, 65%);--info-bg:hsl(215, 100%, 6%);--info-border:hsl(223, 43%, 17%);--info-text:hsl(216, 87%, 65%);--warning-bg:hsl(64, 100%, 6%);--warning-border:hsl(60, 100%, 9%);--warning-text:hsl(46, 87%, 65%);--error-bg:hsl(358, 76%, 10%);--error-border:hsl(357, 89%, 16%);--error-text:hsl(358, 100%, 81%)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast] [data-close-button]{background:var(--normal-bg);border-color:var(--normal-border);color:var(--normal-text)}[data-sonner-toaster][data-sonner-theme=dark] [data-sonner-toast] [data-close-button]:hover{background:var(--normal-bg-hover);border-color:var(--normal-border-hover)}[data-rich-colors=true][data-sonner-toast][data-type=success]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=success] [data-close-button]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=info]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=info] [data-close-button]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning] [data-close-button]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=error]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}[data-rich-colors=true][data-sonner-toast][data-type=error] [data-close-button]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}.sonner-loading-wrapper{--size:16px;height:var(--size);width:var(--size);position:absolute;inset:0;z-index:10}.sonner-loading-wrapper[data-visible=false]{transform-origin:center;animation:sonner-fade-out .2s ease forwards}.sonner-spinner{position:relative;top:50%;left:50%;height:var(--size);width:var(--size)}.sonner-loading-bar{animation:sonner-spin 1.2s linear infinite;background:var(--gray11);border-radius:6px;height:8%;left:-10%;position:absolute;top:-3.9%;width:24%}.sonner-loading-bar:first-child{animation-delay:-1.2s;transform:rotate(.0001deg) translate(146%)}.sonner-loading-bar:nth-child(2){animation-delay:-1.1s;transform:rotate(30deg) translate(146%)}.sonner-loading-bar:nth-child(3){animation-delay:-1s;transform:rotate(60deg) translate(146%)}.sonner-loading-bar:nth-child(4){animation-delay:-.9s;transform:rotate(90deg) translate(146%)}.sonner-loading-bar:nth-child(5){animation-delay:-.8s;transform:rotate(120deg) translate(146%)}.sonner-loading-bar:nth-child(6){animation-delay:-.7s;transform:rotate(150deg) translate(146%)}.sonner-loading-bar:nth-child(7){animation-delay:-.6s;transform:rotate(180deg) translate(146%)}.sonner-loading-bar:nth-child(8){animation-delay:-.5s;transform:rotate(210deg) translate(146%)}.sonner-loading-bar:nth-child(9){animation-delay:-.4s;transform:rotate(240deg) translate(146%)}.sonner-loading-bar:nth-child(10){animation-delay:-.3s;transform:rotate(270deg) translate(146%)}.sonner-loading-bar:nth-child(11){animation-delay:-.2s;transform:rotate(300deg) translate(146%)}.sonner-loading-bar:nth-child(12){animation-delay:-.1s;transform:rotate(330deg) translate(146%)}@keyframes sonner-fade-in{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}@keyframes sonner-fade-out{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.8)}}@keyframes sonner-spin{0%{opacity:1}100%{opacity:.15}}@media (prefers-reduced-motion){.sonner-loading-bar,[data-sonner-toast],[data-sonner-toast]>*{transition:none!important;animation:none!important}}.sonner-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transform-origin:center;transition:opacity .2s,transform .2s}.sonner-loader[data-visible=false]{opacity:0;transform:scale(.8) translate(-50%,-50%)}</style><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/clsx-CjueKrWZ.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/LinkedInIcon-B4uOHtKY.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/with-selector-DGTc_bog.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/context-menu-DpW87l0_.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/es2015-DgTKri98.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/circle-Ca--AnVS.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/dist-DCv-BAUy.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/conversation-tree-ChinCGcp.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/sun-MJDgtb9D.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/panel-left-close-ButepY07.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/qss-CuvTgpZA.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/model-mA-8XIEO.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/GoogleLogo-DiH-nuLi.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/folders-DlWyOclI.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/PaperImageWithZoom-BB2CIPHK.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/arrow-right-AfCYdk7v.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/ResearcherClickCard-DolVUxZD.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/LinkedInLogo-Bc3H334_.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/researcher-links-Cr4APvnn.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/ProfilePhoto-DgwFiU1s.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/popover-CDzF0C2G.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/LightboxImage-mkJt2H4n.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/AlphaxivMarkdown-CkADx6R5.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/alert-dialog-H1PmHpSo.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/katex-B3IgKzAY.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/copy-Bar1KtcV.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/dist-BlGjU4Qg.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/chat-typography.atoms-CtYXr_k2.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/use-quote-text-selection-tGSk5zdR.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/format-time-ago-DKEcv2mW.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/arrow-down-BM4cXyiT.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/circle-check-D2NvQNlb.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/code-Do4Y6n46.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/git-branch-CyNyYqnI.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/image-CTbPLn0G.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/layers-BHFiN1NL.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/pencil-C_iSmXPU.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/rotate-ccw-DFD_2JtR.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/UsageSettingsSection-CSWetrud.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/progress-bar-4vViIlZq.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/MathTextRenderer-8rAixp_2.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/use-dropzone-B-OQSsHP.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/usePopulateQuerySearchParam-DaunEDwP.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/ellipsis-jxqXhulL.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/lightbulb-dV9J3gqD.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/play-BqNeCG7h.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/zap-5yybNI4n.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/clipboard-eSV1oLFH.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/markdown-C77qti1N.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/GoogleButton-I3nJYLRd.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/AppleLogo-6L3FzfvV.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/BlogPost-DauzO0qb.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/client-D-kBOiDm.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/PaperBlogContainer-DQFI563x.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/users-B04Du4rX.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/calendar-C3SonXK4.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/upload-DwiJwYKJ.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/dist-C2J943E6.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/DetailView-BDcawKv6.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/pdf-CvsZLTSX.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/customizations-DWEO-0WZ.js\"><script src=\"https://accounts.google.com/gsi/client\" async=\"\" defer=\"\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/static/exception-autocapture.js?v=1.373.5\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/array/phc_9XHDzykWwwp9oMCSolUDo1tIl0T0Xn0yp2WkX5Lrbio/config.js\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/static/exception-autocapture.js?v=1.373.5\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/static/posthog-recorder.js?v=1.373.5\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/static/surveys.js?v=1.373.5\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/static/dead-clicks-autocapture.js?v=1.373.5\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/static/dead-clicks-autocapture.js?v=1.373.5\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/static/web-vitals.js?v=1.373.5\"></script><script type=\"text/javascript\" crossorigin=\"anonymous\" src=\"/ph/static/exception-autocapture.js?v=1.373.5\"></script><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"/assets/pdf_viewer-D-qAz5Aw.js\"><style id=\"googleidentityservice_button_styles\">.qJTHM{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;color:#202124;direction:ltr;-webkit-touch-callout:none;font-family:Roboto-Regular,arial,sans-serif;-webkit-font-smoothing:antialiased;font-weight:400;margin:0;overflow:hidden;-webkit-text-size-adjust:100%}.ynRLnc{left:-9999px;position:absolute;top:-9999px}.L6cTce{display:none}.bltWBb{overflow-wrap:break-word;word-break:break-word}.hSRGPd{color:#1a73e8;cursor:pointer;font-weight:500;text-decoration:none}.Bz112c-W3lGp{height:16px;width:16px}.Bz112c-E3DyYd{height:20px;width:20px}.Bz112c-r9oPif{height:24px;width:24px}.Bz112c-u2z5K{height:36px;width:36px}.Bz112c-uaxL4e{border-radius:10px}.LgbsSe-Bz112c{display:block}.S9gUrf-YoZ4jf{border:none;margin:0;padding:0}.S9gUrf-YoZ4jf *{border:none;margin:0;padding:0}.fFW7wc-ibnC6b>.aZ2wEe>div{border-color:#4285f4}.P1ekSe-ZMv3u{-webkit-transition:height .2s linear;transition:height .2s linear}.P1ekSe-ZMv3u>div:first-child{background-color:#1a73e8!important;-webkit-transition:width .3s linear;transition:width .3s linear}.P1ekSe-ZMv3u>div:nth-child(2){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.P1ekSe-ZMv3u>div:nth-child(3){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.haAclf{display:inline-block}.nsm7Bb-HzV7m-LgbsSe{border-radius:4px;box-sizing:border-box;-webkit-transition:background-color .218s,border-color .218s;transition:background-color .218s,border-color .218s;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #dadce0;color:#3c4043;cursor:pointer;font-family:Google Sans,arial,sans-serif;font-size:.875rem;height:40px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 12px;position:relative;text-align:center;vertical-align:middle;white-space:nowrap;width:auto}@media screen and (-ms-high-contrast:active){.nsm7Bb-HzV7m-LgbsSe{border:2px solid windowText;color:windowText}}@media screen and (preferes-contrast:more){.nsm7Bb-HzV7m-LgbsSe{color:#000}}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe{font-size:.875rem;height:32px;letter-spacing:.25px;padding:0 10px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe{font-size:.6875rem;height:20px;letter-spacing:.3px;padding:0 8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe{padding:0;width:40px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe{width:32px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe{width:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK{border-radius:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.pSzOP-SxQuSe{border-radius:16px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.purZT-SxQuSe{border-radius:10px}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc{border:1px solid #8e918f;background-color:#131314;color:#e3e3e3}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc{border:none;color:#fff}.nsm7Bb-HzV7m-LgbsSe.MFS4be-v3pZbf-Ia7Qfc{background-color:#1a73e8}.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{background-color:#202124;color:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{color:#fff}}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:18px;margin-right:8px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:14px;min-width:14px;width:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:10px;min-width:10px;width:10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin-left:8px;margin-right:-4px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:10px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:4px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:3px;border-bottom-left-radius:3px;display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center;-webkit-box-align:center;-webkit-align-items:center;align-items:center;background-color:#fff;height:36px;margin-left:-10px;margin-right:12px;min-width:36px;width:36px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c,.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:28px;margin-left:-8px;margin-right:10px;min-width:28px;width:28px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:16px;margin-left:-6px;margin-right:8px;min-width:16px;width:16px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:3px;margin-left:2px;margin-right:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:8px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-bN97Pc-sM5MNb{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;-webkit-flex-direction:row;-webkit-box-orient:horizontal;-webkit-box-direction:normal;flex-direction:row;-webkit-box-pack:justify;-webkit-justify-content:space-between;justify-content:space-between;-webkit-flex-wrap:nowrap;flex-wrap:nowrap;height:100%;position:relative;width:100%}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX{-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:1;-webkit-box-flex:1;flex-grow:1;font-family:Google Sans,arial,sans-serif;font-weight:500;overflow:hidden;text-overflow:ellipsis;vertical-align:top}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-weight:300}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:0;-webkit-box-flex:0;flex-grow:0}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-MJoBVe{-webkit-transition:background-color .218s;transition:background-color .218s;bottom:0;left:0;position:absolute;right:0;top:0}.nsm7Bb-HzV7m-LgbsSe:focus,.nsm7Bb-HzV7m-LgbsSe:hover{box-shadow:none;border-color:rgb(210,227,252);outline:none}.nsm7Bb-HzV7m-LgbsSe:focus-within{outline:2px solid #00639b;border-color:transparent}.nsm7Bb-HzV7m-LgbsSe:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.08)}.nsm7Bb-HzV7m-LgbsSe:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.1)}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.08)}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.12)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.24)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.32)}.nsm7Bb-HzV7m-LgbsSe .n1UuX-DkfjY{border-radius:50%;display:-webkit-box;display:-webkit-flex;display:flex;height:20px;margin-left:-4px;margin-right:8px;min-width:20px;width:20px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-family:Roboto;font-size:12px;text-align:left}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .fmcmS,.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .ssJRIf{overflow:hidden;text-overflow:ellipsis}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;color:#5f6368;fill:#5f6368;font-size:11px;font-weight:400}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.i5vt6e-to915-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#c4c7c5;fill:#c4c7c5}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#e8eaed;fill:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff,.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#000;fill:#000}}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .Bz112c{height:18px;margin:-3px -3px -3px 2px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:0;border-bottom-left-radius:0;border-top-right-radius:3px;border-bottom-right-radius:3px;margin-left:12px;margin-right:-10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.L5Fo6c-sM5MNb{border:0;display:block;left:0;position:relative;top:0}.L5Fo6c-bF1uUb{border-radius:4px;bottom:0;cursor:pointer;left:0;position:absolute;right:0;top:0}.L5Fo6c-bF1uUb:focus{border:none;outline:none}sentinel{}</style><link id=\"googleidentityservice\" type=\"text/css\" media=\"all\" href=\"https://accounts.google.com/gsi/style\" rel=\"stylesheet\"></head><body class=\"min-h-dvh bg-bg text-text\" data-testid=\"root\"><!--$--><!--$--><div class=\"flex min-h-dvh flex-col sm:flex-row\"><div class=\"sticky top-0 hidden h-dvh flex-none sm:block\"><div class=\"group h-full w-[76px] flex-col overflow-hidden border-r border-border bg-panel-alt py-4 transition-[width] duration-300 ease-in-out hidden sm:flex\"><div class=\"mb-4 flex flex-none items-center gap-3 overflow-hidden rounded-full px-4 text-lg transition-opacity duration-100 ease-in-out\"><a href=\"/\" class=\"mr-auto flex items-center gap-3\"><div class=\"flex size-11 shrink-0 items-center justify-center\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 718.41 504.47\" width=\"718.41\" height=\"504.47\" class=\"size-8 text-custom-red\"><polygon fill=\"currentColor\" points=\"591.15 258.54 718.41 385.73 663.72 440.28 536.57 313.62 591.15 258.54\"></polygon><path fill=\"currentColor\" d=\"M273.86.3c34.56-2.41,67.66,9.73,92.51,33.54l94.64,94.63-55.11,54.55-96.76-96.55c-16.02-12.7-37.67-12.1-53.19,1.11L54.62,288.82,0,234.23,204.76,29.57C223.12,13.31,249.27,2.02,273.86.3Z\"></path><path fill=\"currentColor\" d=\"M663.79,1.29l54.62,54.58-418.11,417.9c-114.43,95.94-263.57-53.49-167.05-167.52l160.46-160.33,54.62,54.58-157.88,157.77c-33.17,40.32,18.93,91.41,58.66,57.48L663.79,1.29Z\"></path></svg></div></a></div><div class=\"flex flex-col px-4 pb-4\"><div class=\"flex w-full items-center\" data-state=\"closed\"><a aria-label=\"Explore\" href=\"/\" class=\"flex w-full cursor-pointer items-center rounded-full text-lg transition-colors text-text\"><div class=\"interactable-overlay bg-overlay\"></div><div class=\"flex items-center justify-center p-3\"><span class=\"relative size-5 text-center\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-compass\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z\"></path></svg></span></div></a></div><div class=\"flex w-full items-center\" data-state=\"closed\"><a aria-label=\"ICML 2026\" href=\"/icml\" class=\"flex w-full cursor-pointer items-center rounded-full text-lg transition-colors text-text\"><div class=\"interactable-overlay bg-overlay\"></div><div class=\"flex items-center justify-center p-3\"><span class=\"relative size-5 text-center\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-presentation\" aria-hidden=\"true\"><path d=\"M2 3h20\"></path><path d=\"M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3\"></path><path d=\"m7 21 5-5 5 5\"></path></svg></span></div></a></div><div class=\"flex w-full items-center\" data-state=\"closed\"><a aria-label=\"Researchers\" href=\"/researchers\" class=\"flex w-full cursor-pointer items-center rounded-full text-lg transition-colors text-text\"><div class=\"interactable-overlay bg-overlay\"></div><div class=\"flex items-center justify-center p-3\"><span class=\"relative size-5 text-center\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-users\" aria-hidden=\"true\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"></path><path d=\"M16 3.128a4 4 0 0 1 0 7.744\"></path><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle></svg></span></div></a></div><div class=\"flex w-full items-center\" data-state=\"closed\"><a aria-label=\"Sign In\" href=\"/signin\" class=\"flex w-full cursor-pointer items-center rounded-full text-lg transition-colors text-text\"><div class=\"interactable-overlay bg-overlay\"></div><div class=\"flex items-center justify-center p-3\"><span class=\"relative size-5 text-center\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-log-in\" aria-hidden=\"true\"><path d=\"m10 17 5-5-5-5\"></path><path d=\"M15 12H3\"></path><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"></path></svg></span></div></a></div></div><div class=\"mt-auto flex flex-col px-4 select-none\"><div class=\"flex w-full items-center\" data-state=\"closed\"><a aria-label=\"MCP Server\" href=\"/docs/mcp\" class=\"flex w-full cursor-pointer items-center rounded-full text-lg transition-colors text-text\"><div class=\"interactable-overlay bg-overlay\"></div><div class=\"flex items-center justify-center p-3\"><span class=\"relative size-5 text-center\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-plug\" aria-hidden=\"true\"><path d=\"M12 22v-5\"></path><path d=\"M15 8V2\"></path><path d=\"M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z\"></path><path d=\"M9 8V2\"></path></svg></span></div></a></div><div class=\"flex w-full items-center\" data-state=\"closed\"><a aria-label=\"Compute\" rel=\"noopener noreferrer\" href=\"https://openresearch.sh/compute\" target=\"_blank\" class=\"flex w-full cursor-pointer items-center rounded-full text-lg transition-colors text-text\"><div class=\"interactable-overlay bg-overlay\"></div><div class=\"flex items-center justify-center p-3\"><span class=\"relative size-5 text-center\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-cpu text-text\" aria-hidden=\"true\"><path d=\"M12 20v2\"></path><path d=\"M12 2v2\"></path><path d=\"M17 20v2\"></path><path d=\"M17 2v2\"></path><path d=\"M2 12h2\"></path><path d=\"M2 17h2\"></path><path d=\"M2 7h2\"></path><path d=\"M20 12h2\"></path><path d=\"M20 17h2\"></path><path d=\"M20 7h2\"></path><path d=\"M7 20v2\"></path><path d=\"M7 2v2\"></path><rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"2\"></rect><rect x=\"8\" y=\"8\" width=\"8\" height=\"8\" rx=\"1\"></rect></svg></span></div></a></div><div data-onboarding=\"extension\"><div class=\"flex w-full items-center\" data-state=\"closed\"><a aria-label=\"Browser Extension\" rel=\"noopener noreferrer\" href=\"https://chromewebstore.google.com/detail/alphaxiv-open-research-di/liihfcjialakefgidmaadhajjikbjjab\" target=\"_blank\" class=\"flex w-full cursor-pointer items-center rounded-full text-lg transition-colors text-text\"><div class=\"interactable-overlay bg-overlay\"></div><div class=\"flex items-center justify-center p-3\"><span class=\"relative size-5 text-center\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" class=\"text-text\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10.88 21.94 15.46 14\"></path><path d=\"M21.17 8H12\"></path><path d=\"M3.95 6.06 8.54 14\"></path><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><circle cx=\"12\" cy=\"12\" r=\"4\"></circle></svg></span></div></a></div></div><div type=\"button\" id=\"radix-_R_6qhba_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\" class=\"focus-visible:outline-0\"><div class=\"flex items-center overflow-hidden w-full\" data-state=\"closed\"><div class=\"flex w-full cursor-pointer items-center rounded-full\" aria-label=\"System theme\"><div class=\"interactable-overlay bg-overlay\"></div><div class=\"p-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-sun text-text dark:hidden\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"></circle><path d=\"M12 2v2\"></path><path d=\"M12 20v2\"></path><path d=\"m4.93 4.93 1.41 1.41\"></path><path d=\"m17.66 17.66 1.41 1.41\"></path><path d=\"M2 12h2\"></path><path d=\"M20 12h2\"></path><path d=\"m6.34 17.66-1.41 1.41\"></path><path d=\"m19.07 4.93-1.41 1.41\"></path></svg><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-moon-star hidden text-text dark:block\" aria-hidden=\"true\"><path d=\"M18 5h4\"></path><path d=\"M20 3v4\"></path><path d=\"M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401\"></path></svg></div></div></div></div><div class=\"flex items-center\"><a href=\"https://twitter.com/askalphaxiv\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Twitter\" class=\"flex shrink-0 items-center justify-center rounded-full p-3 text-text\" data-state=\"closed\"><div class=\"interactable-overlay bg-overlay\"></div><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" class=\"\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"currentColor\"><path d=\"M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z\"></path></svg></a></div><div class=\"invisible flex overflow-hidden transition-opacity duration-200 lg:visible pointer-events-none opacity-0\"><a href=\"/blog\" class=\"w-fit p-3 text-xs whitespace-nowrap text-subtext hover:underline\">Blog</a><a href=\"https://github.com/alphaxiv/feedback/issues\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"w-fit p-3 text-xs whitespace-nowrap text-subtext hover:underline\">Send Feedback?</a></div></div></div></div><div class=\"min-h-0 w-full flex-auto flex-col sm:w-0\"><!--$--><div class=\"h-dvh\"><script data-alphaxiv-id=\"json-ld-paper-detail-view\" type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"ScholarlyArticle\",\"headline\":\"Thinking with Visual Primitives\",\"abstract\":\"This is a placeholder abstract for an uploaded PDF document.\",\"author\":[{\"@type\":\"Person\",\"name\":\"Ruijie Lu\"},{\"@type\":\"Person\",\"name\":\"Yiyang Ma\"},{\"@type\":\"Person\",\"name\":\"Xiaokang Chen\"},{\"@type\":\"Person\",\"name\":\"Lingxiao Luo\"},{\"@type\":\"Person\",\"name\":\"Zhiyu Wu\"},{\"@type\":\"Person\",\"name\":\"Zizheng Pan\"},{\"@type\":\"Person\",\"name\":\"Xingchao Liu\"},{\"@type\":\"Person\",\"name\":\"Yutong Lin\"},{\"@type\":\"Person\",\"name\":\"Hao Li\"},{\"@type\":\"Person\",\"name\":\"Wen Liu\"},{\"@type\":\"Person\",\"name\":\"Zhewen Hao\"},{\"@type\":\"Person\",\"name\":\"Xi Gao\"},{\"@type\":\"Person\",\"name\":\"Shaoheng Nie\"},{\"@type\":\"Person\",\"name\":\"Yixuan Wei\"},{\"@type\":\"Person\",\"name\":\"Zhenda Xie\"},{\"@type\":\"Person\",\"name\":\"Ting Chen\"},{\"@type\":\"Person\",\"name\":\"Gang Zeng\"}],\"datePublished\":\"Thu Apr 30 2026 19:00:03 GMT+0000 (Coordinated Universal Time)\",\"url\":\"https://www.alphaxiv.org/abs/2604.visual-primitives\",\"citation\":{\"@type\":\"CreativeWork\",\"identifier\":\"2604.visual-primitives\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"arXiv\"},\"discussionUrl\":\"https://www.alphaxiv.org/abs/2604.visual-primitives\",\"interactionStatistic\":[{\"@type\":\"InteractionCounter\",\"interactionType\":{\"@type\":\"ViewAction\",\"url\":\"https://schema.org/ViewAction\"},\"userInteractionCount\":6595},{\"@type\":\"InteractionCounter\",\"interactionType\":{\"@type\":\"LikeAction\",\"url\":\"https://schema.org/LikeAction\"},\"userInteractionCount\":305}]}</script><div class=\"flex h-full min-w-0 flex-1\"><div class=\"Viewer relative flex h-full flex-1 flex-col w-full sm:min-w-[325px]\"><div class=\"@container relative hidden h-10 min-w-0 border-b sm:block\"><div class=\"scrollbar-hide flex h-full items-center overflow-x-auto whitespace-nowrap justify-center\"><a class=\"text-[0px] @md:text-sm @md:gap-2 flex items-center rounded-none px-3 pt-2.5 pb-2 transition-colors relative border-b-2 h-10 whitespace-nowrap border-b-custom-red font-bold text-custom-red active\" href=\"/abs/2604.visual-primitives\" data-status=\"active\" aria-current=\"page\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-file-text size-4\" aria-hidden=\"true\"><path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\"></path><path d=\"M14 2v5a1 1 0 0 0 1 1h5\"></path><path d=\"M10 9H8\"></path><path d=\"M16 13H8\"></path><path d=\"M16 17H8\"></path></svg>Paper</a><a href=\"/overview/2604.visual-primitives\" class=\"text-[0px] @md:text-sm @md:gap-2 flex items-center rounded-none px-3 pt-2.5 pb-2 transition-colors relative border-b-2 h-10 whitespace-nowrap border-b-transparent text-subtext hover:text-custom-red\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-book-open size-4\" aria-hidden=\"true\"><path d=\"M12 7v14\"></path><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\"></path></svg>Blog</a><a href=\"/audio/2604.visual-primitives\" class=\"text-[0px] @md:text-sm @md:gap-2 flex items-center rounded-none px-3 pt-2.5 pb-2 transition-colors relative border-b-2 h-10 whitespace-nowrap border-b-transparent text-subtext hover:text-custom-red\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-headphones size-4\" aria-hidden=\"true\"><path d=\"M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3\"></path></svg>Audio</a></div></div><div class=\"relative hidden sm:block\"><div class=\"scrollbar-hide flex items-center gap-4 overflow-x-auto border-b px-4 py-1 whitespace-nowrap\"><div class=\"flex grow basis-0 items-center gap-2 text-text\"><button class=\"inline-flex cursor-pointer items-center justify-center whitespace-nowrap ring-offset-bg outline-hidden transition-all duration-200 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 gap-1 hover:text-custom-red enabled:active:ring-2 enabled:active:ring-custom-red/10 h-6 rounded-md px-2 py-0.5 text-sm\" type=\"button\" title=\"Like paper\" data-state=\"closed\"><div class=\"interactable-overlay bg-overlay\"></div><span class=\"block\" style=\"transform: none;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-thumbs-up size-4 fill-none\" aria-hidden=\"true\"><path d=\"M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z\"></path><path d=\"M7 10v12\"></path></svg></span><span class=\"relative inline-flex overflow-hidden text-xs\"><span style=\"opacity:1;transform:none\">305</span></span></button><div class=\"relative shrink-0\"><button class=\"inline-flex items-center justify-center rounded-md text-sm whitespace-nowrap ring-offset-bg outline-hidden transition-all duration-200 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 gap-1 hover:text-custom-red enabled:active:ring-2 enabled:active:ring-custom-red/10 size-6 rounded-full! focus-visible:outline-0 cursor-pointer\" type=\"button\" aria-label=\"Bookmark this paper\" id=\"radix-_R_2d6chba_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\"><div class=\"interactable-overlay bg-overlay\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-bookmark size-4\" aria-hidden=\"true\"><path d=\"M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z\"></path></svg></button></div><button class=\"inline-flex cursor-pointer items-center justify-center rounded-md text-sm whitespace-nowrap ring-offset-bg outline-hidden transition-all duration-200 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 gap-1 hover:text-custom-red enabled:active:ring-2 enabled:active:ring-custom-red/10 size-6 rounded-full! focus-visible:outline-0\" type=\"button\" aria-label=\"Paper Info\" id=\"radix-_R_3d6chba_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\"><div class=\"interactable-overlay bg-overlay\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-info size-4\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M12 16v-4\"></path><path d=\"M12 8h.01\"></path></svg></button><button class=\"inline-flex cursor-pointer items-center justify-center rounded-md text-sm whitespace-nowrap ring-offset-bg outline-hidden transition-all duration-200 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 gap-1 hover:text-custom-red enabled:active:ring-2 enabled:active:ring-custom-red/10 size-6 rounded-full! focus-visible:outline-0\" type=\"button\" aria-label=\"Download Paper\" id=\"radix-_R_4d6chba_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\"><div class=\"interactable-overlay bg-overlay\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-download size-4\" aria-hidden=\"true\"><path d=\"M12 15V3\"></path><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><path d=\"m7 10 5 5 5-5\"></path></svg></button><button class=\"inline-flex cursor-pointer items-center justify-center rounded-md text-sm whitespace-nowrap ring-offset-bg outline-hidden transition-all duration-200 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 gap-1 hover:text-custom-red enabled:active:ring-2 enabled:active:ring-custom-red/10 size-6 rounded-full! focus-visible:outline-0\" type=\"button\" aria-label=\"Print Paper\" id=\"radix-_R_5d6chba_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\"><div class=\"interactable-overlay bg-overlay\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-printer size-4\" aria-hidden=\"true\"><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"></path><path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\"></path><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\"></rect></svg></button><button class=\"inline-flex cursor-pointer items-center justify-center rounded-md text-sm whitespace-nowrap ring-offset-bg outline-hidden transition-all duration-200 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 gap-1 hover:text-custom-red enabled:active:ring-2 enabled:active:ring-custom-red/10 size-6 rounded-full! focus-visible:outline-0\" type=\"button\" aria-label=\"Share Paper\" data-state=\"closed\" id=\"radix-_R_7d6chba_\" aria-haspopup=\"menu\" aria-expanded=\"false\"><div class=\"interactable-overlay bg-overlay\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-share2 lucide-share-2 size-4\" aria-hidden=\"true\"><circle cx=\"18\" cy=\"5\" r=\"3\"></circle><circle cx=\"6\" cy=\"12\" r=\"3\"></circle><circle cx=\"18\" cy=\"19\" r=\"3\"></circle><line x1=\"8.59\" x2=\"15.42\" y1=\"13.51\" y2=\"17.49\"></line><line x1=\"15.41\" x2=\"8.59\" y1=\"6.51\" y2=\"10.49\"></line></svg></button></div><div class=\"flex grow basis-0 justify-center gap-4 text-text\"><div class=\"group flex h-6 cursor-text items-center rounded-sm border border-transparent pr-1 text-xs tabular-nums hover:border-custom-red/40 has-focus:border-custom-red\"><span class=\"pointer-events-none fixed opacity-0\" inert=\"\"></span><input type=\"text\" class=\"bg-transparent text-right text-xs outline-none selection:bg-red-soft selection:text-text text-subtext/50\" style=\"width: 8px;\" disabled=\"\" value=\"-\"><span class=\"text-subtext/50 pl-1 text-xs select-none\">/ <span>-</span></span></div></div><div class=\"flex grow basis-0 justify-end\"><button class=\"inline-flex cursor-pointer items-center justify-center whitespace-nowrap ring-offset-bg outline-hidden transition-all duration-200 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 gap-1 hover:text-custom-red enabled:active:ring-2 enabled:active:ring-custom-red/10 h-6 rounded-md px-2 py-0.5 text-xs font-normal text-text\" type=\"button\"><div class=\"interactable-overlay bg-overlay\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-book-open size-4\" aria-hidden=\"true\"><path d=\"M12 7v14\"></path><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\"></path></svg><span>Hide Tools</span><div class=\"flex items-center justify-center\"><span class=\"text-xs whitespace-pre\">Ctrl + /</span></div></button></div></div></div><div class=\"relative flex min-h-0 w-full flex-1 flex-col sm:overflow-y-auto\"><div class=\"pointer-events-none fixed inset-x-0 bottom-0 z-20 flex items-end justify-between px-safe-offset-3 pb-safe-offset-3 sm:hidden\"><div class=\"pointer-events-auto flex items-center gap-2\"><div><button class=\"inline-flex cursor-pointer items-center justify-center text-sm whitespace-nowrap ring-offset-bg outline-hidden transition-all duration-200 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 rounded-full bg-bg text-custom-red relative after:absolute after:rounded-full after:inset-0 after:bg-overlay/20 after:opacity-0 after:transition-opacity hover:after:opacity-20 enabled:active:after:opacity-40 rounded-full! size-10 border-0 shadow-sm\" aria-label=\"Open navigation menu\"><div class=\"interactable-overlay bg-overlay\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-menu size-6 text-text\" aria-hidden=\"true\"><path d=\"M4 5h16\"></path><path d=\"M4 12h16\"></path><path d=\"M4 19h16\"></path></svg></button></div></div><div class=\"pointer-events-auto flex items-center gap-2\"><div class=\"\"><button class=\"inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50 bg-red-soft px-3 text-custom-red h-11 text-sm\" type=\"button\"><div class=\"interactable-overlay bg-overlay\"></div><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-wrench size-5\" aria-hidden=\"true\"><path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z\"></path></svg>Open Tools</button></div></div></div><h1 class=\"hidden\">Thinking with Visual Primitives</h1><div class=\"absolute inset-0\"><div id=\"PDFPane\" class=\"relative h-full overflow-hidden\"><div class=\"absolute right-6 bottom-4 z-20 hidden sm:block\"></div><div data-scroll-restoration-id=\"paper-pdf-viewer\" class=\"paperBody absolute size-full flex-col overflow-auto\"><img alt=\"\" aria-hidden=\"true\" class=\"pointer-events-none absolute left-1/2 top-px -translate-x-1/2 select-none transition-opacity duration-300 dark:[filter:invert(88.8%)_hue-rotate(180deg)_contrast(100%)] opacity-100\" src=\"https://thumbnails.assets.alphaxiv.org/2604.visual-primitivesv1.png\" style=\"width: min(100% - 40px, 1020px);\"><div class=\"pdfViewer\" id=\"viewer\" style=\"opacity: 0;\"></div></div></div></div><!--$--><script>((m,u,a=new AbortController())=>m.has(u)||m.set(u,[fetch(u,{signal:a.signal}).catch((e) => e),a]))(self.alphaxivFastPdfMap||=new Map,\"https://pdfs.assets.alphaxiv.org/2604.visual-primitivesv1.pdf\")</script><!--/$--></div></div><div id=\"toolingPane\" data-tooling-pane=\"true\" style=\"width:min(var(--pane-width, 575px), 100%);max-width:min(1800px, 77vw)\" class=\"relative flex min-h-0 min-w-60 shrink flex-col overflow-hidden border-l transition-[width] duration-300 ease-in-out max-sm:w-full! max-sm:max-w-full!\"><div class=\"absolute inset-y-0 left-0 z-50 w-3 cursor-ew-resize touch-none border-l-2 border-custom-red opacity-0 transition-opacity hover:opacity-25 active:opacity-100\"></div><div class=\"flex w-full min-w-0 h-10 border-b\"><div class=\"flex items-center justify-center pl-3 sm:hidden\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-x size-6 text-subtext\" aria-hidden=\"true\"><path d=\"M18 6 6 18\"></path><path d=\"m6 6 12 12\"></path></svg></div><div class=\"relative min-w-0 flex-1\"><div class=\"scrollbar-hide flex items-center overflow-x-auto font-medium whitespace-nowrap justify-center h-10\"><button class=\"flex cursor-pointer items-center gap-1 border-b-2 px-3 pt-2.5 pb-2 text-sm border-b-active-item font-bold text-active-item\" data-state=\"closed\">Assistant</button><button class=\"flex cursor-pointer items-center gap-1 border-b-2 px-3 pt-2.5 pb-2 text-sm border-b-transparent text-subtext hover:text-text\" data-state=\"closed\">My Notes</button><button class=\"flex cursor-pointer items-center gap-1 border-b-2 px-3 pt-2.5 pb-2 text-sm border-b-transparent text-subtext hover:text-text\">Comments</button><button class=\"flex cursor-pointer items-center gap-1 border-b-2 px-3 pt-2.5 pb-2 text-sm border-b-transparent text-subtext hover:text-text\">Similar</button></div></div></div><div class=\"min-w-0 flex-1 overflow-y-auto\"><div class=\"relative flex min-h-full flex-col\"><div class=\"flex size-full flex-auto items-center justify-center\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-loader-circle size-16 animate-spin text-custom-red\" aria-hidden=\"true\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"></path></svg></div></div></div></div></div></div><!--/$--></div></div><!--/$--><!--/$--><section aria-label=\"Notifications alt+T\" tabindex=\"-1\" aria-live=\"polite\" aria-relevant=\"additions text\" aria-atomic=\"false\"></section></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "OK",
+    "metadata": {
+      "apple-itunes-app": "app-id=6782411985",
+      "author": [
+        "Ruijie Lu",
+        "Yiyang Ma",
+        "Xiaokang Chen",
+        "Lingxiao Luo",
+        "Zhiyu Wu",
+        "Zizheng Pan",
+        "Xingchao Liu",
+        "Yutong Lin",
+        "Hao Li",
+        "Wen Liu",
+        "Zhewen Hao",
+        "Xi Gao",
+        "Shaoheng Nie",
+        "Yixuan Wei",
+        "Zhenda Xie",
+        "Ting Chen",
+        "Gang Zeng"
+      ],
+      "citation_author": [
+        "Ruijie Lu",
+        "Yiyang Ma",
+        "Xiaokang Chen",
+        "Lingxiao Luo",
+        "Zhiyu Wu",
+        "Zizheng Pan",
+        "Xingchao Liu",
+        "Yutong Lin",
+        "Hao Li",
+        "Wen Liu",
+        "Zhewen Hao",
+        "Xi Gao",
+        "Shaoheng Nie",
+        "Yixuan Wei",
+        "Zhenda Xie",
+        "Ting Chen",
+        "Gang Zeng"
+      ],
+      "citation_pdf_url": "https://www.alphaxiv.org/abs/2604.visual-primitives.pdf",
+      "citation_publication_date": "2026/4/30",
+      "citation_title": "Thinking with Visual Primitives",
+      "description": "DeepSeek-AI researchers introduced \"Thinking with Visual Primitives,\" a framework that integrates points and bounding boxes as fundamental units of thought into Multimodal Large Language Models...",
+      "lang": "en",
+      "naver-site-verification": "1cd501876b1329690601ea935c06dc1877da4629",
+      "og:description": "DeepSeek-AI researchers introduced \"Thinking with Visual Primitives,\" a framework that integrates points and bounding boxes as fundamental units of thought into Multimodal Large Language Models...",
+      "og:image": "https://api.alphaxiv.org/open-graph/v1/paper/2604.visual-primitives.png",
+      "og:image:alt": "Thinking with Visual Primitives",
+      "og:locale": "en_US",
+      "og:site_name": "alphaXiv",
+      "og:title": "Thinking with Visual Primitives",
+      "og:type": "article",
+      "og:url": "https://www.alphaxiv.org/abs/2604.visual-primitives",
+      "theme-color": "#FFFFFF",
+      "twitter:card": "summary_large_image",
+      "twitter:creator": "@askalphaxiv",
+      "twitter:description": "DeepSeek-AI researchers introduced \"Thinking with Visual Primitives,\" a framework that integrates points and bounding boxes as fundamental units of thought into Multimodal Large Language Models...",
+      "twitter:image": "https://api.alphaxiv.org/open-graph/v1/paper/2604.visual-primitives.png",
+      "twitter:image:alt": "Thinking with Visual Primitives",
+      "twitter:title": "Thinking with Visual Primitives",
+      "viewport": "width=device-width, initial-scale=1, maximum-scale=1"
+    },
+    "title": "Thinking with Visual Primitives | alphaXiv",
+    "url": "https://www.alphaxiv.org/abs/2604.visual-primitives",
+    "usage": {
+      "tokens": 24146
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 24146
+    }
+  },
+  "status": 20000
+}

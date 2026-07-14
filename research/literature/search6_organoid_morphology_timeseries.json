@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S2666386425001213",
+    "name": "Label-free cell imaging and tracking in 3D organoids",
+    "snippet": "2025 · Cited by 20 — LabelFreeTracker enables 3D label-free image analysis of intestinal organoids . Predicts 3D cell membrane and nucleus based on bright-field images. Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10680710",
+    "name": "Multiplexed live-cell imaging for drug responses in patient",
+    "snippet": "2023 · Cited by 8 — This methods article details the use of multiplex ed fluorescent live-cell imaging for simultaneous kinetic assessment of different organoid phenotypes.",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.news-medical.net/whitepaper/20201201/3D-Organoid-Growth-in-Matrigelc2ae-Domes-Real-Time-Live-Cell-Analysis.aspx",
+    "name": "3D Organoid Growth: Live-Cell Analysis in Matrigel® Domes",
+    "snippet": "Dec 1, 2020 — Organoid count, size, and morphology measurements are automatically plotted over time , providing robust insight into organoid maturation and ... Read more",
+    "host_name": "www.news-medical.net",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.frontiersin.org/journals/cell-and-developmental-biology/articles/10.3389/fcell.2026.1861934/full",
+    "name": "Advances in organoid imaging and automated",
+    "snippet": "2026 — This review examines programs for the morphometric analysis of spheroids and organoids . Most of these programs utilize images taken with a brightfield ...",
+    "host_name": "www.frontiersin.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://zencellowl.com/zh/organoid-live-cell-imaging",
+    "name": "Organoid Live-Cell Imaging — without opening the incubator.",
+    "snippet": "Monitor organoid growth, morphology and drug response continuously — label-free, 24 wells , directly in your CO₂ incubator. No annual fee.",
+    "host_name": "zencellowl.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.leica-microsystems.com/applications/life-science/structure-and-physiology-of-organoids-and-3d-cell-culture",
+    "name": "Structure and Physiology of Organoids and 3D Cell Culture",
+    "snippet": "Imaging techniques such as advanced widefield, spinning disk confocal and light sheet microscopy enable real- time observation of live cells within 3D cultures. Read more",
+    "host_name": "www.leica-microsystems.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.nature.com/articles/s12276-024-01312-0",
+    "name": "Long-term three-dimensional high-resolution imaging of",
+    "snippet": "2024 · Cited by 59 — Live imaging techniques play a crucial role in organoid research and contribute to elucidating the complex structure and dynamic biological ...",
+    "host_name": "www.nature.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.biocompare.com/Editorial-Articles/614311-Live-Cell-Imaging-Tools-to-Visualize-Organoids",
+    "name": "Live-Cell Imaging Tools to Visualize Organoids",
+    "snippet": "Aug 20, 2024 — “By capturing images over time , researchers can analyze how cells within organoids respond to stimuli and interact with neighboring cells. Read more",
+    "host_name": "www.biocompare.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S0167779926000090",
+    "name": "Next-generation discovery: empowering organoid research with",
+    "snippet": "Image-based readouts remain foundational: snapshot microscopy (confocal and wide field) captures morphology and, together with staining, detects a limited panel of proteins under steady-state conditions, whereas live cell imaging yields rich time series.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.nature.com/articles/s41592-025-02685-4",
+    "name": "Digitalized organoids: integrated pipeline for high-speed 3D",
+    "snippet": "In this study, we introduce an AI-based multilevel segmentation and cellular topology pipeline for screening morphology and topology modifications in 3D cell culture at both the nuclear and...",
+    "host_name": "www.nature.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

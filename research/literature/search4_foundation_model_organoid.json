@@ -1,0 +1,65 @@
+[
+  {
+    "url": "https://www.nature.com/articles/s41592-025-02879-w",
+    "name": "CellSAM: a foundation model for cell segmentation - Nature",
+    "snippet": "Here we present CellSAM, a universal model for cell segmentation that generalizes across diverse cellular imaging data. CellSAM builds on top of the Segment Anything Model (SAM) by...",
+    "host_name": "www.nature.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/abs/2501.11734",
+    "name": "MedicoSAM: Robust Improvement of SAM for Medical Imaging",
+    "snippet": "The emergence of vision foundation models, especially Segment Anything, offers a path to universal segmentation for medical images, overcoming these issues. Here, we study how to improve Segment Anything for medical images by comparing different finetuning strategies on a large and diverse dataset.",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/abs/2404.09957",
+    "name": "How to build the best medical image segmentation algorithm",
+    "snippet": "While foundation models have been useful in natural language processing and some vision tasks for some time, the foundation model developed with image segmentation in mind - Segment Anything Model (SAM) - has been developed only recently and has shown similar promise.",
+    "host_name": "arxiv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2306-5354/12/6/608",
+    "name": "Research on Medical Image Segmentation Based on SAM and Its",
+    "snippet": "While direct application of SAM to complex, multimodal, and multi-target medical datasets may not yet yield optimal results, insights from these efforts provide crucial guidance for developing foundational models tailored to the intricacies of medical image analysis.",
+    "host_name": "www.mdpi.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.nature.com/articles/s41592-025-02879-w.pdf",
+    "name": "CellSAM: a foundation model for cell segmentation - Nature",
+    "snippet": "Here we present CellSAM, a universal model for cell segmentation that generalizes across diverse cellular imaging data. CellSAM builds on top of the Segment Anything Model (SAM) by...",
+    "host_name": "www.nature.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S0895611124001502",
+    "name": "A review of the Segment Anything Model (SAM) for medical",
+    "snippet": "This work compares the performance of SAM, MedSAM, and SAM-Med2D with other well-established models applied to medical image segmentation, namely U-Net and nnU-Net.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2306-5354/12/12/1312",
+    "name": "A Review of Deep Learning Approaches Based on Segment  - MDPI",
+    "snippet": "Medical image segmentation has undergone significant changes in recent years, mainly due to the development of base models. The introduction of the Segment Anything Model (SAM) represents a major shift from task-specific architectures to universal architectures.",
+    "host_name": "www.mdpi.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  }
+]

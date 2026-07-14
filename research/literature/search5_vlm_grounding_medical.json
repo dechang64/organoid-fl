@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://openaccess.thecvf.com/content/ICCV2025/papers/Huy_Seeing_the_Trees_for_the_Forest_Rethinking_Weakly-Supervised_Medical_Visual_ICCV_2025_paper.pdf",
+    "name": "[PDF] Rethinking Weakly-Supervised Medical Visual Grounding",
+    "snippet": "Visual grounding (VG) is the capability to localize spe- cific regions. In medical imaging, VG enhances inter- pretability and cross-modal. Few-shot visual ...",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/linhuixiao/Awesome-Visual-Grounding",
+    "name": "[TPAMI 2025] Towards Visual Grounding: A Survey · GitHub",
+    "snippet": "This repo is used for recording, tracking, and benchmarking several recent visual grounding methods to supplement our Grounding Survey.",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2410.12694v2",
+    "name": "Vision Language Model with Versatile Visual Grounding for Medicine - arXiv",
+    "snippet": "A foundation model utilizing chest ct volumes and radiology reports for supervised-level zero-shot detection of abnormalities.",
+    "host_name": "arxiv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://runsenxu.com/projects/VLM-Grounder",
+    "name": "VLM-Grounder: A VLM Agent for Zero-Shot 3D Visual Grounding",
+    "snippet": "This work presents VLM-Grounder, a novel framework using vision-language models (VLMs) for zero-shot 3D visual grounding based solely on 2D images.",
+    "host_name": "runsenxu.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://neurips.cc/virtual/2024/poster/97860",
+    "name": "Revisiting Few-Shot Object Detection with Vision-Language Models",
+    "snippet": "First, we point out that zero-shot predictions from VLMs such as GroundingDINO significantly outperform state-of-the-art few-shot detectors (48 ...",
+    "host_name": "neurips.cc",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.emergentmind.com/topics/visual-grounding-in-vision-language-models-vlms",
+    "name": "Visual Grounding in Vision-Language Models - Emergent Mind",
+    "snippet": "Visual grounding in VLMs is the technique to align textual cues with precise image regions using outputs like bounding boxes or masks, ...",
+    "host_name": "www.emergentmind.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://aclanthology.org/2025.naacl-long.89.pdf",
+    "name": "[PDF] VividMed: Vision Language Model with Versatile Visual Grounding for",
+    "snippet": "A foundation model utilizing chest ct volumes and radiology reports for supervised- level zero-shot detection of abnormalities.",
+    "host_name": "aclanthology.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.neeharperi.com/VPLOW25-Foundational-FSOD-Challenge",
+    "name": "CVPR 2025 Foundational Few-Shot Object Detection Challenge",
+    "snippet": "Vision-Language Models (VLMs) like GroundingDINO have demonstrated remarkable zero-shot 2D detection performance on standard benchmarks like ...",
+    "host_name": "www.neeharperi.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dspace.mit.edu/bitstream/handle/1721.1/158933/hoopes-hoopes-sm-eecs-2025-thesis.pdf?sequence=-1&isAllowed=y",
+    "name": "[PDF] VoxelPrompt: A Vision-Language Agent for Grounded Medical Image",
+    "snippet": "Vision-language models (VLMs) learn joint representations of images and text to facilitate language-driven image analysis. They often combine language models ...",
+    "host_name": "dspace.mit.edu",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=ZcnAcZG1cLM",
+    "name": "SeqVLM: Zero-Shot 3D Visual Grounding via VLM - YouTube",
+    "snippet": "... image sequences to preserve spatial relationships and context. A ... Gemma 4 Vision Agent | Object Detection + VLM Pipeline. Prompt ...",
+    "host_name": "www.youtube.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

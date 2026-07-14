@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.alphaxiv.org/abs/2604.visual-primitives",
+    "name": "Thinking with Visual Primitives | alphaXiv",
+    "snippet": "DeepSeek-AI researchers introduced \"Thinking with Visual Primitives,\" a framework that integrates points and bounding boxes as fundamental units of thought ...",
+    "host_name": "www.alphaxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mindstudio.ai/blog/what-is-visual-primitives-reasoning-deepseek",
+    "name": "What Is Visual Primitives Reasoning? DeepSeek's Breakthrough for AI",
+    "snippet": "DeepSeek's 'thinking with visual primitives' lets AI agents point to objects during reasoning—solving the reference gap that breaks multimodal",
+    "host_name": "www.mindstudio.ai",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/data-and-beyond/whats-inside-the-mysterious-paper-deepseek-withdrew-at-lightning-speed-4351004f7c69",
+    "name": "What's Inside the Mysterious Paper DeepSeek Withdrew at Lightning",
+    "snippet": "... DeepSeek posted a paper on GitHub titled “Thinking with Visual Primitives.” The paper went online on April 30th and was taken down by May ...\n... DeepSeek posted a paper on GitHub titled “Thinking with Visual Primitives. ... The reference gap leads to failures in tasks requiring ...",
+    "host_name": "medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/mitkox/Thinking-with-Visual-Primitives",
+    "name": "mitkox/Thinking-with-Visual-Primitives - GitHub",
+    "snippet": "our framework elevates visual primitives to minimal units of thought, effectively solving the Reference Gap in complex structural reasoning.",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2605.12586v1",
+    "name": "3D Primitives are a Spatial Language for VLMs - arXiv",
+    "snippet": "DeepSeek interleaves 2D points and bounding boxes (in pixel coordinates) into the chain of thought as referencing markers,",
+    "host_name": "arxiv.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=zUtPBexQRC0",
+    "name": "The Moment AI Learned to Point: DeepSeek's Visual Reasoning -",
+    "snippet": "What if multimodal AI does not fail because it cannot see, but because it cannot point? This blackboard explainer breaks down DeepSeek's ...",
+    "host_name": "www.youtube.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/LocalLLaMA/comments/1szwi1d/deepseek_released_thinkingwithvisualprimitives",
+    "name": "DeepSeek released 'Thinking-with-Visual-Primitives",
+    "snippet": "The core approach of this framework is to elevate spatial tokens—specifically coordinate points and bounding boxes—into the \"minimal units of ...",
+    "host_name": "www.reddit.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://genaiassembling.substack.com/p/deepseek-can-see-now-then-quietly",
+    "name": "DeepSeek Can See Now. Then Quietly Deleted the Paper",
+    "snippet": "Thinking with visual primitives doesn't mean visual reasoning is solved. What it does is make the model's visual reasoning more stable and more ...",
+    "host_name": "genaiassembling.substack.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.threads.com/@sung.kim.mw/post/DX0FcbGkq4N/deep-seek-ai-published-this-paper-and-took-it-down-thinking-with-visual?hl=en",
+    "name": "DeepSeek AI published this paper and took it down. - Threads",
+    "snippet": "Thinking with Visual Primitives. To close the reference gap, not merely improve perception, using few visual tokens. They propose to let the ...",
+    "host_name": "www.threads.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://eu.36kr.com/en/p/3789208597372165",
+    "name": "DeepSeek unveils its multimodal technology paradigm, thinking with",
+    "snippet": "This paper is titled \"Thinking with Visual Primitives\". The problem it poses hits the soft underbelly of almost all current multimodal large ...\nDeepSeek unveils its multimodal technology paradigm, thinking with visual primitives ... DeepSeek named this problem the \"Reference Gap ...",
+    "host_name": "eu.36kr.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

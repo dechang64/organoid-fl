@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12538981",
+    "name": "A knowledge-driven deep learning framework for organoid  - PMC",
+    "snippet": "To train and validate our framework, we curate a large-scale organoid dataset encompassing diverse tissue types and various microscopic imaging ...",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S0167779926000090",
+    "name": "Next-generation discovery: empowering organoid research with",
+    "snippet": "organoid datasets are high-dimensional and heterogeneous (microscopy images and videos, time-lapse tracking, Organoid: a versatile deep ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.nature.com/articles/s41592-025-02845-6",
+    "name": "Cell tracking with accurate error prediction | Nature Methods",
+    "snippet": "OrganoidTracker 2.0 is a highly competitive cell tracker, with output tracks containing errors at <0.5% per cell per frame for intestinal  ...",
+    "host_name": "www.nature.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2674-1172/4/4/30",
+    "name": "AI-Enhanced Patient-Derived Cancer Organoids: Integrating  - MDPI",
+    "snippet": "High-content, time-lapse imaging combined with deep learning enables dynamic phenotypic profiling, accurately quantifying changes in growth, morphology, and ...",
+    "host_name": "www.mdpi.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.biorxiv.org/content/10.1101/2022.01.13.476248.full",
+    "name": "OrganoID: a versatile deep learning platform for tracking  - bioRxiv",
+    "snippet": "Single-organoid tracking accuracy remained above 89% over a four-day time-lapse microscopy study. Automated single-organoid morphology analysis ...",
+    "host_name": "www.biorxiv.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://taylab.uchicago.edu/uploads/9/1/8/0/91804060/Organoid_plos_2022.pdf",
+    "name": "[PDF] OrganoID: A versatile deep learning platform for tracking  - Tay Lab",
+    "snippet": "Single-organoid tracking accuracy remained above 89% over a four-day time-lapse microscopy study. images and in time- lapse experiments.",
+    "host_name": "taylab.uchicago.edu",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://scholarcommons.sc.edu/cgi/viewcontent.cgi?article=1842&context=acorn_pub",
+    "name": "[PDF] A Knowledge-Driven Deep Learning Framework for Organoid",
+    "snippet": "Using the sequence of organoid images and segmentation results, the tracking module consistently tracks organoids over time.",
+    "host_name": "scholarcommons.sc.edu",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://neurips.cc/virtual/2024/poster/97645",
+    "name": "NeurIPS Poster MultiOrg: A Multi-rater Organoid-detection Dataset",
+    "snippet": "This dataset comprises over 400 high-resolution 2d microscopy images and curated annotations of more than 60,000 organoids. Deep Learning (DL) ...",
+    "host_name": "neurips.cc",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/396741278_A_knowledge-driven_deep_learning_framework_for_organoid_morphological_segmentation_and_characterization",
+    "name": "(PDF) A knowledge-driven deep learning framework for organoid",
+    "snippet": "To train and validate our framework, we curate a large-scale organoid dataset encompassing diverse tissue types and various microscopic imaging settings.",
+    "host_name": "www.researchgate.net",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3003597",
+    "name": "A deep learning-based computational pipeline predicts",
+    "snippet": "Here, we utilize deep learning to predict the differentiation path and resulting tissues in retinal organoids well before they become visually discernible. Our ...",
+    "host_name": "journals.plos.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,65 @@
+[
+  {
+    "url": "https://arxiv.org/html/2510.09586v1",
+    "name": "Vision Language Models: A Survey of 26K Papers (CVPR, ICLR",
+    "snippet": "Takeaways for readers about VLMs. We present a transparent, reproducible measurement of research trends across 26,104 accepted papers from CVPR, ICLR, and NeurIPS spanning 2023–2025.",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2510.14979v1",
+    "name": "From Pixels to Words – Towards Native Vision-Language",
+    "snippet": "In this paper, we clarify these challenges and outline guiding principles for constructing native VLMs.",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://news.mit.edu/2024/understanding-visual-knowledge-language-models-0617",
+    "name": "Understanding the visual knowledge of language models",
+    "snippet": "You’ve likely heard that a picture is worth a thousand words, but can a large language model (LLM) get the picture if it’s never seen images before? As it turns out, language models that are trained purely on text have a solid understanding of the visual world.",
+    "host_name": "news.mit.edu",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/org/science/article/pii/S1546221825001420",
+    "name": "A Review on Vision-Language-Based Approaches: Challenges and",
+    "snippet": "In this paper, we present an extensive review of Vision-Language Pre-training (VLP), starting with an in-depth investigation of its basic ideas and the development of important models.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openaccess.thecvf.com/content/CVPR2025/papers/Bi_Unveiling_Visual_Perception_in_Language_Models_An_Attention_Head_Analysis_CVPR_2025_paper.pdf",
+    "name": "Unveiling Visual Perception in Language Models: An Attention",
+    "snippet": "Recent advancements in Multimodal Large Language Mod-els (MLLMs) have demonstrated remarkable progress in visual understanding. This impressive leap raises a com-pelling question: how can language models, initially trained solely on linguistic data, effectively interpret and process visual content?",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.nature.com/articles/s42256-024-00963-y",
+    "name": "Visual cognition in multimodal large language models - Nature",
+    "snippet": "This paper evaluates the current state of vision-based large language models in the domains of intuitive physics, causal reasoning and intuitive psychology.",
+    "host_name": "www.nature.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openaccess.thecvf.com/content/CVPR2024/papers/Sheng_Towards_More_Unified_In-context_Visual_Understanding_CVPR_2024_paper.pdf",
+    "name": "Towards More Unified In-context Visual Understanding",
+    "snippet": "To address this issue, we present a new ICL framework for visual understanding with multi-modal output enabled. First, we quantize and embed both text and visual prompt into a unified representational space, structured as interleaved in-context sequences.",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  }
+]

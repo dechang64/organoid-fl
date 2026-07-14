@@ -1,0 +1,65 @@
+[
+  {
+    "url": "https://github.com/PCASOlab/FORLA",
+    "name": "GitHub - PCASOlab/FORLA: Code for NeurIPS2025 paper \"FORLA",
+    "snippet": "FORLA is released under the PENN ACADEMIC SOFTWARE LICENSE. See the LICENSE file for more details. If you have any questions about the code, please contact Guiqiu Liao liaoguiqiu@outlook.com.",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://mlanthology.org/neurips/2025/liao2025neurips-forla",
+    "name": "FORLA: Federated Object-Centric Representation Learning with",
+    "snippet": "We introduce FORLA, a novel framework for federated object-centric representation learning and feature adaptation across clients using unsupervised slot attention.",
+    "host_name": "mlanthology.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/abs/2506.02964",
+    "name": "[2506.02964] FORLA: Federated Object-centric Representation",
+    "snippet": "We introduce FORLA, a novel framework for federated object-centric representation learning and feature adaptation across clients using unsupervised slot attention.",
+    "host_name": "arxiv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://papers.neurips.cc/paper_files/paper/2025/file/923fd1695eaee59610c2bc033a9e2354-Paper-Conference.pdf",
+    "name": "FORLA: Federated Object-Centric Representation Learning with",
+    "snippet": "Figure 1 illustrates the proposed framework for federated object-centric representation learning and feature adaptation using Slot Attention. Clients share frozen features extracted from multiple vision foundation models.",
+    "host_name": "papers.neurips.cc",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://nips.cc/media/neurips-2025/Slides/117568.pdf",
+    "name": "FORLA: Federated Object-Centric Representation Learning with",
+    "snippet": "Self-supervised object-centric learning offers the right inductive bias for learning semantically meaningful representations. Federated learning across curated datasets integrates local, object-level knowledge across clients.",
+    "host_name": "nips.cc",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://papers.miccai.org/miccai-2025/paper/4725_paper.pdf",
+    "name": "Future Slot Prediction for Unsupervised Object Discovery in",
+    "snippet": "To address this challenge, we propose a dynamic temporal slot transformer (DTST) module that is trained both for temporal reasoning and for predicting the optimal future slot initialization.",
+    "host_name": "papers.miccai.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://neurips.cc/virtual/2025/poster/117568",
+    "name": "NeurIPS Poster FORLA: Federated Object-Centric Representation",
+    "snippet": "We introduce FORLA, a novel framework for federated object-centric representation learning and feature adaptation across clients using unsupervised slot attention.",
+    "host_name": "neurips.cc",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  }
+]

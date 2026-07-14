@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.nature.com/articles/s41592-025-02685-4",
+    "name": "Digitalized organoids: integrated pipeline for high-speed 3D analysis",
+    "snippet": "In this study, we introduce an AI-based multilevel segmentation and cellular topology pipeline for screening morphology and topology modifications in 3D cell ...\nIn this study, we introduce an AI-based multilevel segmentation and cellular topology pipeline for screening morphology and topology modifications in 3D cell culture at both the nuclear and ...",
+    "host_name": "www.nature.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pubmed.ncbi.nlm.nih.gov/40369245",
+    "name": "integrated pipeline for high-speed 3D analysis of organoid  - PubMed",
+    "snippet": "In this study, we introduce an AI-based multilevel segmentation and cellular topology pipeline for screening morphology and topology modifications in 3D cell ...",
+    "host_name": "pubmed.ncbi.nlm.nih.gov",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/anne-beghin-539b4421_digitalized-organoids-integrated-pipeline-activity-7328380727723548672--ID7",
+    "name": "Anne BEGHIN's Post - Digitalized organoids - LinkedIn",
+    "snippet": "We developed an integrated pipeline to digitally dissect organoids in 3D. These are not just 3D images, but interactive, data-rich reconstructions.",
+    "host_name": "www.linkedin.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://experiments.springernature.com/articles/10.1038/s41592-025-02685-4",
+    "name": "Digitalized organoids: integrated pipeline for high-speed 3D analysis",
+    "snippet": "Nature Methods. Digitalized organoids: integrated pipeline for high-speed 3D analysis of organoid structures using multilevel segmentation and cellular topology.\nIn this study, we introduce an AI-based multilevel segmentation and cellular topology pipeline for screening morphology and topology modifications in 3D cell culture at both the nuclear and cytoplasmic levels, as well as at the whole-organoid scale.",
+    "host_name": "experiments.springernature.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.biorxiv.org/content/10.1101/2023.11.08.566158v1",
+    "name": "Digitalized organoids: integrated pipeline for 3D high-speed analysis",
+    "snippet": "We present a novel, fine-tuned pipeline for screening morphology and topology modifications in 3D cell culture using multilevel segmentations and cellular ...",
+    "host_name": "www.biorxiv.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

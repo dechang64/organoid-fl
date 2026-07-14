@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11851800",
+    "name": "IDCC-SAM: A Zero-Shot Approach for Cell Counting in  - PMC - NIH",
+    "snippet": "SAM4Organoid is a zero-shot segmentation model designed specifically for organoid microscopy cellular images.",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2076-3417/15/21/11441",
+    "name": "Prototype-Guided Zero-Shot Medical Image Segmentation with Large",
+    "snippet": "Building on advances in promptable segmentation models, this work introduces a framework that integrates Large Vision-Language Model (LVLM) bounding box ...",
+    "host_name": "www.mdpi.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S146532492600040X",
+    "name": "Foundation model cascades enable zero-shot microscopy image",
+    "snippet": "The simplest zero-shot prompt instructs the model to count live and dead cells in the image and output the results as a JSON object.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://proceedings.iclr.cc/paper_files/paper/2025/file/59a9cc95f046e9125d8816ef971873e7-Paper-Conference.pdf",
+    "name": "[PDF] PROMPT AS KNOWLEDGE BANK: BOOST VISION - ICLR Proceedings",
+    "snippet": "We introduced StructuralGLIP, a novel zero-shot medical detection model that achieves fine-grained alignment between target descriptions and medical images.",
+    "host_name": "proceedings.iclr.cc",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://research.nvidia.com/labs/dvl/projects/sal4d",
+    "name": "Zero-Shot 4D Lidar Panoptic Segmentation - Research at NVIDIA",
+    "snippet": "We propose SAL-4D (Segment Anything in Lidar-4D), a method that utilizes multi-modal robotic sensor setups as a bridge to distill recent developments in Video ...",
+    "host_name": "research.nvidia.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openreview.net/forum?id=l0t2rumAvR",
+    "name": "Prompt as Knowledge Bank: Boost Vision-language model via",
+    "snippet": "Zero-shot medical detection can further improve detection performance without relying on annotated medical images even upon the fine-tuned ...",
+    "host_name": "openreview.net",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciopen.com/article/10.26599/BDMA.2024.9020058",
+    "name": "TV-SAM: Increasing Zero-Shot Segmentation Performance on",
+    "snippet": "This study presents a novel multimodal medical image zero-shot segmentation algorithm named the text-visual-prompt segment anything model ...",
+    "host_name": "www.sciopen.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://2025.midl.io/scientific-program",
+    "name": "Scientific Program - MIDL 2025 - Medical Imaging with Deep Learning",
+    "snippet": "Abstract: The Segment Anything Model (SAM) and similar models build a family of promptable foundation models (FMs) for image and video segmentation. The object ...",
+    "host_name": "2025.midl.io",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openaccess.thecvf.com/content/ICCV2025/html/Wang_Language-Driven_Multi-Label_Zero-Shot_Learning_with_Semantic_Granularity_ICCV_2025_paper.html",
+    "name": "ICCV 2025 Open Access Repository",
+    "snippet": "We propose a language-driven zero-shot multi-label learning framework to bridge associations among classes across multiple granularity levels through class ...",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://weidixie.github.io/research.html",
+    "name": "Research - Weidi Xie",
+    "snippet": "Open-vocabulary Semantic Segmentation with Frozen Vision-Language Models. ... Prompting Visual-Language Models for Efficient Video Understanding. Chen Ju ...",
+    "host_name": "weidixie.github.io",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

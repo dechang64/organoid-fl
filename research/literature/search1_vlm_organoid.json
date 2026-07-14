@@ -1,0 +1,65 @@
+[
+  {
+    "url": "https://www.nature.com/articles/s41592-025-02685-4",
+    "name": "Digitalized organoids: integrated pipeline for high-speed 3D",
+    "snippet": "A universal AI-powered pipeline for fast, precise and plug-and-play image analysis of diverse 3D cellular structures across multiple imaging resolutions.",
+    "host_name": "www.nature.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S2452199X23002761",
+    "name": "AI-enabled organoids: Construction, analysis, and application",
+    "snippet": "Organoids, miniature and simplified in vitro model systems that mimic the structure and function of organs, have attracted considerable interest due to their promising applications in disease modeling, drug screening, personalized medicine, and tissue engineering.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://link.springer.com/article/10.1186/s12915-025-02411-8",
+    "name": "A knowledge-driven deep learning framework for organoid",
+    "snippet": "In this paper, we present a knowledge-driven deep learning system named TransOrga-plus to automatically analyse organoid dynamics in a non-invasive manner. Given a bright-field microscopic image, TransOrga-plus detects organoids through a multi-modal transformer-based segmentation module.",
+    "host_name": "link.springer.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S2950348525000264",
+    "name": "Artificial intelligence unlocks the future of oral organoid",
+    "snippet": "In this review, we first summarize the main types of oral organoids in the field and their construction strategies. Then, we introduce their application in regenerative medicine and the modeling of oral disease.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://advanced.onlinelibrary.wiley.com/doi/10.1002/advs.202508534",
+    "name": "Multiscale Construction, Evaluation, and Application of",
+    "snippet": "Herein is presented a comprehensive multi-scale perspective encompassing dual-scale construction, four-dimensional evaluation, triple-point application, and an analysis of the current challenges faced by organoid technology, aiming to advance organoid research and its biomedical applications.",
+    "host_name": "advanced.onlinelibrary.wiley.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://xplorestaging.ieee.org/document/11084740",
+    "name": "Organoid-ICLIP: Class Imbalance-Aware Vision-Language",
+    "snippet": "Abstract: Visual analysis of brain organoid imaging is critical for advancing the understanding of in vitro organoid development. However, precise differentiation of mitotic stages remains challenging due to complex cellular morphology and limited imaging data.",
+    "host_name": "xplorestaging.ieee.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2313-7673/10/12/845",
+    "name": "Artificial Intelligence in Organoid-Based Disease  - MDPI",
+    "snippet": "This review aims to discuss how AI is reshaping organoid-based research by enhancing morphological image analysis, enabling dynamic modeling of organoid development, and facilitating the integration of genomics, transcriptomics, and proteomics for disease classification.",
+    "host_name": "www.mdpi.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  }
+]

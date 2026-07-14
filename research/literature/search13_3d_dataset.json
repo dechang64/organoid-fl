@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.cell.com/cell-reports-physical-science/fulltext/S2666-3864(25)00121-3?rss=yes",
+    "name": "Label-free cell imaging and tracking in 3D organoids",
+    "snippet": "Apr 7, 2025 — LabelFreeTracker enables 3D label-free image analysis of intestinal organoids . Predicts 3D cell membrane and nucleus based on bright - field images.",
+    "host_name": "www.cell.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pubmed.ncbi.nlm.nih.gov/36170389",
+    "name": "Segmentation and Tracking of Mammary Epithelial",
+    "snippet": "2023 · Cited by 33 — We present an automated and deep-learning-based workflow to quantitatively analyze the spatiotemporal development of mammary epithelial organoids .",
+    "host_name": "pubmed.ncbi.nlm.nih.gov",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.nature.com/articles/s44303-024-00046-y",
+    "name": "Label-free live cell recognition and tracking for biological",
+    "snippet": "2024 · Cited by 19 — Phase contrast time - lapse microscopy datasets with automated and manual cell tracking annotations. framework for generating 3D synthetic time - ...",
+    "host_name": "www.nature.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/363930891_Segmentation_and_Tracking_of_Mammary_Epithelial_Organoids_in_Brightfield_Microscopy",
+    "name": "Segmentation and Tracking of Mammary Epithelial",
+    "snippet": "The mammary epithelial organoid dataset was collected by Lucia Hradecká [13] as brightfield two-dimensional time - lapse (2D+t) sequences of mammary epithelial ...",
+    "host_name": "www.researchgate.net",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://neurips.cc/virtual/2024/poster/97645",
+    "name": "MultiOrg: A Multi-rater Organoid-detection Dataset",
+    "snippet": "Dec 9, 2024 — This dataset comprises over 400 high-resolution 2d microscopy images and curated annotations of more than 60,000 organoids .",
+    "host_name": "neurips.cc",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.cell.com/cell-reports-physical-science/pdfExtended/S2666-3864(25)00121-3",
+    "name": "Label-free cell imaging and tracking in 3D organoids",
+    "snippet": "2025 · Cited by 17 — We acquired time - lapse imaging data consisting of 916 z stack images with accompanying Hoechst and EpCam staining from 91 WT organoids and ...",
+    "host_name": "www.cell.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://amolf.nl/publications/label-free-cell-imaging-and-tracking-in-3d-organoids",
+    "name": "Label-free cell imaging and tracking in 3D organoids",
+    "snippet": "Apr 16, 2025 — Here, we introduce LabelFreeTracker, a label-free machine-learning-based method to visualize the nuclei and membranes in bright - field images of ...",
+    "host_name": "amolf.nl",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2306-5354/12/11/1216",
+    "name": "Enhanced U-Net-Based Deep Learning Model for",
+    "snippet": "2025 · Cited by 7 — The method was validated on bright - field organoid images and demonstrated robust performance, achieving an accuracy of 98.15%, a dice similarity coefficient of ...",
+    "host_name": "www.mdpi.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2410.14612v1",
+    "name": "MultiOrg: A Multi-rater Organoid-detection Dataset",
+    "snippet": "Oct 18, 2024 — This dataset comprises over 400 high-resolution 2d microscopy images and curated annotations of more than 60,000 organoids . Most importantly, it ...\nIn this work, we release MultiOrg, a large multi-rater dataset for organoid detection in 2d microscopy images. Our dataset consists of more than 60,000 annotated lung organoids, labeled by two expert annotators.",
+    "host_name": "arxiv.org",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://idr.openmicroscopy.org",
+    "name": "IDR: Image Data Resource",
+    "snippet": "The Image Data Resource (IDR) is a public repository of image datasets from published scientific studies, where the community can submit, search and access high-quality bio-image data.",
+    "host_name": "idr.openmicroscopy.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.mdpi.com/2079-9292/14/24/4785",
+    "name": "Zero-Shot Industrial Anomaly Detection via CLIP-DINOv2  - MDPI",
+    "snippet": "This paper introduces a zero-shot framework leveraging multimodal feature fusion and stabilized attention pooling. cross-domain scenarios.",
+    "host_name": "www.mdpi.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/398367800_Zero-Shot_Industrial_Anomaly_Detection_via_CLIP-DINOv2_Multimodal_Fusion_and_Stabilized_Attention_Pooling",
+    "name": "(PDF) Zero-Shot Industrial Anomaly Detection via CLIP-DINOv2",
+    "snippet": "This paper introduces a zero-shot framework leveraging multimodal feature fusion and stabilized attention pooling.",
+    "host_name": "www.researchgate.net",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2411.19346v3",
+    "name": "CLIP meets DINO for Tuning Zero-Shot Classifier using  - arXiv",
+    "snippet": "In this paper, we propose a label-free prompt-tuning method that leverages the rich visual features of self-supervised learning models (DINO) and the broad ...",
+    "host_name": "arxiv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://cvpr.thecvf.com/virtual/2025/poster/33482",
+    "name": "CVPR Poster DINOv2 Meets Text: A Unified Framework for Image",
+    "snippet": "DINOv2, a widely used self-supervised visual encoder. CLIP-like model ・ achieving state-of-the-art results in zero-shot classification ・ zero-shot image clas ...",
+    "host_name": "cvpr.thecvf.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://bmvc2025.bmva.org/proceedings/281",
+    "name": "CLIP meets DINO for Tuning Zero-Shot Classifier using",
+    "snippet": "In this paper, we propose a label-free prompt-tuning method that leverages the rich visual features extracted using DINO SSL model and the broad contextual ...",
+    "host_name": "bmvc2025.bmva.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://bmva-archive.org.uk/bmvc/2025/assets/papers/Paper_281/paper.pdf",
+    "name": "[PDF] CLIP meets DINO for Tuning Zero-Shot Classifier using",
+    "snippet": "CLIP makes it an ideal choice for tasks such as zero-shot recognition, image captioning, visual question answering, and more.",
+    "host_name": "bmva-archive.org.uk",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://iccv.thecvf.com/virtual/2025/poster/2571",
+    "name": "Frequency Enhanced CLIP Model for Zero-Shot Anomaly Detection and",
+    "snippet": "the proposed FE-CLIP has good generalization across different domains and achieves superior zero-shot performance of detecting and segmenting anomalies",
+    "host_name": "iccv.thecvf.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.ecva.net/papers/eccv_2024/papers_ECCV/papers/05096.pdf",
+    "name": "[PDF] AdaCLIP: Adapting CLIP with Hybrid Learnable Prompts for Zero-Shot",
+    "snippet": "AdaCLIP outperforms other ZSAD methods and can generalize better to different categories and even domains.",
+    "host_name": "www.ecva.net",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=KSZiJ4k28b4",
+    "name": "DINOv2 - YouTube",
+    "snippet": "DinoV2 AI Feature Detection and Feature Matching from Meta AI. Kevin Wood | Robotics & AI•12K views · 19:51 · Go to channel IBM Technology ...",
+    "host_name": "www.youtube.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@pranavprakash4777/clip-dino-sam-and-git-the-2025-computer-vision-stack-1c55ec5db42c",
+    "name": "CLIP, DINO, SAM, and GIT: The 2025 Computer Vision Stack - Medium",
+    "snippet": "CLIP enables zero-shot classification, where you don't need labeled training data. Just describe the class in text. Use Cases: Prompt-based ...",
+    "host_name": "medium.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
