@@ -8,6 +8,7 @@ echo  5 prompt pairs × 4 datasets (MultiOrg + Mouse B1/B2/B3 + Intestinal)
 echo ============================================================
 echo.
 
+pip install open_clip_torch 2>nul
 python scripts\multiorg\clip_zeroshot_eval.py --device cuda:0
 if %errorlevel% neq 0 (
     echo [ERROR] CLIP eval failed!
