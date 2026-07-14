@@ -176,10 +176,12 @@ def render():
         """)
 
     st.markdown("---")
-    st.markdown("### 🔄 Multi-Dataset Joint Training: Big Improvement!")
+    st.markdown("### 🔄 Multi-Dataset Joint Training (Same-Domain)")
 
     st.markdown("""
     Training on MultiOrg (100) + Mouse Liver (134) + Intestinal (2744) jointly.
+    ⚠️ All three datasets are in the training set — these are **same-domain** results, not cross-domain.
+    Need leave-one-out for true cross-domain validation.
     """)
 
     col3, col4 = st.columns(2)
