@@ -214,6 +214,12 @@ def main():
     all_image_names = []
     
     print(f"\nRunning inference on {len(dataset)} crops...")
+    if len(dataset) == 0:
+        print("[ERROR] No crops found! Check:")
+        print(f"  metadata: {args.metadata}")
+        print(f"  crops-dir: {args.crops_dir}")
+        print("  Ensure generate_intestinal_crops.py produced crops before running eval.")
+        sys.exit(1)
     with torch.no_grad():
         for batch in loader:
             images = batch['image'].to(device)
