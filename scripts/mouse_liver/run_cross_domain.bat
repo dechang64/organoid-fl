@@ -115,7 +115,7 @@ REM ============================================================
 REM Pack results into zip
 REM ============================================================
 echo Packing results into zip...
-powershell -Command "Compress-Archive -Path 'results\cross_domain_b1\cross_domain_results.json','results\cross_domain_b1\embeddings.npy','results\cross_domain_b1\labels.npy','results\cross_domain_b1\confs.npy','results\cross_domain_b2\cross_domain_results.json','results\cross_domain_b2\embeddings.npy','results\cross_domain_b2\labels.npy','results\cross_domain_b2\confs.npy','results\cross_domain_b3\cross_domain_results.json','results\cross_domain_b3\embeddings.npy','results\cross_domain_b3\labels.npy','results\cross_domain_b3\confs.npy' -DestinationPath '%OUT_ZIP%' -Force"
+powershell -Command "Compress-Archive -Path 'results\cross_domain_b1','results\cross_domain_b2','results\cross_domain_b3' -DestinationPath '%OUT_ZIP%' -Force"
 
 if exist %OUT_ZIP% (
     echo.
