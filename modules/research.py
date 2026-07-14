@@ -297,7 +297,48 @@ def render():
     st.markdown("""
     **Breakthrough finding**: CLIP's text-visual alignment space is cross-domain stable.
     - Mouse B1: DINOv2 0.29 (anti-prediction) → CLIP 0.86 (+0.57, no training!)
-    - CLIP zero-shot uses text prompts like "a 3D multicellular organoid structure" vs "a non-organoid region"
     - This validates the NLP analogy: semantic alignment (CLIP) > pure visual features (DINOv2)
-    - Next: CLIP + SupCon joint training to see if supervised learning on CLIP features can exceed conf
     """)
+
+    st.markdown("---")
+    st.markdown("### ⚠️ Training Destroys Zero-Shot Generalization")
+
+    st.markdown("""
+    A1 (CLIP+SupCon LOO) and A3 (CoOp Prompt Tuning LOO) both **underperform** CLIP zero-shot.
+    """)
+
+    col5, col6 = st.columns(2)
+
+    with col5:
+        import plotly.graph_objects as go
+        methods = ["DINOv2\nLOO", "CLIP\nZero-Shot", "CLIP+SupCon\nLOO", "CoOp\nLOO", "Conf\nBaseline"]
+        avg_auc = [0.58, 0.73, 0.58, 0.64, 0.94]
+        colors = ["#e74c3c", "#3498db", "#e67e22", "#f1c40f", "#2ecc71"]
+
+        fig4 = go.Figure()
+        fig4.add_trace(go.Bar(x=methods, y=avg_auc, marker_color=colors,
+                              text=[f"{v:.2f}" for v in avg_auc], textposition="auto"))
+        fig4.update_layout(height=350, title="Average Cross-Domain AUC (4 datasets)",
+                           yaxis_title="AUC", yaxis_range=[0, 1.0],
+                           template="plotly_dark", showlegend=False)
+        st.plotly_chart(fig4, use_container_width=True)
+
+    with col6:
+        st.markdown("#### Full Comparison")
+        st.markdown("""
+        | Dataset | DINOv2 LOO | CLIP ZS | CLIP+SC | CoOp | Conf |
+        |---------|-----------|---------|---------|------|------|
+        | MultiOrg | — | 0.73 | 0.95 | 0.62 | 0.87 |
+        | Mouse B1 | 0.49 | **0.86** | 0.50 | 0.67 | 0.91 |
+        | Mouse B2 | 0.56 | **0.66** | 0.57 | 0.58 | 0.98 |
+        | Mouse B3 | 0.82 | **0.69** | 0.45 | 0.65 | 0.92 |
+        | Intest. | 0.58 | **0.69** | 0.50 | 0.69 | 0.92 |
+        | **Avg** | 0.58 | **0.73** | 0.58 | 0.64 | **0.94** |
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        - 🟢 CLIP zero-shot (no training) = best cross-domain slot
+        - 🔴 All training hurts cross-domain (overfits to source)
+        - 🟢 Conf (0.94) still champion
+        - → Prompt engineering, VLM reasoning, 3D temporal
+        """)
