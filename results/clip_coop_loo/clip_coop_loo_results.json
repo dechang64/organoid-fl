@@ -1,0 +1,87 @@
+{
+  "multiorg": {
+    "tag": "loo_coop_multiorg",
+    "train_on": [
+      "mouse_b1",
+      "mouse_b2",
+      "mouse_b3",
+      "intestinal"
+    ],
+    "test_on": "multiorg",
+    "n_train": 2878,
+    "n_test": 100,
+    "slot_auc": 0.6175999999999999,
+    "conf_auc": 0.8712000000000001,
+    "slot_ap": 0.5922410836101978,
+    "conf_ap": 0.9011053120768919,
+    "delta_auc": -0.25360000000000016
+  },
+  "mouse_b1": {
+    "tag": "loo_coop_mouse_b1",
+    "train_on": [
+      "multiorg",
+      "mouse_b2",
+      "mouse_b3",
+      "intestinal"
+    ],
+    "test_on": "mouse_b1",
+    "n_train": 2952,
+    "n_test": 26,
+    "slot_auc": 0.6666666666666667,
+    "conf_auc": 0.9130434782608695,
+    "slot_ap": 0.946088840657789,
+    "conf_ap": 0.988410788958993,
+    "delta_auc": -0.24637681159420277
+  },
+  "mouse_b2": {
+    "tag": "loo_coop_mouse_b2",
+    "train_on": [
+      "multiorg",
+      "mouse_b1",
+      "mouse_b3",
+      "intestinal"
+    ],
+    "test_on": "mouse_b2",
+    "n_train": 2930,
+    "n_test": 48,
+    "slot_auc": 0.584045584045584,
+    "conf_auc": 0.9772079772079773,
+    "slot_ap": 0.859193408843429,
+    "conf_ap": 0.9946984200020638,
+    "delta_auc": -0.3931623931623932
+  },
+  "mouse_b3": {
+    "tag": "loo_coop_mouse_b3",
+    "train_on": [
+      "multiorg",
+      "mouse_b1",
+      "mouse_b2",
+      "intestinal"
+    ],
+    "test_on": "mouse_b3",
+    "n_train": 2918,
+    "n_test": 60,
+    "slot_auc": 0.6549999999999999,
+    "conf_auc": 0.91625,
+    "slot_ap": 0.7402156809439747,
+    "conf_ap": 0.9632075709595641,
+    "delta_auc": -0.2612500000000001
+  },
+  "intestinal": {
+    "tag": "loo_coop_intestinal",
+    "train_on": [
+      "multiorg",
+      "mouse_b1",
+      "mouse_b2",
+      "mouse_b3"
+    ],
+    "test_on": "intestinal",
+    "n_train": 234,
+    "n_test": 2744,
+    "slot_auc": 0.6898279933956151,
+    "conf_auc": 0.9180450184964575,
+    "slot_ap": 0.9126542284130451,
+    "conf_ap": 0.9839110348948406,
+    "delta_auc": -0.2282170251008424
+  }
+}

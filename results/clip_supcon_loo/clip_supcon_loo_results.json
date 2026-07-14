@@ -1,0 +1,47 @@
+{
+  "multiorg": {
+    "tag": "loo_clip_multiorg",
+    "train_on": [
+      "mouse_b1",
+      "mouse_b3"
+    ],
+    "test_on": "multiorg",
+    "n_train": 30,
+    "n_test": 100,
+    "best_slot_auc": 0.9496,
+    "conf_auc": 0.8712000000000001,
+    "slot_ap": 0.92125,
+    "conf_ap": 0.9011053120768919,
+    "delta_auc": 0.07839999999999991
+  },
+  "mouse_b1": {
+    "tag": "loo_clip_mouse_b1",
+    "train_on": [
+      "multiorg",
+      "mouse_b3"
+    ],
+    "test_on": "mouse_b1",
+    "n_train": 107,
+    "n_test": 23,
+    "best_slot_auc": 0.5,
+    "conf_auc": 0.9545454545454546,
+    "slot_ap": 0.9565217391304348,
+    "conf_ap": 0.9980237154150196,
+    "delta_auc": -0.4545454545454546
+  },
+  "mouse_b3": {
+    "tag": "loo_clip_mouse_b3",
+    "train_on": [
+      "multiorg",
+      "mouse_b1"
+    ],
+    "test_on": "mouse_b3",
+    "n_train": 123,
+    "n_test": 7,
+    "best_slot_auc": 0.5,
+    "conf_auc": 0.9166666666666666,
+    "slot_ap": 0.42857142857142855,
+    "conf_ap": 0.9166666666666665,
+    "delta_auc": -0.41666666666666663
+  }
+}
