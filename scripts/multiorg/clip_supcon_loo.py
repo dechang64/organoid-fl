@@ -369,11 +369,11 @@ def run_loo_experiment(args):
 
     all_results = {}
 
-    for test_ds in available:
-        train_ds_list = [d for d in available if d != test_ds]
+    for test_ds_name in available:
+        train_ds_list = [d for d in available if d != test_ds_name]
 
         print(f"\n{'='*40}")
-        print(f"  LOO: train on {train_ds_list} → test on {test_ds}")
+        print(f"  LOO: train on {train_ds_list} → test on {test_ds_name}")
         print(f"{'='*40}")
 
         # Prepare train data
@@ -388,20 +388,20 @@ def run_loo_experiment(args):
         )
 
         # Prepare test data
-        test_features = all_features[test_ds]
-        test_labels = torch.tensor(all_labels[test_ds], dtype=torch.long)
-        test_confs = torch.tensor(all_confs[test_ds], dtype=torch.float)
+        test_features = all_features[test_ds_name]
+        test_labels = torch.tensor(all_labels[test_ds_name], dtype=torch.long)
+        test_confs = torch.tensor(all_confs[test_ds_name], dtype=torch.float)
 
         print(f"  Train: {len(train_features)} crops (TP={train_labels.sum()}, FP={len(train_labels)-train_labels.sum()})")
         print(f"  Test:  {len(test_features)} crops (TP={test_labels.sum()}, FP={len(test_labels)-test_labels.sum()})")
 
         # Create datasets
-        train_ds = CLIPFeatureDataset(train_features, train_labels, train_confs, augment=True)
-        test_ds = CLIPFeatureDataset(test_features, test_labels, test_confs, augment=False)
+        train_ds_obj = CLIPFeatureDataset(train_features, train_labels, train_confs, augment=True)
+        test_ds_obj = CLIPFeatureDataset(test_features, test_labels, test_confs, augment=False)
 
-        train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
-                                  drop_last=True, num_workers=0)
-        test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False,
+        train_loader = DataLoader(train_ds_obj, batch_size=args.batch_size, shuffle=True,
+                                  drop_last=False, num_workers=0)
+        test_loader = DataLoader(test_ds_obj, batch_size=args.batch_size, shuffle=False,
                                  num_workers=0)
 
         # Build model
@@ -442,10 +442,10 @@ def run_loo_experiment(args):
         print(f"  Conf AUC: {best_metrics['conf_auc']:.4f}")
         print(f"  Δ AUC: {best_auc - best_metrics['conf_auc']:+.4f}")
 
-        all_results[test_ds] = {
-            'tag': f'loo_clip_{test_ds}',
+        all_results[test_ds_name] = {
+            'tag': f'loo_clip_{test_ds_name}',
             'train_on': train_ds_list,
-            'test_on': test_ds,
+            'test_on': test_ds_name,
             'n_train': len(train_features),
             'n_test': len(test_features),
             'best_slot_auc': float(best_auc),

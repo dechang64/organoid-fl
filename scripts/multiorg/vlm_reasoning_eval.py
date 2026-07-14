@@ -87,30 +87,58 @@ def load_metadata(meta_path):
     return items
 
 
-def call_vlm(prompt, image_path, timeout=60):
+def call_vlm(prompt, image_path, timeout=120, retry=3):
     """Call VLM via z-ai Node.js SDK (bypass CLI for reliability)."""
     import subprocess
-    try:
-        script_path = Path(__file__).parent / 'vlm_call.mjs'
-        cmd = ['bun', 'run', str(script_path), prompt, str(image_path)]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    import time as _time
 
-        # stdout has JSON content
-        output = result.stdout.strip()
-        if output:
+    script_path = Path(__file__).parent / 'vlm_call.mjs'
+
+    # Set NODE_PATH to find z-ai-web-dev-sdk (global bun install)
+    env = os.environ.copy()
+    bun_global = os.path.expanduser('~/.bun/install/global/node_modules')
+    if os.path.isdir(bun_global):
+        existing = env.get('NODE_PATH', '')
+        env['NODE_PATH'] = bun_global + (os.pathsep + existing if existing else '')
+
+    for attempt in range(retry):
+        try:
+            cmd = ['bun', 'run', str(script_path), prompt, str(image_path)]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
+
+            output = result.stdout.strip()
+            if not output:
+                _time.sleep(2)
+                continue
+
             try:
                 content = json.loads(output)
-                # content is the message content string, parse JSON from it
-                import re
-                json_match = re.search(r'\{[^}]+\}', content)
-                if json_match:
-                    return json.loads(json_match.group())
             except:
-                pass
+                _time.sleep(2)
+                continue
 
-        return None
-    except Exception as e:
-        return None
+            # Check for error from VLM
+            if isinstance(content, dict) and 'error' in content:
+                _time.sleep(3 * (attempt + 1))
+                continue
+
+            # content is the message content string, parse JSON from it
+            import re
+            json_match = re.search(r'\{[^}]+\}', str(content))
+            if json_match:
+                try:
+                    return json.loads(json_match.group())
+                except:
+                    pass
+
+            _time.sleep(1)
+
+        except subprocess.TimeoutExpired:
+            pass
+        except Exception:
+            pass
+
+    return None
 
 
 def find_crop_path(item, crops_dir):
@@ -160,37 +188,43 @@ def evaluate_dataset(ds_name, meta_path, crops_dir, max_crops=None, enable_step3
     all_scores = []
     all_confs = []
     all_labels = []
-    
+    all_details = []
+    n_vlm_ok = 0
+    n_vlm_fail = 0
+
     for i, item in enumerate(items):
         crop_path = find_crop_path(item, crops_dir)
         if not crop_path:
             continue
-        
+
         # Step 1: 全局评估
         result1 = call_vlm(PROMPT_STEP1, crop_path)
-        
+
         if result1 and 'is_organoid' in result1:
             score = float(result1.get('confidence', 0.5))
             if not result1['is_organoid']:
                 score = 1.0 - score
+            n_vlm_ok += 1
         else:
             score = 0.5  # fallback if VLM fails
-        
-        # Step 3: 对比推理 (for uncertain samples)
-        if enable_step3 and tp_refs and 0.3 < score < 0.7:
-            ref_path = tp_refs[i % len(tp_refs)]
-            # Create comparison image (side by side)
-            # For now, just use step 1 score as fallback
-            # TODO: create side-by-side comparison image
-            pass
-        
+            n_vlm_fail += 1
+
         all_scores.append(score)
         all_confs.append(item['confidence'])
         all_labels.append(1 if item['matched'] else 0)
-        
+        all_details.append({
+            'cache_key': item.get('cache_key', ''),
+            'label': 1 if item['matched'] else 0,
+            'vlm_is_organoid': result1.get('is_organoid') if result1 else None,
+            'vlm_confidence': result1.get('confidence') if result1 else None,
+            'score': score,
+            'detector_conf': item['confidence'],
+        })
+
         if (i+1) % 10 == 0 or i == len(items) - 1:
             print(f"    [{i+1}/{len(items)}] "
-                  f"TP={sum(all_labels)}, FP={len(all_labels)-sum(all_labels)}")
+                  f"TP={sum(all_labels)}, FP={len(all_labels)-sum(all_labels)}, "
+                  f"VLM ok={n_vlm_ok}, fail={n_vlm_fail}")
     
     scores = np.array(all_scores)
     confs = np.array(all_confs)
@@ -209,11 +243,14 @@ def evaluate_dataset(ds_name, meta_path, crops_dir, max_crops=None, enable_step3
         'n_crops': len(labels),
         'n_tp': int(sum(labels)),
         'n_fp': int(len(labels) - sum(labels)),
+        'n_vlm_ok': n_vlm_ok,
+        'n_vlm_fail': n_vlm_fail,
         'slot_auc': float(slot_auc),
         'conf_auc': float(conf_auc),
         'slot_ap': float(slot_ap),
         'conf_ap': float(conf_ap),
         'delta_auc': float(slot_auc - conf_auc),
+        'predictions': all_details,
     }
 
 
