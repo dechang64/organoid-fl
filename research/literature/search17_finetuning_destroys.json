@@ -1,0 +1,65 @@
+[
+  {
+    "url": "https://arxiv.org/abs/2501.15377",
+    "name": "[2501.15377] Fine Tuning without Catastrophic Forgetting via",
+    "snippet": "Adapting deep learning models to new domains often requires computationally intensive retraining and risks catastrophic forgetting. While fine-tuning enables domain-specific adaptation, it can reduce robustness to distribution shifts, impacting out-of-distribution (OOD) performance.",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/abs/2402.09613",
+    "name": "[2402.09613] Quantified Task Misalignment to Inform PEFT: An",
+    "snippet": "In this paper, we analyze the relation between task difficulty in the CLIP model and the performance of several simple parameter-efficient fine-tuning methods through the lens of domain generalization and catastrophic forgetting.",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://iclr.cc/virtual/2024/21197",
+    "name": "Quantified Task Misalignment to Inform PEFT: An  - ICLR",
+    "snippet": "In this paper, we analyze the relation between task difficulty in the CLIP model and the performance of several simple parameter-efficient fine-tuning methods through the lens of domain generalization and catastrophic forgetting.",
+    "host_name": "iclr.cc",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.emergentmind.com/topics/zero-shot-and-fine-tuning-evaluations",
+    "name": "Zero-shot and Fine-Tuning Evaluations",
+    "snippet": "A concise overview of zero-shot and fine-tuning evaluations, detailing their methodologies, metrics, and trade-offs in modern large-scale models.",
+    "host_name": "www.emergentmind.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://aclanthology.org/2024.findings-emnlp.249",
+    "name": "Revisiting Catastrophic Forgetting in Large Language Model",
+    "snippet": "Catastrophic Forgetting (CF) means models forgetting previously acquired knowledge when learning new data. It compromises the effectiveness of large language models (LLMs) during fine-tuning, yet the underlying causes have not been thoroughly investigated.",
+    "host_name": "aclanthology.org",
+    "rank": 4,
+    "date": "Jul 11, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://mbrenndoerfer.com/writing/catastrophic-forgetting-fine-tuning-mitigation",
+    "name": "Catastrophic Forgetting in Fine-Tuning: Causes & Mitigation",
+    "snippet": "Fine-tune GPT on medical text, and it might lose fluency in general English. This phenomenon, known as catastrophic forgetting, represents one of the central challenges in adapting powerful pre-trained models to specific domains. Think of it as retraining a concert pianist to play heavy metal.",
+    "host_name": "mbrenndoerfer.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/10.1145/3664647.3681213",
+    "name": "Towards Robustness Prompt Tuning with Fully Test-Time",
+    "snippet": "To improve robustness, mitigate overfitting, and reduce bias toward outlying samples, we propose a novel method: Self-Text Distillation with Conjugate Pseudo-labels (SCP), designed to enhance CLIP's zero-shot generalization.",
+    "host_name": "dl.acm.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  }
+]

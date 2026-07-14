@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://arxiv.org/html/2510.09867v1",
+    "name": "Cluster-Aware Prompt Ensemble Learning for Few-Shot Vision",
+    "snippet": "CLIP achieve zero-shot transfer across various tasks by pre-training on numerous image-text pairs.",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@satojkovic/prompt-ensemble-in-zero-shot-classification-using-clip-e8e1b7b23bb1",
+    "name": "Prompt Ensemble in Zero-shot Classification using CLIP - Medium",
+    "snippet": "In this blog post, we've delved into the realm of prompt ensemble, a powerful technique for enhancing CLIP's zero-shot classification capabilities.\nWe implemented and pre-trained CLIP and experimented with a zero-shot classification prompt ensemble. Based on Implementing CLIP With PyTorch Lightning, replacing loss calculation with...",
+    "host_name": "medium.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://proceedings.mlr.press/v202/allingham23a/allingham23a.pdf",
+    "name": "[PDF] A Simple Zero-shot Prompt Weighting Technique to Improve Prompt",
+    "snippet": "We present an algorithm for automatically scoring the importance of prompts in a large pool given a specific downstream task when using text-image models for.",
+    "host_name": "proceedings.mlr.press",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/10.1145/3731715.3733328",
+    "name": "Effective Zero-shot Classification with Hundreds of Multi-modal CLIPs",
+    "snippet": "CLIP is a multi-modal model that bridges the gap between images and text, showing remarkable zero-shot inference power and image-text retrieval capabilities.\nCLIP is a multi-modal model that bridges the gap between images and text, showing remarkable zero-shot inference power and image-text retrieval capabilities. However, it remains a weaker classifier compared to fine-tuned CLIP on downstream task datasets.",
+    "host_name": "dl.acm.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/satojkovic/clip-pytorch",
+    "name": "CLIP Prompt Engineering and Ensemble with PyTorch - GitHub",
+    "snippet": "This repository offers a PyTorch implementation of OpenAI's CLIP model, specifically focusing on prompt engineering and ensemble techniques to enhance zero- ...",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.pinecone.io/learn/series/image-search/zero-shot-image-classification-clip",
+    "name": "Zero-shot Image Classification with OpenAI's CLIP - Pinecone",
+    "snippet": "Zero-shot image classification with CLIP is a fascinating use case for high-performance image classification with minimal effort and zero fine-tuning required.",
+    "host_name": "www.pinecone.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S1110016826000402",
+    "name": "Beyond pixels: Zero-shot classification of chest X-ray reports via",
+    "snippet": "Presents a novel zero-shot learning method for classifying chest X-ray reports using LLMs and prompt engineering. Ensemble Prompting, multiple distinct prompts ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=8o701AEoZ8I",
+    "name": "CLIP: OpenAI's amazing new zero-shot image classifier - YouTube",
+    "snippet": "OpenAI drops a bomb on the vision world, learn about and try out CLIP in this video, connecting text and images.",
+    "host_name": "www.youtube.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openai.com/index/clip",
+    "name": "CLIP: Connecting text and images - OpenAI",
+    "snippet": "CLIP learns from unfiltered, highly varied, and highly noisy data, and is intended to be used in a zero-shot manner. We know from GPT‑2 and 3 ...",
+    "host_name": "openai.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11323634",
+    "name": "Contrastive Learning from Unpaired Medical Images and Text - PMC",
+    "snippet": "We prove that MedCLIP is a simple yet effective framework: it outperforms state-of-the-art methods on zero-shot prediction, supervised classification, and image ...",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

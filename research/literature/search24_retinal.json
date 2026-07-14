@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3003597",
+    "name": "A deep learning-based computational pipeline predicts",
+    "snippet": "Here, we utilize deep learning to predict the differentiation path and resulting tissues in retinal organoids well before they become visually discernible.",
+    "host_name": "journals.plos.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12843511",
+    "name": "A deep learning-based computational pipeline predicts  - PMC",
+    "snippet": "This study uses deep learning to predict the differentiation path and resulting tissues in retinal organoids, and can inform the design of ...",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.biorxiv.org/content/10.1101/2025.02.19.639061v1",
+    "name": "Deep learning predicts tissue outcomes in retinal organoids - bioRxiv",
+    "snippet": "Here, we utilize deep learning to predict the differentiation path and resulting tissues in retinal organoids well before they become visually ...",
+    "host_name": "www.biorxiv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/389267258_Deep_learning_predicts_tissue_outcomes_in_retinal_organoids",
+    "name": "Deep learning predicts tissue outcomes in retinal organoids",
+    "snippet": "Here, we utilize deep learning to predict the differentiation path and resulting tissues in retinal organoids well before they become visually ...",
+    "host_name": "www.researchgate.net",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.frontiersin.org/journals/cellular-neuroscience/articles/10.3389/fncel.2020.00171/full",
+    "name": "Convolutional Neural Networks Can Predict Retinal Differentiation in",
+    "snippet": "We have developed a deep learning-based computer algorithm to recognize and predict retinal differentiation in stem cell-derived organoids ...",
+    "host_name": "www.frontiersin.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://arxiv.org/html/2509.14921v1",
+    "name": "Trade-offs in Cross-Domain Generalization of Foundation Model",
+    "snippet": "Our analysis includes zero-shot and linear-probe evaluations, revealing how task-specific adaptations impact the model's broader capabilities.",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13205931",
+    "name": "Comparative Analysis of General-Purpose vs. Domain  - PMC",
+    "snippet": "These results indicate that linear probing effectively leverages pretrained representations and can outperform fine-tuning in certain cases, particularly for ...",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openreview.net/forum?id=V1aCgqLTeY&noteId=HBpnH8tzEs",
+    "name": "Comparing Foundation Models for Medical Images: A Study on Limited",
+    "snippet": "For large amounts of data, the ResNet-50 outperforms the foundation models for linear probing and achieves comparable performance for full fine-tuning.",
+    "host_name": "openreview.net",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://neurips.cc/virtual/2025/poster/115576",
+    "name": "Linearization Explains Fine-Tuning in Large Language Models",
+    "snippet": "We specifically analyze how close the fully linear and the linearized fine-tuning optimizations are,",
+    "host_name": "neurips.cc",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://taharchettaoui.github.io/Generalization-of-FM-for-Biometric_web",
+    "name": "Trade-offs in Cross-Domain Generalization of Foundation Model",
+    "snippet": "Our results indicate that finetuned models suffer from over-specialization, especially when finetuned for complex tasks of FR. CLIP outperforms the fine-tuned ...",
+    "host_name": "taharchettaoui.github.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pixelscientia.com/articles/how-foundation-models-are-revolutionizing-pathology-ai",
+    "name": "How Foundation Models Are Revolutionizing Pathology AI",
+    "snippet": "Start simple with linear probing. As complexity or domain specificity increases, move toward fine-tuning, continued pretraining, or full model ...",
+    "host_name": "pixelscientia.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://snorkel.ai/blog/boost-foundation-model-results-with-linear-probing-fine-tuning",
+    "name": "Boost foundation model results with linear probing and fine-tuning",
+    "snippet": "Linear probing freezes the foundation model and trains a head on top. Fine-tuning updates all the parameters of the model. Which method does ... Missing: tradeoff generalization 2025",
+    "host_name": "snorkel.ai",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S016926072500611X",
+    "name": "Benchmarking foundation models and parameter-efficient fine-tuning for",
+    "snippet": "In few-shot settings, FMs showed limited generalization, with linear probing yielding the most stable results. Conclusions: No single fine-tuning strategy ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://icml.cc/virtual/2025/poster/43707",
+    "name": "ICML Poster In-Context Fine-Tuning for Time-Series Foundation Models",
+    "snippet": "We do two kinds of fine-tuning: • Full: All weights in the model are updated during fine-tuning. • Linear Probing (LP): We hold the transformer weights ...",
+    "host_name": "icml.cc",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/pdf/2509.14921",
+    "name": "[PDF] Trade-offs in Cross-Domain Generalization of Foundation Model",
+    "snippet": "Our analysis includes zero-shot and linear-probe evaluations, revealing how task-specific adaptations impact the model's broader capabilities.",
+    "host_name": "arxiv.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -273,3 +273,113 @@ TwVP:  image → VLM "is this a real organoid?" → crop/zoom → VLM "check bou
 19. IDR (Image Data Resource). https://idr.openmicroscopy.org
 20. Phase contrast time-lapse, Nature 2024. https://www.nature.com/articles/s44303-024-00046-y
 21. Deep learning predicts retinal organoid differentiation, PLOS Biology 2025. https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3003597
+
+---
+
+## 七、补充调研（2026-07-14 下午）
+
+### 7.1 训练破坏 zero-shot 泛化的理论解释
+
+**我们的发现**：SupCon 训练 slot 和 CoOp 训练 prompt 都破坏 CLIP zero-shot 跨域能力。
+
+**文献支撑**：
+- **"Fine Tuning without Catastrophic Forgetting"** (arXiv 2501.15377, 2025)：微调导致灾难性遗忘是已知问题
+- **"Quantified Task Misalignment to Inform PEFT"** (ICLR 2024)：CLIP 的 task difficulty 和 PEFT 性能有系统关系
+- **"Revisiting Catastrophic Forgetting in LLM"** (EMNLP 2024)：大模型微调后的遗忘模式
+- **"Trade-offs in Cross-Domain Generalization of Foundation Model"** (arXiv 2509.14921, 2025)：
+  - **"finetuned models suffer from over-specialization, especially when finetuned for complex tasks"**
+  - Zero-shot 和 linear-probe 评估显示 task-specific adaptation 影响跨域
+- **"Linearization Explains Fine-Tuning in LLM"** (NeurIPS 2025)：微调的线性化分析
+
+**结论**：我们的发现和文献一致——**监督训练破坏 foundation model 的 zero-shot 泛化**。这不是 bug，是 foundation model 的固有特性。
+
+### 7.2 Prompt 工程方向（不训练参数）
+
+**文献**：
+- **"Cluster-Aware Prompt Ensemble Learning for Few-Shot Vision"** (arXiv 2510.09867, 2025)：
+  - 多 prompt 集成 + 聚类感知 → 提升 CLIP zero-shot
+- **"A Simple Zero-shot Prompt Weighting Technique"** (PMLR 2023)：
+  - 给 prompt pool 里每个 prompt 自动打分，加权聚合
+- **"Effective Zero-shot Classification with Hundreds of Multi-modal CLIPs"** (ACM 2025)：
+  - 多 CLIP 模型集成
+- **"Prompt Ensemble in Zero-shot Classification using CLIP"** (Medium 2025)：
+  - 实践指南 + PyTorch 实现
+  - GitHub: https://github.com/satojkovic/clip-pytorch
+
+**MaPLe** (CVPR 2023)：
+- Multi-modal Prompt Learning：同时学视觉和语言 prompt
+- 比单模态 prompt 更好
+- 但仍然是训练——可能也破坏 zero-shot
+
+**方案**：不训练的 prompt 集成——用 5-20 个不同 prompt 做 ensemble voting，类似我们 A4 的 5 组 prompt，但加权聚合而非选最优。
+
+### 7.3 Test-Time Training (TTT)
+
+**文献**：
+- **"The Surprising Effectiveness of TTT for Few-Shot"** (PMLR 2025, arXiv 2411.07279)：
+  - 推理时临时更新模型参数，用测试样本自监督
+  - **不需要标注数据，在测试样本上自适应**
+  - "TTT drastically improves LM's few-shot learning on out-of-distribution tasks"
+- **"Forget, Anticipate and Adapt: TTT for Long Videos"** (arXiv 2606.26515, 2025)：
+  - 视频时序的 TTT
+- **"Learning to Learn at Test Time"** (TTT-LM, 2025)：
+  - TTT 作为 RNN 的隐藏状态
+
+**方案**：TTT 在每个测试 crop 上自适应 CLIP prompt——不需要标注，用 crop 自身的自监督信号（如旋转预测）。可能避免过拟合到源域。
+
+### 7.4 3D 时序数据集补充
+
+**新发现**：
+- **OrgLine (Cell Reports Methods, 2026)**：4 个独立数据集的时序追踪评估
+  - https://www.sciencedirect.com/science/article/pii/S2667237526001827
+- **3D Organoid Time-Lapse Nuclei Segmentation** (image.sc forum)：
+  - FRET-based protein activity 时序追踪
+  - https://forum.image.sc/t/3d-organoid-time-lapse-nuclei-segmentation-and-tracking-workflow/120475
+- **OrganoidTracker 2.0** (GitHub hrlblab)：
+  - **SAM2-powered 3D organoid tracking**，zero-shot 分割 + 时序追踪
+  - https://github.com/hrlblab/OrganoidTracker
+- **OrganoidTracker** (PMC, PLOS ONE)：
+  - 3D cell tracking + machine learning + manual correction
+  - https://pmc.ncbi.nlm.nih.gov/articles/PMC7580893
+  - Website: https://organoidtracker.org
+- **LabelFreeTracker** (Patterns 2025)：
+  - 3D label-free intestinal organoid tracking
+  - https://www.sciencedirect.com/science/article/pii/S2666386425001213
+
+**3D 时序数据集清单**（更新版）：
+
+| 数据集 | 类型 | 规模 | 特点 | 来源 |
+|--------|------|------|------|------|
+| OrganoID | 2D 时序 | 4-day tracking | 肠道 organoid 生长追踪 | PMC9645660 |
+| OrganoidTracker 2.0 | 3D 时序 | SAM2-powered | zero-shot 分割+追踪 | GitHub hrlblab |
+| OrganoidTracker | 3D 时序 | intestinal | ML + manual correction | PLOS ONE |
+| LabelFreeTracker | 3D label-free | intestinal | FRET protein activity | Patterns 2025 |
+| OrgLine | 4 数据集 | 时序追踪 | detector-guided SAM2 | Cell Reports Methods |
+| Digitalized Organoids | 3D | multilevel | 拓扑+筛查 | Nature Methods 2025 |
+| Phase contrast time-lapse | 2D | cell tracking | 标注完整 | Nature 2024 |
+| Retinal organoid | 时序 | differentiation | 预测分化 | PLOS Biology 2025 |
+
+### 7.5 下一步实验方案（更新）
+
+基于"训练破坏泛化"的发现：
+
+| 方案 | 方法 | 训练？ | 预期 |
+|------|------|--------|------|
+| A5 | Prompt 集成（20 prompt 加权） | 否 | zero-shot 0.73 → 0.78+ |
+| A6 | Prompt 自动权重（PMLR 2023） | 否 | 自动选最优 prompt 权重 |
+| B2 | VLM 推理（API 待恢复） | 否 | VLM 推理操作 |
+| C1 | 3D 时序 + OrganoID 4-day | — | 时序变化跨域不变 |
+| TTT | Test-Time Training | 自监督 | 可能避免过拟合 |
+
+### 7.6 补充参考文献
+
+22. Fine Tuning without Catastrophic Forgetting. arXiv 2501.15377, 2025.
+23. Quantified Task Misalignment to Inform PEFT. ICLR 2024.
+24. Trade-offs in Cross-Domain Generalization of FM. arXiv 2509.14921, 2025.
+25. Cluster-Aware Prompt Ensemble Learning. arXiv 2510.09867, 2025.
+26. A Simple Zero-shot Prompt Weighting. PMLR 2023.
+27. The Surprising Effectiveness of TTT. PMLR 2025.
+28. MaPLe: Multi-Modal Prompt Learning. CVPR 2023.
+29. OrganoidTracker 2.0 (SAM2-powered). GitHub hrlblab, 2025.
+30. OrgLine: detector-guided SAM2. Cell Reports Methods, 2026.
+31. LabelFreeTracker. Patterns, 2025.

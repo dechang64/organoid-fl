@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://arxiv.org/html/2606.26515v1",
+    "name": "Forget, Anticipate and Adapt: Test Time Training for Long Videos",
+    "snippet": "Test Time Training (TTT) is a mechanism in which a model adapts to an incoming test-sample. This procedure does not require labels at test-time.",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://test-time-training.github.io",
+    "name": "Test-Time Training Project Website",
+    "snippet": "Our latest papers on TTT End-to-End Test-Time Training for Long Context (2025) One-Minute Video Generation with Test-Time Training (2025)",
+    "host_name": "test-time-training.github.io",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://proceedings.mlr.press/v267/akyurek25a.html",
+    "name": "The Surprising Effectiveness of Test-Time Training for Few-Shot",
+    "snippet": "We investigate the effectiveness of test-time training (TTT)—temporarily updating model parameters during inference using a loss derived from input data—as a ...",
+    "host_name": "proceedings.mlr.press",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/test-time-training/ttt-lm-pytorch",
+    "name": "Learning to (Learn at Test Time): RNNs with Expressive Hidden States",
+    "snippet": "Since the hidden state is updated by training even on test sequences, our layers are called Test-Time Training (TTT) layers.",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2411.07279v2",
+    "name": "The Surprising Effectiveness of Test-Time Training for Few-Shot",
+    "snippet": "Overall, our findings highlight that TTT drastically improves LM's few-shot learning ability on out-of-distribution tasks. Report issue for ...",
+    "host_name": "arxiv.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openaccess.thecvf.com/content/CVPR2024/papers/Zanella_On_the_Test-Time_Zero-Shot_Generalization_of_Vision-Language_Models_Do_We_CVPR_2024_paper.pdf",
+    "name": "[PDF] On the Test-Time Zero-Shot Generalization of Vision-Language",
+    "snippet": "In this work, we introduce a robust multi- modal MeanShift Test-time Augmentation (MTA), which enhances the zero-shot generalization of CLIP models, leveraging ...",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://papers.neurips.cc/paper_files/paper/2022/file/5bf2b802e24106064dc547ae9283bb0c-Paper-Conference.pdf",
+    "name": "[PDF] Test-Time Prompt Tuning for Zero-Shot Generalization in Vision",
+    "snippet": "The tuned prompt is adapted to each task, making it suitable for zero-shot generalization without requiring any task-specific training data or annotations.",
+    "host_name": "papers.neurips.cc",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ekinakyurek.github.io/papers/ttt.pdf",
+    "name": "[PDF] The Surprising Effectiveness of Test-Time Training for Few-Shot",
+    "snippet": "Test-time training (TTT) enables parametric models to adapt during inference through dynamic parameter updates in re- sponse to each test input.",
+    "host_name": "ekinakyurek.github.io",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/azshue/tpt",
+    "name": "Test-time Prompt Tuning (TPT) for zero-shot generalization in vision",
+    "snippet": "This repository contains the implementation of TPT for image classification with a pre-trained CLIP. We consider 3 different initializations for test-time ...",
+    "host_name": "github.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/abs/2606.26515",
+    "name": "Forget, Anticipate and Adapt: Test Time Training for Long Videos",
+    "snippet": "Test Time Training (TTT) is a mechanism in which a model adapts to an incoming test-sample by performing some self-supervised (SSL) task and ...",
+    "host_name": "arxiv.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

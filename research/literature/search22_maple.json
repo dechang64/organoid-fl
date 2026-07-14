@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://openaccess.thecvf.com/content/CVPR2023/papers/Khattak_MaPLe_Multi-Modal_Prompt_Learning_CVPR_2023_paper.pdf",
+    "name": "[PDF] MaPLe: Multi-Modal Prompt Learning - CVF Open Access",
+    "snippet": "To the best of our knowledge, this is the first multi- modal prompting approach for fine-tuning CLIP. • To link prompts learned in text and image encoders, we.",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://muzairkhattak.github.io/multimodal-prompt-learning",
+    "name": "MaPLe: Multi-modal Prompt Learning [CVPR'23] - Muhammad Uzair Khattak",
+    "snippet": "A novel Prompt Learning framework to adapt both vision and language branches of CLIP to improve alignment between the vision and language representations.",
+    "host_name": "muzairkhattak.github.io",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/muzairkhattak/multimodal-prompt-learning",
+    "name": "[CVPR 2023] Official repository of paper titled \"MaPLe: Multi-modal",
+    "snippet": "In this work, we propose Multi-modal Prompt Learning (MaPLe) for both vision and language branches to improve alignment between the vision and ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/abs/2210.03117",
+    "name": "[2210.03117] MaPLe: Multi-modal Prompt Learning - arXiv",
+    "snippet": "We propose Multi-modal Prompt Learning (MaPLe) for both vision and language branches to improve alignment between the vision and language representations.",
+    "host_name": "arxiv.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://cvpr.thecvf.com/virtual/2023/poster/21684",
+    "name": "CVPR Poster MaPLe: Multi-Modal Prompt Learning",
+    "snippet": "MaPLe adds about 2.85% training parameters on top of CLIP. To study if the performance gain is mainly attributed to more parameters, we experiment with MaPLe†, ...",
+    "host_name": "cvpr.thecvf.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]
