@@ -15,7 +15,7 @@ REM ============================================================
 REM Config - modify paths here if needed
 REM ============================================================
 set CKPT=results\supcon_8s_d128_p256_t0.07_b0.1_20260713_003826\best.pt
-set YOLO_CKPT=runs\detect\train\weights\best.pt
+set YOLO_CKPT=runs\detect\baseline_test\v12s_1280\weights\best.pt
 set DATA_ROOT=data\intestinal_organoid\OrganoidDataset
 set OUT_ZIP=results\cross_domain_intestinal.zip
 
