@@ -13,14 +13,16 @@ where bun >nul 2>&1
 if %errorlevel% neq 0 (
     echo [INFO] bun not found. Installing...
     powershell -Command "irm bun.sh/install.ps1 | iex"
-    REM Refresh PATH after install
-    set "PATH=%USERPROFILE%\.bun\bin;%PATH%"
-    where bun >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo [ERROR] bun install failed. Please install manually from https://bun.sh
-        pause
-        exit /b 1
-    )
+)
+
+REM Refresh PATH (bun installs to %USERPROFILE%\.bun\bin)
+set "PATH=%USERPROFILE%\.bun\bin;%PATH%"
+
+where bun >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] bun still not found. Please restart terminal and run again.
+    pause
+    exit /b 1
 )
 
 REM Install z-ai-web-dev-sdk if not present
