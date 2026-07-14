@@ -108,18 +108,23 @@ def call_vlm(prompt, image_path, timeout=120, retry=3):
 
             output = result.stdout.strip()
             if not output:
-                _time.sleep(2)
+                # Check stderr for rate limit
+                stderr = result.stderr.strip()
+                if '429' in stderr or 'Too many requests' in stderr:
+                    _time.sleep(10 * (attempt + 1))
+                else:
+                    _time.sleep(3)
                 continue
 
             try:
                 content = json.loads(output)
             except:
-                _time.sleep(2)
+                _time.sleep(3)
                 continue
 
             # Check for error from VLM
             if isinstance(content, dict) and 'error' in content:
-                _time.sleep(3 * (attempt + 1))
+                _time.sleep(10 * (attempt + 1))
                 continue
 
             # content is the message content string, parse JSON from it
@@ -131,7 +136,7 @@ def call_vlm(prompt, image_path, timeout=120, retry=3):
                 except:
                     pass
 
-            _time.sleep(1)
+            _time.sleep(2)
 
         except subprocess.TimeoutExpired:
             pass
@@ -225,6 +230,9 @@ def evaluate_dataset(ds_name, meta_path, crops_dir, max_crops=None, enable_step3
             print(f"    [{i+1}/{len(items)}] "
                   f"TP={sum(all_labels)}, FP={len(all_labels)-sum(all_labels)}, "
                   f"VLM ok={n_vlm_ok}, fail={n_vlm_fail}")
+
+        # Rate limit protection: wait between calls
+        time.sleep(1)
     
     scores = np.array(all_scores)
     confs = np.array(all_confs)
