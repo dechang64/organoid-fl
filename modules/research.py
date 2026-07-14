@@ -122,3 +122,88 @@ def render():
     - **Asynchronous FL**: Remove synchronization barrier between clients
     - **Multi-modal Fusion**: Combine imaging + genomic + clinical data
     """)
+
+    # ── Cross-Domain Evaluation Results ──
+    st.markdown("---")
+    st.markdown("### 🔬 Cross-Domain Evaluation Results")
+
+    st.markdown("""
+    SupCon slot model trained on MultiOrg (100 crops, K=8, dim=128, τ=0.07, β=0.1)
+    evaluated on mouse liver (3 batches) and intestinal organoid datasets.
+    """)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("#### Slot vs Confidence AUC")
+        import plotly.graph_objects as go
+        datasets = ["Mouse B1", "Mouse B2", "Mouse B3", "Intestinal"]
+        slot_auc = [0.29, 0.51, 0.54, 0.67]
+        conf_auc = [0.91, 0.98, 0.92, 0.92]
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name="Slot AUC", x=datasets, y=slot_auc,
+                             marker_color="#e74c3c", text=[f"{v:.2f}" for v in slot_auc],
+                             textposition="auto"))
+        fig.add_trace(go.Bar(name="Conf AUC", x=datasets, y=conf_auc,
+                             marker_color="#2ecc71", text=[f"{v:.2f}" for v in conf_auc],
+                             textposition="auto"))
+        fig.update_layout(barmode="group", height=350,
+                          title="Slot model fails to generalize across domains",
+                          yaxis_title="AUC", yaxis_range=[0, 1.1],
+                          template="plotly_dark")
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.markdown("#### Dataset Summary")
+        st.markdown("""
+        | Dataset | Crops | TP/FP | Slot AUC | Conf AUC |
+        |---------|-------|-------|----------|----------|
+        | Mouse B1 | 26 | 23/3 | 0.29 🔴 | 0.91 |
+        | Mouse B2 | 48 | 39/9 | 0.51 🔴 | 0.98 |
+        | Mouse B3 | 60 | 40/20 | 0.54 🔴 | 0.92 |
+        | Intestinal | 2744 | 2334/410 | 0.67 🔴 | 0.92 |
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        **Key Findings:**
+        - 🔴 Slot model **completely fails** cross-domain (all AUC < 0.70)
+        - ✅ Detector confidence is **robust** across domains (0.91-0.98)
+        - ❌ All fusion strategies (hard_filter, soft_penalize, geometric_mean) 
+          degrade to baseline (α=0, w=1.0)
+        - **Root cause**: SupCon learns domain-specific TP/FP patterns, 
+          not universal organoid primitives
+        """)
+
+    st.markdown("---")
+    st.markdown("### 📊 Phase 8-11 Experiment Summary")
+
+    col_a, col_b = st.columns(2)
+
+    with col_a:
+        st.markdown("""
+        #### Completed Phases
+
+        | Phase | Method | Result |
+        |-------|--------|--------|
+        | 8 | Wavelet primitives | PR-AUC 0.45 ❌ |
+        | 9 | Slot Attention | PR-AUC 0.788 ✅ |
+        | 9 | Combined (slot+conf) | AP 0.903 (+1.5pp) ✅ |
+        | 10 | Federated Slot | Global > Local +1.1pp ✅ |
+        | 11 | SupCon β=0.1 | AP 0.910 ✅ |
+        | 11 | SupCon β=0.5 | AP 0.899 |
+        | Cross | MultiOrg→Mouse | Failed 🔴 |
+        | Cross | MultiOrg→Intestinal | Failed 🔴 |
+        """)
+
+    with col_b:
+        st.markdown("""
+        #### Key Insights
+
+        - **Same-domain**: Slot + confidence fusion improves AP by 1.5-3.3pp
+        - **Cross-domain**: Slot model fails, confidence remains best baseline
+        - **Data scale matters**: 100 crops (MultiOrg) vs 16K crops (CTM) 
+          — more data needed for generalizable primitives
+        - **Next direction**: Multi-dataset joint training 
+          (MultiOrg + Mouse Liver + Intestinal)
+        """)

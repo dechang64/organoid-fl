@@ -1,6 +1,6 @@
 # MultiOrg 实验追踪表
 
-> 最后更新：2026-07-03（Orga-Dete 三模块 yolo11n/yolo12s 训练全部完成，全面失败）
+> 最后更新：2026-07-14（Phase 11 SupCon + 跨域评估全部完成，slot model 跨域失效确认）
 > 目标：突破 SOTA SSD 68.1% mAP@0.5 → 达到 80%+
 > 数据集：MultiOrg_v2 (411张 6K×5.7K, 单类 organoid, **肺类器官**) / MultiOrg_v4_640 (640px tiling)
 
@@ -373,3 +373,46 @@ checkpoint 来源（06-24 daily notes 确认）：S6 系列用的是 **R1 (small
 | 2026-07-10 | CTM 实现（DINOv2冻结+3.64M），62样本 val AUC 0.907 峰值超 RF-DETR |
 | 2026-07-11 | 新增 Phase 8-11 视觉原语实验设计（WIPES/FORLA/对比学习），基于文献调研 |
 | 2026-07-11 | Phase 8 完成：小波单独无效（PR-AUC 0.45<0.50），W3 morph+wavelet 0.645 为 baseline |
+| 2026-07-13 | Phase 11 SupCon β=0.1 最优（AP 0.910），组合分析 AP 0.903 |
+| 2026-07-13 | Phase 10 联邦 Slot 聚合完成（Global>Local +1.1pp） |
+| 2026-07-14 | 跨域评估完成：SupCon slot model 跨域失效（鼠肝 B1 AUC=0.29, B2=0.51, B3=0.54; Intestinal=0.67），conf baseline 始终最优 |
+
+---
+
+## 九、Phase 11 SupCon + 跨域评估结果
+
+### 9.1 SupCon 训练（MultiOrg 100 crops）
+
+| 配置 | 值 |
+|------|------|
+| Backbone | DINOv2 ViT-B/14（86.6M，冻结） |
+| Slot | K=8, dim=128, proj=256, τ=0.07, β=0.1 |
+| Trainable params | 579,458 (0.58M) |
+| 训练数据 | 68 train / 13 val / 17 test（100 crops, 50 TP + 50 FP） |
+| Epochs | 50 |
+
+### 9.2 MultiOrg 同域测试结果
+
+| 指标 | 值 |
+|------|------|
+| Slot AUC | 0.788 |
+| Conf (RF-DETR) AUC | 0.888 |
+| 组合 AP (w_slot=0.20) | 0.903（+1.5pp vs conf） |
+
+### 9.3 跨域评估结果（核心实验）
+
+| 数据集 | Crops | TP/FP | Slot AUC | Conf AUC | 最优融合 Δ |
+|--------|-------|-------|----------|----------|-----------|
+| 鼠肝 B1 (2592×1944) | 26 | 23/3 | **0.29**（反预测） | 0.91 | 无 |
+| 鼠肝 B2 (4000×3000) | 48 | 39/9 | **0.51**（随机） | 0.98 | 无 |
+| 鼠肝 B3 (4000×3000) | 60 | 40/20 | **0.54**（随机） | 0.92 | 无 |
+| Intestinal (84 val) | 2744 | 2334/410 | **0.67** | 0.92 | +0.0005（可忽略） |
+
+### 9.4 结论
+
+- **SupCon slot model 跨域完全失效**：所有4个跨域场景 slot AUC 都低于 conf AUC
+- **鼠肝 B1 反预测（AUC=0.29）**：slot 给 TP 打低分、FP 打高分，和 MultiOrg 学到的模式相反
+- **Intestinal 稍好（0.67）**：明场类器官视觉特征更接近 MultiOrg，但仍远低于 conf 0.92
+- **所有融合策略无提升**：hard_filter/soft_penalize/geometric_mean 最优参数退化到 α=0、w=1.0
+- **根因**：SupCon 在 MultiOrg 100 crops 上学到的 TP/FP 区分特征是域特定的，不构成通用 organoid 原语
+- **RF-DETR/YOLO confidence 跨域稳健**：不依赖域知识，始终是最强 baseline
