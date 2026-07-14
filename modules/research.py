@@ -176,6 +176,59 @@ def render():
         """)
 
     st.markdown("---")
+    st.markdown("### 🔄 Multi-Dataset Joint Training: Big Improvement!")
+
+    st.markdown("""
+    Training on MultiOrg (100) + Mouse Liver (134) + Intestinal (2744) jointly.
+    """)
+
+    col3, col4 = st.columns(2)
+
+    with col3:
+        st.markdown("#### Single-domain vs Joint Training")
+        import plotly.graph_objects as go
+        datasets = ["Mouse B1", "Mouse B2", "Mouse B3", "Intestinal"]
+        single_auc = [0.29, 0.51, 0.54, 0.67]
+        merged_auc = [0.74, 0.70, 0.85, 0.74]
+        conf_auc = [0.91, 0.98, 0.92, 0.92]
+
+        fig2 = go.Figure()
+        fig2.add_trace(go.Bar(name="Single-domain Slot", x=datasets, y=single_auc,
+                              marker_color="#e74c3c", text=[f"{v:.2f}" for v in single_auc],
+                              textposition="auto"))
+        fig2.add_trace(go.Bar(name="Joint Training Slot", x=datasets, y=merged_auc,
+                              marker_color="#3498db", text=[f"{v:.2f}" for v in merged_auc],
+                              textposition="auto"))
+        fig2.add_trace(go.Bar(name="Conf (baseline)", x=datasets, y=conf_auc,
+                              marker_color="#2ecc71", text=[f"{v:.2f}" for v in conf_auc],
+                              textposition="auto"))
+        fig2.update_layout(barmode="group", height=350,
+                           title="Joint training dramatically improves cross-domain AUC",
+                           yaxis_title="AUC", yaxis_range=[0, 1.1],
+                           template="plotly_dark")
+        st.plotly_chart(fig2, use_container_width=True)
+
+    with col4:
+        st.markdown("#### Improvement Summary")
+        st.markdown("""
+        | Dataset | Single | Joint | Δ | Conf |
+        |---------|--------|-------|---|------|
+        | Mouse B1 | 0.29 🔴 | **0.74** | +0.45 | 0.91 |
+        | Mouse B2 | 0.51 🔴 | **0.70** | +0.19 | 0.98 |
+        | Mouse B3 | 0.54 🔴 | **0.85** | +0.31 | 0.92 |
+        | Intestinal | 0.67 | **0.74** | +0.07 | 0.92 |
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        **Key Findings:**
+        - ✅ Joint training **reverses** B1 from 0.29 → 0.74 (+0.45)
+        - ✅ B3 reaches **0.85**, only 7pp below conf
+        - ✅ `soft_penalize` first meaningful positive delta (+0.0125 on B3)
+        - ⚠️ Still below conf — single-frame DINOv2 features have a ceiling
+        - 🚀 Next: CLIP semantic alignment / 3D temporal / VLM reasoning
+        """)
+
+    st.markdown("---")
     st.markdown("### 📊 Phase 8-11 Experiment Summary")
 
     col_a, col_b = st.columns(2)
