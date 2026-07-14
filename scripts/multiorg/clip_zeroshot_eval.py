@@ -146,11 +146,15 @@ def encode_images_and_text(model, preprocess, tokenizer, device, crops_dir, item
 
 def evaluate_prompt_pair(image_features, text_features, labels, confs, tp_idx, fp_idx):
     """Evaluate one prompt pair: compute similarity and AUC."""
+    import torch
     from sklearn.metrics import roc_auc_score, average_precision_score
 
+    # Ensure both on same device (image_features is CPU, text_features is GPU)
+    text_feat = text_features.cpu()
+
     # Cosine similarity to TP and FP text
-    sim_tp = (image_features @ text_features[tp_idx]).cpu().numpy()
-    sim_fp = (image_features @ text_features[fp_idx]).cpu().numpy()
+    sim_tp = (image_features @ text_feat[tp_idx]).numpy()
+    sim_fp = (image_features @ text_feat[fp_idx]).numpy()
 
     # Slot score = sim_tp - sim_fp (higher = more likely TP)
     slot_scores = sim_tp - sim_fp
