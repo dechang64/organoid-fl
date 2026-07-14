@@ -8,10 +8,10 @@ echo  Uses z-ai vision API (no GPU needed)
 echo ============================================================
 echo.
 
-REM Test z-ai CLI available
-where z-ai >nul 2>&1
+REM Check bun available (for VLM SDK)
+where bun >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] z-ai CLI not found. Install: npm install -g z-ai-web-dev-sdk
+    echo [ERROR] bun not found. Install: https://bun.sh
     pause
     exit /b 1
 )

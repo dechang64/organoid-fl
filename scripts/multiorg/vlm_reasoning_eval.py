@@ -87,35 +87,27 @@ def load_metadata(meta_path):
     return items
 
 
-def call_vlm(prompt, image_path, timeout=30):
-    """Call z-ai vision CLI and parse JSON response."""
+def call_vlm(prompt, image_path, timeout=60):
+    """Call VLM via z-ai Node.js SDK (bypass CLI for reliability)."""
+    import subprocess
     try:
-        cmd = ['z-ai', 'vision', '-p', prompt, '-i', str(image_path)]
+        script_path = Path(__file__).parent / 'vlm_call.mjs'
+        cmd = ['bun', 'run', str(script_path), prompt, str(image_path)]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-        
-        # Parse output — z-ai returns JSON with content field
+
+        # stdout has JSON content
         output = result.stdout.strip()
-        # Try to find JSON in output
-        import re
-        # Look for JSON in the output
-        json_match = re.search(r'\{[^}]+\}', output)
-        if json_match:
+        if output:
             try:
-                return json.loads(json_match.group())
-            except:
-                pass
-        
-        # Fallback: try parsing entire output as JSON
-        try:
-            data = json.loads(output)
-            if isinstance(data, dict):
-                content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                content = json.loads(output)
+                # content is the message content string, parse JSON from it
+                import re
                 json_match = re.search(r'\{[^}]+\}', content)
                 if json_match:
                     return json.loads(json_match.group())
-        except:
-            pass
-        
+            except:
+                pass
+
         return None
     except Exception as e:
         return None
