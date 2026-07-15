@@ -133,6 +133,7 @@ page = st.sidebar.radio(
         "⛓️ Audit Chain",
         "📈 Model Analysis",
         "🔬 Research",
+        "🎓 SURF 2026",
     ],
     label_visibility="collapsed",
 )
@@ -177,3 +178,6 @@ elif page == "📈 Model Analysis":
 elif page == "🔬 Research":
     from modules import research
     research.render()
+elif page == "🎓 SURF 2026":
+    from modules import surf_2026
+    surf_2026.render()
