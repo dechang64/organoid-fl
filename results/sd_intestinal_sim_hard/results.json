@@ -1,0 +1,9 @@
+{
+  "n_train": 500,
+  "n_val": 200,
+  "auc_zero_shot": 1.0,
+  "auc_classifier": 0.9888481084133258,
+  "auc_distilled": 1.0,
+  "improvement": 0.0,
+  "sam2_noise": 0.05
+}
