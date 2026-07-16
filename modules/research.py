@@ -136,23 +136,17 @@ def render():
 
     with col1:
         st.markdown("#### Slot vs Confidence AUC")
-        import plotly.graph_objects as go
+        import pandas as pd
         datasets = ["Mouse B1", "Mouse B2", "Mouse B3", "Intestinal"]
         slot_auc = [0.29, 0.51, 0.54, 0.67]
         conf_auc = [0.91, 0.98, 0.92, 0.92]
 
-        fig = go.Figure()
-        fig.add_trace(go.Bar(name="Slot AUC", x=datasets, y=slot_auc,
-                             marker_color="#e74c3c", text=[f"{v:.2f}" for v in slot_auc],
-                             textposition="auto"))
-        fig.add_trace(go.Bar(name="Conf AUC", x=datasets, y=conf_auc,
-                             marker_color="#2ecc71", text=[f"{v:.2f}" for v in conf_auc],
-                             textposition="auto"))
-        fig.update_layout(barmode="group", height=350,
-                          title="Slot model fails to generalize across domains",
-                          yaxis_title="AUC", yaxis_range=[0, 1.1],
-                          template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True)
+        chart_df = pd.DataFrame({
+            "Slot AUC": slot_auc,
+            "Conf AUC": conf_auc,
+        }, index=datasets)
+        st.bar_chart(chart_df, use_container_width=True)
+        st.caption("Slot model fails to generalize across domains (all <0.70)")
 
     with col2:
         st.markdown("#### Dataset Summary")
@@ -188,27 +182,19 @@ def render():
 
     with col3:
         st.markdown("#### Single-domain vs Joint Training")
-        import plotly.graph_objects as go
+        import pandas as pd
         datasets = ["Mouse B1", "Mouse B2", "Mouse B3", "Intestinal"]
         single_auc = [0.29, 0.51, 0.54, 0.67]
         merged_auc = [0.74, 0.70, 0.85, 0.74]
         conf_auc = [0.91, 0.98, 0.92, 0.92]
 
-        fig2 = go.Figure()
-        fig2.add_trace(go.Bar(name="Single-domain Slot", x=datasets, y=single_auc,
-                              marker_color="#e74c3c", text=[f"{v:.2f}" for v in single_auc],
-                              textposition="auto"))
-        fig2.add_trace(go.Bar(name="Joint Training Slot", x=datasets, y=merged_auc,
-                              marker_color="#3498db", text=[f"{v:.2f}" for v in merged_auc],
-                              textposition="auto"))
-        fig2.add_trace(go.Bar(name="Conf (baseline)", x=datasets, y=conf_auc,
-                              marker_color="#2ecc71", text=[f"{v:.2f}" for v in conf_auc],
-                              textposition="auto"))
-        fig2.update_layout(barmode="group", height=350,
-                           title="Joint training dramatically improves cross-domain AUC",
-                           yaxis_title="AUC", yaxis_range=[0, 1.1],
-                           template="plotly_dark")
-        st.plotly_chart(fig2, use_container_width=True)
+        chart_df2 = pd.DataFrame({
+            "Single-domain Slot": single_auc,
+            "Joint Training Slot": merged_auc,
+            "Conf (baseline)": conf_auc,
+        }, index=datasets)
+        st.bar_chart(chart_df2, use_container_width=True)
+        st.caption("Joint training dramatically improves cross-domain AUC")
 
     with col4:
         st.markdown("#### Improvement Summary")
@@ -265,34 +251,22 @@ def render():
     st.markdown("---")
     st.markdown("### 🆚 DINOv2 vs CLIP: Cross-Domain Comparison")
 
-    import plotly.graph_objects as go
-
     datasets = ["MultiOrg", "Mouse B1", "Mouse B2", "Mouse B3"]
     dinov2_single = [0.79, 0.29, 0.51, 0.54]
     dinov2_loo = [None, 0.49, 0.56, 0.82]
     clip_zeroshot = [0.73, 0.86, 0.66, 0.69]
     conf_auc = [0.87, 0.91, 0.98, 0.92]
 
-    fig3 = go.Figure()
-    fig3.add_trace(go.Bar(name="DINOv2 Single", x=datasets, y=dinov2_single,
-                          marker_color="#e74c3c", text=[f"{v:.2f}" for v in dinov2_single],
-                          textposition="auto"))
-    # LOO has None for MultiOrg, use 0 for display
+    import pandas as pd
     dinov2_loo_display = [v if v is not None else 0 for v in dinov2_loo]
-    fig3.add_trace(go.Bar(name="DINOv2 LOO", x=datasets, y=dinov2_loo_display,
-                          marker_color="#f39c12", text=[f"{v:.2f}" if v else "—" for v in dinov2_loo],
-                          textposition="auto"))
-    fig3.add_trace(go.Bar(name="CLIP Zero-Shot", x=datasets, y=clip_zeroshot,
-                          marker_color="#3498db", text=[f"{v:.2f}" for v in clip_zeroshot],
-                          textposition="auto"))
-    fig3.add_trace(go.Bar(name="Conf (baseline)", x=datasets, y=conf_auc,
-                          marker_color="#2ecc71", text=[f"{v:.2f}" for v in conf_auc],
-                          textposition="auto"))
-    fig3.update_layout(barmode="group", height=400,
-                       title="CLIP zero-shot outperforms DINOv2 cross-domain (no training needed!)",
-                       yaxis_title="AUC", yaxis_range=[0, 1.1],
-                       template="plotly_dark")
-    st.plotly_chart(fig3, use_container_width=True)
+    chart_df3 = pd.DataFrame({
+        "DINOv2 Single": dinov2_single,
+        "DINOv2 LOO": dinov2_loo_display,
+        "CLIP Zero-Shot": clip_zeroshot,
+        "Conf (baseline)": conf_auc,
+    }, index=datasets)
+    st.bar_chart(chart_df3, use_container_width=True)
+    st.caption("CLIP zero-shot outperforms DINOv2 cross-domain (no training needed!)")
 
     st.markdown("""
     **Breakthrough finding**: CLIP's text-visual alignment space is cross-domain stable.
@@ -310,18 +284,13 @@ def render():
     col5, col6 = st.columns(2)
 
     with col5:
-        import plotly.graph_objects as go
-        methods = ["DINOv2\nLOO", "CLIP\nZero-Shot", "CLIP+SupCon\nLOO", "CoOp\nLOO", "Conf\nBaseline"]
+        import pandas as pd
+        methods = ["DINOv2 LOO", "CLIP Zero-Shot", "CLIP+SupCon LOO", "CoOp LOO", "Conf Baseline"]
         avg_auc = [0.58, 0.73, 0.58, 0.64, 0.94]
-        colors = ["#e74c3c", "#3498db", "#e67e22", "#f1c40f", "#2ecc71"]
 
-        fig4 = go.Figure()
-        fig4.add_trace(go.Bar(x=methods, y=avg_auc, marker_color=colors,
-                              text=[f"{v:.2f}" for v in avg_auc], textposition="auto"))
-        fig4.update_layout(height=350, title="Average Cross-Domain AUC (4 datasets)",
-                           yaxis_title="AUC", yaxis_range=[0, 1.0],
-                           template="plotly_dark", showlegend=False)
-        st.plotly_chart(fig4, use_container_width=True)
+        chart_df4 = pd.DataFrame({"Avg AUC": avg_auc}, index=methods)
+        st.bar_chart(chart_df4, use_container_width=True)
+        st.caption("Average Cross-Domain AUC (4 datasets)")
 
     with col6:
         st.markdown("#### Full Comparison")
