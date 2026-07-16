@@ -34,16 +34,41 @@ Organoid-FL is an **end-to-end federated learning platform** for medical organoi
 
 ### Key Results
 
-| Metric | Intestinal Organoid | MultiOrg |
-|--------|---------------------|----------|
-| Classification Accuracy | **99.17%** | — |
-| Detection mAP50 | — | **0.885** (v12s, 1280px) |
-| Detection mAP50-95 | — | **0.624** (v12s, 1280px) |
-| Feature Dim | **768** (DINOv2 base) | — |
-| Detection Model | YOLOv11 (3.2M–20.1M params) | YOLOv12s (9.2M params) |
-| Segmentation | SAM2 (pixel-level) | — |
-| Vector Search | HNSW (kNN) | — |
-| Audit | SHA-256 Blockchain | — |
+| Metric | Intestinal Organoid | MultiOrg | Mouse Liver |
+|--------|---------------------|----------|-------------|
+| Classification Accuracy | **99.17%** | — | — |
+| Detection mAP50 | — | **0.885** (v12s, 1280px) | 0.96 (RF-DETR) |
+| Detection mAP50-95 | — | **0.624** (v12s, 1280px) | — |
+| Feature Dim | **768** (DINOv2 base) | — | — |
+| Detection Model | YOLOv11 (3.2M–20.1M params) | YOLOv12s (9.2M params) | RF-DETR-base |
+| Segmentation | SAM2 (pixel-level) | — | — |
+| Vector Search | HNSW (kNN) | — | — |
+| Audit | SHA-256 Blockchain | — | — |
+
+### 🔬 SAM2 Self-Distillation Cross-Domain (2026-07-16)
+
+**Method**: Use SAM2 zero-shot mask as independent signal to train classifier head,
+avoiding circular logic when RF-DETR conf fails cross-domain.
+
+**Three-tier evidence chain**:
+
+| Experiment | Samples | Zero-shot AUC | Distilled AUC | Improvement |
+|---|---|---|---|---|
+| Simulation (Intestinal 500+200) | 700 | 0.6616 | **0.9437** | **+28.22%** |
+| Real cross-domain 50+30 | 10578 | 0.7480 | **0.8857** | **+13.77%** |
+| Real cross-domain 200+100 | 40503 | 0.7679 | **0.8589** | **+9.10%** |
+| MPM pilot (34 patches) | 3131 | 0.9779 | 1.0000 | +2.21% |
+
+**Adaptive distillation strategy** (paper innovation):
+
+| Zero-shot AUC | Strategy | Formula | Improvement |
+|---|---|---|---|
+| **< 0.70** | Classifier alone | `distilled = classifier_prob` | **+31.76%** |
+| 0.70 - 0.85 | Distilled | `conf × classifier_prob` | **+9.10%** |
+| > 0.85 | Zero-shot | `distilled = conf` | maintain |
+
+**Key insight**: Traditional `conf × classifier_prob` is suboptimal when RF-DETR conf
+fails cross-domain. Classifier alone wins in 2/3 experiments.
 
 ---
 

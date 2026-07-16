@@ -533,3 +533,63 @@ def render():
         | P-D2 Agentic AI survey | Methodology companion | Companion paper |
         """
     )
+
+    # ── SAM2 Self-Distillation 3-tier evidence chain ─────────────────────
+    st.markdown("---")
+    st.markdown("### 🔬 SAM2 自蒸馏三层证据链 (2026-07-16)")
+
+    st.markdown(
+        """
+        **方法**：用 SAM2 zero-shot mask 作独立信号训练分类头，避免 RF-DETR conf 循环论证
+
+        | 实验 | 样本数 | Zero-shot AUC | Distilled AUC | 提升 |
+        |---|---|---|---|---|
+        | Simulation v2 (Intestinal) | 700 | 0.6616 | **0.9437** | **+28.22%** |
+        | 真实跨域 50+30 | 10578 | 0.7480 | **0.8857** | **+13.77%** |
+        | 真实跨域 200+100 | 40503 | 0.7679 | **0.8589** | **+9.10%** |
+        | ResNet50 200+84 | 11974 | 0.9156 | 0.9281 | +1.25% |
+        | MPM 试点 (34 patch) | 3131 | 0.9779 | 1.0000 | +2.21% |
+        """
+    )
+
+    st.markdown("#### 🎯 自适应蒸馏策略（论文创新点）")
+    st.markdown(
+        """
+        **关键发现**：传统 `distilled = conf × classifier_prob` 不是最优！
+        当 RF-DETR conf 跨域失效时，conf 是噪声，乘 classifier 反而拉低性能。
+
+        | Zero-shot AUC | 策略 | 公式 | 提升 |
+        |---|---|---|---|
+        | **< 0.70** | Classifier alone | `distilled = classifier_prob` | **+31.76%** |
+        | 0.70 - 0.85 | Distilled | `conf × classifier_prob` | **+9.10%** |
+        | > 0.85 | Zero-shot | `distilled = conf` | maintain |
+
+        **四实验对比**：Classifier alone 在 2/3 实验中胜出 distilled (conf×cls)
+        """
+    )
+
+    st.markdown("#### 📊 ResNet50 真特征 vs 图像统计")
+    st.markdown(
+        """
+        | 特征 | 维度 | Classifier alone AUC | 结论 |
+        |---|---|---|---|
+        | 图像统计 | 30 | 0.8202 | distilled 赢 (+9.10%) |
+        | **ResNet50** | **2048** | **0.9938** | **classifier alone 赢** |
+
+        ResNet50 真特征单独分类 AUC=0.9938（接近完美），但 distilled 0.9281 反而更低
+        ——conf 乘法压低了高置信度样本。
+        """
+    )
+
+    st.markdown("#### 📁 实验代码与结果")
+    st.markdown(
+        """
+        - `scripts/mpm/sam2_self_distillation.py` — MPM 34 patch 原始脚本
+        - `scripts/mpm/self_distillation_intestinal_sim.py` — Simulation v2
+        - `scripts/mpm/self_distillation_intestinal_real.py` — 真实跨域 RF-DETR
+        - `scripts/mpm/self_distillation_intestinal_resnet.py` — ResNet50 真特征
+        - `scripts/mpm/comprehensive_analysis.py` — 四实验综合对比
+        - `scripts/mpm/adaptive_strategy_analysis.py` — 自适应策略分析
+        - `results/sd_comprehensive_analysis/` — 综合分析报告
+        """
+    )
