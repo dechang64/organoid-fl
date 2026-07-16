@@ -6,6 +6,7 @@ Cross-hospital similar case retrieval and diagnostic report generation.
 """
 
 import streamlit as st
+import pandas as pd
 import numpy as np
 import json
 import sys
@@ -133,7 +134,7 @@ def render():
                             "Circularity": f"{case.morphology.get('circularity', 0):.2f}",
                             "Eccentricity": f"{case.morphology.get('eccentricity', 0):.2f}",
                         })
-                    st.dataframe(table_data, use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
 
                 # Similarity distribution chart
                 _plot_similarity_distribution(similar)

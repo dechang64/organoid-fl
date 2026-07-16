@@ -84,11 +84,12 @@ def render():
     with col_right:
         st.subheader("📊 Key Results")
 
-        results_data = {
+        import pandas as pd
+        results_data = pd.DataFrame({
             "Metric": ["Classification Accuracy", "Model", "Aggregation", "Vector Search", "Audit"],
             "Value": ["99.17%", "ResNet-18 (pretrained)", "FedAvg", "HNSW (kNN)", "SHA-256 Blockchain"],
-        }
-        st.dataframe(results_data, use_container_width=True, hide_index=True)
+        })
+        st.table(results_data)
 
         st.subheader("🔬 Research Context")
         st.markdown("""

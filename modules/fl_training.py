@@ -7,6 +7,7 @@ Phase 2: YOLOv12n on 840 intestinal organoid images (23K bboxes)
 """
 
 import streamlit as st
+import pandas as pd
 import numpy as np
 import json
 import csv
@@ -156,7 +157,7 @@ def render():
                         "Final Accuracy": f"{final:.1%}",
                     })
             if table_data:
-                st.dataframe(table_data, use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
 
             # Convergence curves
             st.markdown("### Convergence Curves")
@@ -300,7 +301,7 @@ unzip OrganoidDataset.zip -d intestinal_organoid
                     "Gap": f"{float(r['best_mAP']) - float(r['final_mAP']):.4f}",
                     "Conv Round": r["convergence_round"],
                 })
-            st.dataframe(table_rows, use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
 
             # ── Export ──
             col_a, col_b = st.columns(2)
