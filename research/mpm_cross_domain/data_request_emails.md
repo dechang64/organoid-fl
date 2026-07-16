@@ -208,5 +208,43 @@ Email: dechang.xu@xjtlu.edu.cn
 
 ---
 
-**文档版本**：v1.0
+## 2026-07-16 更新：加入三层证据链结果
+
+**今天完成的三层证据链**（已 commit + push GitHub，可在附件中引用）：
+
+| 层级 | 数据 | 样本 | Zero-shot AUC | Distilled AUC | 提升 |
+|---|---|---|---|---|---|
+| Simulation | Intestinal 500+200 | 700 | 0.6616 | 0.9437 | **+28.22%** |
+| **真实跨域** | **鼠肝 RF-DETR → Intestinal 50+30** | **10578** | **0.7480** | **0.8857** | **+13.77%** |
+| MPM 试点 | MPM 34 patches | 3131 | 0.9779 | 1.0000 | +2.21% |
+
+**关键信息可加入邮件**：
+> "We have validated the self-distillation method on three tiers:
+> (1) Simulation with 500+200 intestinal organoid samples: AUC improved +28.22%
+> (2) Real cross-domain (mouse liver → intestinal, 10,578 samples): +13.77%
+> (3) MPM pilot (34 patches, 10 positives): pipeline runnable, sample-limited
+>
+> All code is open-source at https://github.com/dechang64/organoid-fl
+> (commits 788f442, 258a0f9, ada4ac8 on 2026-07-16)."
+
+**GitHub commit references** (可作为邮件附件链接)：
+- 788f442 — SAM2 自蒸馏原始脚本（MPM 34 patches）
+- 258a0f9 — Intestinal simulation +28.22%
+- ada4ac8 — 真实跨域（鼠肝→Intestinal）+13.77%
+
+---
+
+## 邮件发送前 checklist
+
+- [ ] 冬生确认 4 个邮箱地址（Sarah Best / Li Chenggang / Marco Falasca / Sarah Knox）
+- [ ] 冬生确认 XJTLU 邮箱可用（dechang.xu@xjtlu.edu.cn）
+- [ ] 附件 1：PI 一页 CV PDF
+- [ ] 附件 2：团队代表性论文 1-2 篇 PDF
+- [ ] 附件 3：预实验结果摘要（含三层证据链）
+- [ ] 邮件 2 (Li Chenggang) 需要从 Sci Rep 2025 论文查通讯邮箱
+- [ ] 发送后记录日期，建立 follow-up 日历提醒
+
+---
+
+**文档版本**：v1.1（2026-07-16 更新三层证据链）
 **状态**：待冬生审核邮箱地址和内容后发出
