@@ -60,18 +60,12 @@ def render():
 
         with tab_2d:
             fig = _plot_2d(reduced[:, :2], labels, class_names, method)
-            try:
-                st.plotly_chart(fig, use_container_width=True)
-            except Exception:
-                st.caption("📊 Chart unavailable (plotly issue on Cloud)")
+            st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
 
         with tab_3d:
             if reduced.shape[1] >= 3:
                 fig = _plot_3d(reduced[:, :3], labels, class_names, method)
-                try:
-                    st.plotly_chart(fig, use_container_width=True)
-                except Exception:
-                    st.caption("📊 Chart unavailable (plotly issue on Cloud)")
+                st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
             else:
                 st.info("3D view requires t-SNE or UMAP with n_components=3.")
 

@@ -223,7 +223,4 @@ def _plot_morphology_charts(results: list):
         height=500,
         showlegend=False,
     )
-    try:
-        st.plotly_chart(fig, use_container_width=True)
-    except Exception:
-        st.caption("📊 Chart unavailable (plotly issue on Cloud)")
+    st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")

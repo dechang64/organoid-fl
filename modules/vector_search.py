@@ -117,10 +117,7 @@ def render():
             # Distance chart
             distances = [score for _, score in results]
             fig = knn_distance_chart(distances)
-            try:
-                st.plotly_chart(fig, use_container_width=True)
-            except Exception:
-                st.caption("📊 Chart unavailable (plotly issue on Cloud)")
+            st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
 
             matches = sum(1 for vid, _ in results if engine.metadata.get(vid, {}).get("class") == query_label)
             st.metric("Class Match Rate", f"{matches}/{len(results)} ({matches / len(results) * 100:.0f}%)")
