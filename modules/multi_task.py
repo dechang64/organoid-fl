@@ -19,8 +19,14 @@ from utils.constants import (
     ORGANOID_CLASSES, CLASS_INFO, REFERENCES, COLORS,
 )
 from utils.helpers import generate_synthetic_features
-from analysis.multi_task_fl import MultiTaskFLEngine
 from visualization.charts import fl_convergence
+
+# Lazy import torch-dependent module (may fail on Streamlit Cloud without GPU)
+try:
+    from analysis.multi_task_fl import MultiTaskFLEngine
+    _HAS_ENGINE = True
+except ImportError:
+    _HAS_ENGINE = False
 
 
 def render():
@@ -72,6 +78,9 @@ def render():
 
             # Initialize engine
             st.write("🔧 Initializing multi-task FL engine...")
+            if not _HAS_ENGINE:
+                st.error("⚠ Multi-task FL engine requires torch. Install with: pip install torch")
+                st.stop()
             engine = MultiTaskFLEngine(
                 input_dim=feature_dim,
                 num_classes=len(class_names),
