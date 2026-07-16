@@ -16,6 +16,7 @@ organoid-fl platform, and contribution to the three-grant pipeline:
 import streamlit as st
 import json
 import os
+import pandas as pd
 from pathlib import Path
 
 
@@ -498,7 +499,7 @@ def render():
             "deadline": "2026 Q4",
         },
     ]
-    st.dataframe(gap_data, use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(gap_data), use_container_width=True, hide_index=True)
 
     # ── Timeline ─────────────────────────────────────────────────────────
     st.markdown("---")
