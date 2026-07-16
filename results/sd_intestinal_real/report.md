@@ -1,6 +1,6 @@
 # Intestinal 真实跨域自蒸馏验证
 
-**日期**: 2026-07-16 08:47:52
+**日期**: 2026-07-16 10:36:22
 **RF-DETR**: 鼠肝 checkpoint → Intestinal 检测（跨域）
 **GT**: Intestinal YOLO 4-class（真实标注）
 **方法**: GT IoU 作独立信号（5% 噪声模拟 SAM2）+ 轻量分类头
@@ -9,24 +9,24 @@
 
 | Split | Images | Samples | TP | FP |
 |---|---|---|---|---|
-| Train | 50 | 6702 | 865 | 5837 |
-| Val | 30 | 3876 | 652 | 3224 |
+| Train | 200 | 28925 | 3973 | 24952 |
+| Val | 100 | 11578 | 2501 | 9077 |
 
 ## 2. Zero-shot 跨域失效检查
 
-⚠ **跨域部分有效**: Zero-shot AUC=0.7480
+⚠ **跨域部分有效**: Zero-shot AUC=0.7679
    RF-DETR conf 仍有一定区分能力（可能 checkpoint 迁移性好）。
 
 ## 3. 自蒸馏结果
 
 | 方法 | AUC |
 |---|---|
-| Zero-shot (RF-DETR conf) | 0.7480 |
-| Classifier alone | 0.8995 |
-| Distilled (conf × classifier) | 0.8857 |
-| **Improvement** | **+0.1377** |
+| Zero-shot (RF-DETR conf) | 0.7679 |
+| Classifier alone | 0.8202 |
+| Distilled (conf × classifier) | 0.8589 |
+| **Improvement** | **+0.0910** |
 
-✅ **自蒸馏有效**：AUC 提升 13.8% > 10%。
+⚠ **自蒸馏微弱有效**：AUC 提升 9.1%。
 
 ## 4. 说明
 

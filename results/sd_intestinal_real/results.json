@@ -1,11 +1,11 @@
 {
   "rfdetr_checkpoint": "runs/mouse_liver_v2/b1/full/checkpoint_best_ema.pth",
-  "n_train": 6702,
-  "n_val": 3876,
-  "n_tp_train": 865,
-  "n_tp_val": 652,
-  "auc_zero_shot": 0.7479553273759686,
-  "auc_classifier": 0.8994918289211283,
-  "auc_distilled": 0.8856824392211786,
-  "improvement": 0.13772711184521003
+  "n_train": 28925,
+  "n_val": 11578,
+  "n_tp_train": 3973,
+  "n_tp_val": 2501,
+  "auc_zero_shot": 0.767934932449847,
+  "auc_classifier": 0.8202166087404411,
+  "auc_distilled": 0.8588900013421974,
+  "improvement": 0.09095506889235039
 }
