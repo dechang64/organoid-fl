@@ -1,5 +1,6 @@
 [server]
 maxUploadSize = 500
+enableStaticServing = true
 
 [browser]
 gatherUsageStats = false
@@ -10,3 +11,6 @@ primaryColor = "#1e3a5f"
 backgroundColor = "#0f172a"
 secondaryBackgroundColor = "#1e293b"
 textColor = "#e2e8f0"
+
+[client]
+toolbarMode = "minimal"
