@@ -1,0 +1,9 @@
+{
+  "feature": "ResNet50 ImageNet pretrained 2048-dim",
+  "n_train": 200,
+  "n_val": 84,
+  "auc_zero_shot": 0.9156249999999999,
+  "auc_classifier": 0.99375,
+  "auc_distilled": 0.9281250000000001,
+  "improvement": 0.012500000000000178
+}
