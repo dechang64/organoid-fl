@@ -12,7 +12,8 @@ from utils.constants import REFERENCES
 def render():
     st.markdown(
         '<div class="main-header"><h1>🔬 Research</h1>'
-        '<p>Theoretical foundation, methodology, and paper references</p></div>',
+        '<p>Theoretical foundation, methodology, and paper references</p>'
+        '<p style="font-size:0.7rem;color:#94a3b8;">Code version: 2026-07-16 v3bc3e3d</p></div>',
         unsafe_allow_html=True,
     )
 
