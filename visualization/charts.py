@@ -231,8 +231,17 @@ def knn_results(
     return fig
 
 
-def audit_timeline(chain_df: pd.DataFrame, title: str = "Audit Chain Timeline") -> go.Figure:
+def audit_timeline(chain_df, title: str = "Audit Chain Timeline") -> go.Figure:
     """Timeline visualization of audit chain blocks."""
+    # Defensive: convert list to DataFrame
+    if not isinstance(chain_df, pd.DataFrame):
+        if isinstance(chain_df, list):
+            chain_df = pd.DataFrame(chain_df)
+        else:
+            return go.Figure().update_layout(
+                title=dict(text="No audit data", font=dict(size=14)),
+                template="plotly_white", height=300,
+            )
     if chain_df.empty:
         return go.Figure().update_layout(
             title=dict(text="No audit data", font=dict(size=14)),

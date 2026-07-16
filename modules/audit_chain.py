@@ -86,7 +86,7 @@ def render():
         st.dataframe(df.tail(n_show), use_container_width=True, hide_index=True)
 
         # Timeline visualization
-        fig = audit_timeline(recent)
+        fig = audit_timeline(df.tail(n_show))
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No blocks yet. Add test operations above.")

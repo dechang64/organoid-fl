@@ -115,7 +115,8 @@ def render():
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
             # Distance chart
-            fig = knn_distance_chart(results, query_label)
+            distances = [score for _, score in results]
+            fig = knn_distance_chart(distances)
             st.plotly_chart(fig, use_container_width=True)
 
             matches = sum(1 for vid, _ in results if engine.metadata.get(vid, {}).get("class") == query_label)
