@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.constants import (
     DEFAULT_ROUNDS, DEFAULT_CLIENTS, DEFAULT_LR,
     DEFAULT_BATCH_SIZE, DEFAULT_LOCAL_EPOCHS,
-    ORGANOID_CLASSES, ORGANOID_CLASSES_V1, CLASS_INFO, REFERENCES, COLORS,
+    ORGANOID_CLASSES, CLASS_INFO, REFERENCES,
 )
 
 # ── Data directories ──

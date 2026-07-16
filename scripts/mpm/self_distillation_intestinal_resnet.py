@@ -35,7 +35,7 @@ def load_yolo_labels(lbl_path, img_w, img_h):
     boxes = []
     if not os.path.exists(lbl_path):
         return boxes
-    with open(lbl_path) as f:
+    with open(lbl_path, encoding="utf-8") as f:
         for line in f:
             p = line.strip().split()
             if len(p) < 5: continue
@@ -382,7 +382,7 @@ def main():
     print(f"\n  ✓ Saved: {report_path}")
 
     json_path = output_dir / "results.json"
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump({
             "feature": "ResNet50 ImageNet pretrained 2048-dim",
             "n_train": len(y_true_train),

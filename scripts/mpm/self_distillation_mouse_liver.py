@@ -63,7 +63,7 @@ class Classifier(nn.Module):
 
 def load_batch(batch_dir, crop_meta_path):
     """Load one batch's crops + features + labels"""
-    meta = json.load(open(crop_meta_path))
+    meta = json.load(open(crop_meta_path, encoding="utf-8"))
     features = []
     labels = []      # true: matched = TP
     scores = []      # RF-DETR conf
@@ -252,7 +252,7 @@ def main():
     print(f"\n  ✓ Saved: {report_path}")
 
     json_path = output_dir / "results.json"
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump({
             "batches": {b: {"n": len(d["X"]), "tp": int(d["y"].sum())} for b, d in batches.items()},
             "lobo_results": results,

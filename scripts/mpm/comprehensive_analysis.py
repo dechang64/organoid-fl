@@ -224,7 +224,7 @@ print(f"✓ Saved: {report_path}")
 
 # Save JSON summary
 json_path = output_dir / "summary.json"
-with open(json_path, "w") as f:
+with open(json_path, "w", encoding="utf-8") as f:
     json.dump({
         "experiments": experiments,
         "best_strategy": "adaptive based on zero-shot AUC",

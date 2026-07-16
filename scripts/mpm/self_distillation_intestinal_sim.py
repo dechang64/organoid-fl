@@ -54,7 +54,7 @@ def load_yolo_labels(label_path):
     if not os.path.exists(label_path):
         return []
     boxes = []
-    with open(label_path) as f:
+    with open(label_path, encoding="utf-8") as f:
         for line in f:
             parts = line.strip().split()
             if len(parts) < 5:
@@ -479,7 +479,7 @@ def main():
     print(f"  ✓ Saved: {report_path}")
 
     json_path = output_dir / "results.json"
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump({
             "n_train": len(y_true_train),
             "n_val": len(y_true_val),

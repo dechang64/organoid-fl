@@ -77,13 +77,13 @@ def build_pseudo_labels(rfdetr_results_path, sam2_results_dir, output_path):
         pseudo_labels: dict[patch_name] = list of {box, label, score, sam2_iou}
     """
     print(f"\n[Step 1] 构建伪标签 (SAM2 IoU 作为独立信号)")
-    rfdetr = json.load(open(rfdetr_results_path))
+    rfdetr = json.load(open(rfdetr_results_path, encoding="utf-8"))
     per_patch = rfdetr["per_patch"]
 
     # Load SAM2 results
     sam2_per_patch = {}
     for f in Path(sam2_results_dir).glob("*_sam2.json"):
-        d = json.load(open(f))
+        d = json.load(open(f, encoding="utf-8"))
         patch_name = d["patch"]
         sam2_per_patch[patch_name] = d["masks_info"]
 
@@ -192,7 +192,7 @@ def build_pseudo_labels(rfdetr_results_path, sam2_results_dir, output_path):
         "patches": pseudo_labels,
     }
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
     print(f"  ✓ Saved: {output_path}")
     print(f"  Stats: pos={n_pos}, neg={n_neg}, ignored={n_ignored}, total={n_pos+n_neg}")
@@ -365,7 +365,7 @@ def train_classifier(features, labels, epochs=50, lr=1e-3, device="cpu"):
 def evaluate(pseudo_labels_path, classifier, feature_extractor, patches_dir, output_path):
     """评估 zero-shot baseline vs 自蒸馏后"""
     print(f"\n[Step 5] 评估")
-    data = json.load(open(pseudo_labels_path))
+    data = json.load(open(pseudo_labels_path, encoding="utf-8"))
     patches = data["patches"]
 
     results = {"patches": {}, "summary": {}}
@@ -422,7 +422,7 @@ def evaluate(pseudo_labels_path, classifier, feature_extractor, patches_dir, out
     else:
         print(f"  ⚠ Single-class labels, can't compute AUC")
 
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     print(f"  ✓ Saved: {output_path}")
     return results
@@ -472,7 +472,7 @@ def generate_report(pseudo_labels, eval_results, output_path):
     report.append("- 对比 DINOv2 + Linear Probe（P-A3 学生项目）")
     report.append("- 联合训练: 鼠肝 + MultiOrg + MPM (P-A5 学生项目)")
 
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(report))
     print(f"  ✓ Saved: {output_path}")
 
