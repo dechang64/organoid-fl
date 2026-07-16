@@ -1,0 +1,46 @@
+{
+  "experiments": [
+    {
+      "name": "Simulation v2 (Intestinal 500+200)",
+      "feature": "Image statistics 30-dim",
+      "n_train": 500,
+      "n_val": 200,
+      "auc_zero_shot": 0.6615624999999999,
+      "auc_classifier": 0.9791666666666667,
+      "auc_distilled": 0.94375
+    },
+    {
+      "name": "Real cross-domain (Intestinal 200+100)",
+      "feature": "Image statistics 30-dim",
+      "n_train": 28925,
+      "n_val": 11578,
+      "auc_zero_shot": 0.767934932449847,
+      "auc_classifier": 0.8202166087404411,
+      "auc_distilled": 0.8588900013421974
+    },
+    {
+      "name": "Real cross-domain ResNet50 (Intestinal 200+84)",
+      "feature": "ResNet50 2048-dim",
+      "n_train": 200,
+      "n_val": 84,
+      "auc_zero_shot": 0.9156249999999999,
+      "auc_classifier": 0.99375,
+      "auc_distilled": 0.9281250000000001
+    },
+    {
+      "name": "MPM pilot (34 patches)",
+      "feature": "RF-DETR backbone 256-dim",
+      "n_train": 3131,
+      "n_val": 3131,
+      "auc_zero_shot": 0.9779,
+      "auc_classifier": null,
+      "auc_distilled": 1.0
+    }
+  ],
+  "best_strategy": "adaptive based on zero-shot AUC",
+  "thresholds": {
+    "use_classifier_alone": "zero_shot_auc < 0.70",
+    "use_distilled": "0.70 <= zero_shot_auc < 0.85",
+    "use_zero_shot": "zero_shot_auc >= 0.85"
+  }
+}
