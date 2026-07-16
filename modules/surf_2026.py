@@ -377,11 +377,8 @@ TRACK_INFO = {
 
 
 def render():
-    st.markdown(
-        '<div class="main-header"><h1>🎓 SURF 2026 Summer Research</h1>'
-        '<p>18 students × 8 weeks · 3 tracks · Integrated with organoid-fl platform</p></div>',
-        unsafe_allow_html=True,
-    )
+    st.title("🎓 SURF 2026 Summer Research")
+    st.caption("18 students × 8 weeks · 3 tracks · Integrated with organoid-fl platform")
 
     # ── Top-level overview ─────────────────────────────────────────────
     col_a, col_b, col_c, col_d = st.columns(4)
@@ -397,20 +394,7 @@ def render():
     st.markdown("---")
 
     # ── Three-grant pipeline banner ─────────────────────────────────────
-    st.markdown(
-        """
-        <div style="background: linear-gradient(90deg, #1e3a8a 0%, #065f46 50%, #92400e 100%);
-                    padding: 1.2rem; border-radius: 8px; color: white; margin-bottom: 1rem;">
-          <h3 style="margin: 0 0 0.4rem 0;">🔗 Three-Grant Pipeline</h3>
-          <div style="font-size: 0.95rem; opacity: 0.95;">
-            <b>SURF 2026</b> (proxy validation, this program) →
-            <b>Ruijin Medical-Engineering 2026-27</b> (20 real MPM PDO) →
-            <b>NSFC General Program 2027-30</b> (100-center multi-site)
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.info("🔗 **Three-Grant Pipeline**: SURF 2026 (proxy validation) → Ruijin Medical-Engineering 2026-27 (20 real MPM PDO) → NSFC General Program 2027-30 (100-center multi-site)")
 
     # ── Filter ──────────────────────────────────────────────────────────
     filter_col, status_col, _ = st.columns([2, 2, 3])
@@ -499,7 +483,7 @@ def render():
             "deadline": "2026 Q4",
         },
     ]
-    st.dataframe(pd.DataFrame(gap_data), use_container_width=True, hide_index=True)
+    st.table(pd.DataFrame(gap_data))
 
     # ── Timeline ─────────────────────────────────────────────────────────
     st.markdown("---")
