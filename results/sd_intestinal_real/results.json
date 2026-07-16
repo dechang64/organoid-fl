@@ -1,0 +1,11 @@
+{
+  "rfdetr_checkpoint": "runs/mouse_liver_v2/b1/full/checkpoint_best_ema.pth",
+  "n_train": 6702,
+  "n_val": 3876,
+  "n_tp_train": 865,
+  "n_tp_val": 652,
+  "auc_zero_shot": 0.7479553273759686,
+  "auc_classifier": 0.8994918289211283,
+  "auc_distilled": 0.8856824392211786,
+  "improvement": 0.13772711184521003
+}

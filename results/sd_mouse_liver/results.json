@@ -1,0 +1,37 @@
+{
+  "batches": {
+    "b1": {
+      "n": 23,
+      "tp": 22
+    },
+    "b3": {
+      "n": 7,
+      "tp": 3
+    }
+  },
+  "lobo_results": {
+    "b1": {
+      "n_val": 23,
+      "n_tp": 22,
+      "n_fp": 1,
+      "auc_zero_shot": 0.9545454545454546,
+      "auc_classifier": 0.0,
+      "auc_distilled": 0.9545454545454546,
+      "improvement": 0.0
+    },
+    "b3": {
+      "n_val": 7,
+      "n_tp": 3,
+      "n_fp": 4,
+      "auc_zero_shot": 0.9166666666666666,
+      "auc_classifier": 0.0,
+      "auc_distilled": 0.9166666666666666,
+      "improvement": 0.0
+    }
+  },
+  "pooled": {
+    "auc_zero_shot": 0.976,
+    "auc_distilled": 0.9440000000000001,
+    "improvement": -0.03199999999999992
+  }
+}
