@@ -35,7 +35,7 @@ def parse_yolo_label(lbl_path):
     bboxes = []
     if not os.path.exists(lbl_path):
         return bboxes
-    with open(lbl_path, 'r') as f:
+    with open(lbl_path, 'r', encoding='utf-8') as f:
         for line in f:
             parts = line.strip().split()
             if len(parts) >= 5:
@@ -225,7 +225,7 @@ def process_split(data_dir, split, iou_threshold=0.5):
 
         if not annotator_labels:
             # 空标签也写一个空文件
-            open(os.path.join(consensus_dir, f"{stem}.txt"), 'w').close()
+            open(os.path.join(consensus_dir, f"{stem}.txt"), 'w', encoding='utf-8').close()
             continue
 
         # 生成共识标签
@@ -233,7 +233,7 @@ def process_split(data_dir, split, iou_threshold=0.5):
 
         # 写入共识标签
         consensus_path = os.path.join(consensus_dir, f"{stem}.txt")
-        with open(consensus_path, 'w') as f:
+        with open(consensus_path, 'w', encoding='utf-8') as f:
             for cls, xc, yc, w, h, conf, n_ann in consensus:
                 f.write(f"{cls} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}\n")
 
@@ -284,7 +284,7 @@ def main():
 
     # 保存汇总报告
     report_path = os.path.join(args.data, 'consensus_report.json')
-    with open(report_path, 'w') as f:
+    with open(report_path, 'w', encoding='utf-8') as f:
         json.dump({
             'iou_threshold': args.iou_threshold,
             'stats': all_stats,
@@ -312,7 +312,7 @@ def main():
     # 但更简单的方式: 直接用标准路径, 只是标签目录可能是 labels 或 labels_consensus
     
     yaml_path = os.path.join(args.data, 'data_consensus.yaml')
-    with open(yaml_path, 'w') as f:
+    with open(yaml_path, 'w', encoding='utf-8') as f:
         f.write(f"""# MultiOrg Consensus Labels (CLOD-cleaned)
 # Train: merged A+B labels (each image has single annotator)
 # Val: IoU consensus of t0/t1_a/t1_b (each image has 3 annotators)

@@ -1,0 +1,36 @@
+{
+  "tag": "b3",
+  "checkpoint": "results\\supcon_8s_d128_p256_t0.07_b0.1_20260713_003826\\best.pt",
+  "n_crops": 60,
+  "n_tp": 40,
+  "n_fp": 20,
+  "slot_auc": 0.54125,
+  "conf_auc": 0.91625,
+  "slot_ap": 0.7437189812241181,
+  "conf_ap": 0.9632075709595641,
+  "strategies": {
+    "baseline": {
+      "ap": 0.9632075709595641,
+      "delta": 0.0
+    },
+    "hard_filter": {
+      "ap": 0.9632075709595641,
+      "delta": 0.0,
+      "threshold": 0.0
+    },
+    "soft_penalize": {
+      "ap": 0.9632075709595641,
+      "delta": 0.0,
+      "alpha": 0.0
+    },
+    "geometric_mean": {
+      "ap": 0.9632075709595641,
+      "delta": 0.0,
+      "w_slot": 1.0
+    },
+    "lr_meta": {
+      "ap": 0.8290493138365469,
+      "delta": -0.1341582571230172
+    }
+  }
+}

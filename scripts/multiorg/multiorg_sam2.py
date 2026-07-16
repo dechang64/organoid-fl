@@ -606,7 +606,7 @@ def main():
                 if gt_path:
                     # 只获取图片尺寸，不转 RGB（节省内存）
                     print(f"    Loading TIFF...", flush=True)
-                    with Image.open(tiff_file) as _im:
+                    with Image.open(tiff_file, encoding="utf-8") as _im:
                         img_w, img_h = _im.size
                     print(f"    Image size: {img_w}x{img_h}", flush=True)
                     gts = load_ground_truth(gt_path, img_w, img_h)
@@ -791,7 +791,7 @@ def main():
     }
 
     report_path = Path(args.dst) / 'multiorg_sam2_results.json'
-    with open(report_path, 'w') as f:
+    with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2, default=str)
     print(f"\n  Report saved: {report_path}")
 

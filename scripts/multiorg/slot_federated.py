@@ -386,7 +386,7 @@ def main():
             'global_vs_conf_delta': float(global_roc - conf_roc),
         },
     }
-    with open(os.path.join(args.output_dir, 'federated_results.json'), 'w') as f:
+    with open(os.path.join(args.output_dir, 'federated_results.json'), 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2)
     print(f"Results saved to {args.output_dir}/federated_results.json")
 

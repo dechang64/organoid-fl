@@ -19,7 +19,7 @@ SAM2_PATH = '/home/z/my-project/organoid-fl/results/multiorg_sam2_zeroshot/multi
 OUT_DIR = '/home/z/my-project/organoid-fl/results/phase5_fl_primitive'
 os.makedirs(OUT_DIR, exist_ok=True)
 
-with open(SAM2_PATH) as f:
+with open(SAM2_PATH, encoding="utf-8") as f:
     sam2_data = json.load(f)
 
 per_img = sam2_data['per_image']
@@ -302,7 +302,7 @@ summary = {
     'client_names': client_names,
 }
 
-with open(f'{OUT_DIR}/phase5_summary.json', 'w') as f:
+with open(f'{OUT_DIR}/phase5_summary.json', 'w', encoding='utf-8') as f:
     json.dump(summary, f, indent=2, ensure_ascii=False)
 
 print(f"\nResults saved to {OUT_DIR}/phase5_summary.json")

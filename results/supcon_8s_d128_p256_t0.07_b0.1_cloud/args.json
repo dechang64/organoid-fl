@@ -1,0 +1,18 @@
+{
+  "metadata": "/home/z/my-project/organoid-fl/results/phase2_vlm_100/ctm_metadata.json",
+  "crops_dir": "/home/z/my-project/organoid-fl/results/phase2_vlm_100/crops",
+  "output_dir": "/home/z/my-project/organoid-fl/results/supcon_8s_d128_p256_t0.07_b0.1_cloud",
+  "num_slots": 8,
+  "dim_slots": 128,
+  "num_iters": 3,
+  "proj_dim": 256,
+  "temperature": 0.07,
+  "supcon_weight": 0.1,
+  "epochs": 50,
+  "batch_size": 32,
+  "lr": 0.0001,
+  "device": "cpu",
+  "img_size": 224,
+  "num_workers": 0,
+  "patience": 15
+}

@@ -45,7 +45,7 @@ def check_install():
 
 def load_data_yaml(yaml_path):
     """加载 YOLO 格式 data.yaml"""
-    with open(yaml_path, 'r') as f:
+    with open(yaml_path, 'r', encoding='utf-8') as f:
         data = yaml.safe_load(f)
     print(f"Dataset config:")
     print(f"  path: {data.get('path')}")
@@ -131,7 +131,7 @@ def train_rfdetr(data_yaml, model_variant='base', epochs=200, imgsz=512,
         'training_time_hours': hours,
     }
     results_path = os.path.join(output_dir, 'training_results.json')
-    with open(results_path, 'w') as f:
+    with open(results_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, default=str)
     print(f"\nResults saved: {results_path}")
     print(f"\nUse --eval mode to evaluate the best checkpoint:")
@@ -240,7 +240,7 @@ def evaluate_rfdetr(checkpoint_path, data_yaml, imgsz=512, model_variant='small'
         gt_path = os.path.join(labels_dir, base_name + '.txt')
         gt_boxes = []
         if os.path.isfile(gt_path):
-            with open(gt_path, 'r') as f:
+            with open(gt_path, 'r', encoding='utf-8') as f:
                 for line in f:
                     parts = line.strip().split()
                     if len(parts) < 5:
@@ -287,7 +287,7 @@ def evaluate_rfdetr(checkpoint_path, data_yaml, imgsz=512, model_variant='small'
         'mAP50_95': float(result.map50_95),
     }
     results_path = os.path.join(os.path.dirname(checkpoint_path), 'eval_results.json')
-    with open(results_path, 'w') as f:
+    with open(results_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved: {results_path}")
 

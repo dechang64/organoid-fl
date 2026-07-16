@@ -396,4 +396,7 @@ def _plot_feature_importance(morphology: dict, predicted_class: str):
         height=400,
         showlegend=False,
     )
-    st.plotly_chart(fig, use_container_width=True)
+    try:
+        st.plotly_chart(fig, use_container_width=True)
+    except Exception:
+        st.caption("📊 Chart unavailable (plotly issue on Cloud)")

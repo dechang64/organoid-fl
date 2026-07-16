@@ -1503,25 +1503,58 @@
     \end{itemize}
   \end{block}
   \vspace{0em}
-  \begin{alertblock}{结果：Slot 跨域失效}
+  \begin{alertblock}{DINOv2 跨域结果：Slot 失效 + LOO 真跨域}
     \footnotesize
-    \begin{tabular}{lcccc}
+    \begin{tabular}{lccccc}
       \toprule
-      \textbf{数据集} & \textbf{Crops} & \textbf{Slot AUC} & \textbf{Conf AUC} & \textbf{融合提升} \\
+      \textbf{数据集} & \textbf{单域} & \textbf{同域} & \textbf{LOO} & \textbf{Conf} & \textbf{泄露} \\
       \midrule
-      鼠肝 B1 (2592$\times$1944) & 26 & \textcolor{red}{0.29}（反预测） & 0.91 & 无 \\
-      鼠肝 B2 (4000$\times$3000) & 48 & \textcolor{red}{0.51}（随机） & 0.98 & 无 \\
-      鼠肝 B3 (4000$\times$3000) & 60 & \textcolor{red}{0.54}（随机） & 0.92 & 无 \\
-      Intestinal (84 val) & 2744 & \textcolor{red}{0.67} & 0.92 & +0.0005 \\
+      鼠肝 B1 & \textcolor{red}{0.29} & 0.74 & \textcolor{red}{0.49} & 0.91 & 0.25 \\
+      鼠肝 B2 & \textcolor{red}{0.51} & 0.70 & \textcolor{red}{0.56} & 0.98 & 0.14 \\
+      鼠肝 B3 & \textcolor{red}{0.54} & 0.85 & 0.82 & 0.92 & 0.03 \\
+      Intestinal & 0.67 & 0.74 & \textcolor{red}{0.58} & 0.92 & 0.16 \\
       \bottomrule
     \end{tabular}
   \end{alertblock}
   \vspace{0em}
-  \begin{block}{结论}
+  \begin{block}{诊断}
     \begin{itemize}
-      \item SupCon 学到的 TP/FP 区分是\textbf{域特定}的，不构成通用 organoid 原语
-      \item RF-DETR/YOLO confidence 跨域稳健（不依赖域知识）
-      \item 方向：需更大数据量 + 跨域训练（多数据集联合训练）
+      \item 同域结果有数据泄露（平均虚高 0.14pp）
+      \item LOO 真跨域：B1/B2 接近随机，Intestinal 比单域还差
+      \item \textbf{根因}：DINOv2 全局特征是域特定的，不构成通用 organoid 原语
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{CLIP 语义对齐：Zero-Shot 跨域有信号}
+  \begin{block}{动机：借鉴 NLP 语义分析成功经验}
+    \begin{itemize}
+      \item NLP 跨域成功 = 大规模预训练 + 语义对齐 + CoT 推理
+      \item DINOv2 有预训练但\textbf{无语义对齐}——纯视觉特征域特定
+      \item CLIP 有文本-视觉对齐空间 → ``a real organoid'' vs ``background''
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{CLIP Zero-Shot 结果（无训练！）}
+    \footnotesize
+    \begin{tabular}{lcccc}
+      \toprule
+      \textbf{数据集} & \textbf{DINOv2 单域} & \textbf{DINOv2 LOO} & \textbf{CLIP zero-shot} & \textbf{Conf} \\
+      \midrule
+      MultiOrg & 0.79 & — & 0.73 & 0.87 \\
+      鼠肝 B1 & \textcolor{red}{0.29} & 0.49 & \textbf{0.86} & 0.91 \\
+      鼠肝 B2 & 0.51 & 0.56 & \textbf{0.66} & 0.98 \\
+      鼠肝 B3 & 0.54 & 0.82 & \textbf{0.69} & 0.92 \\
+      \bottomrule
+    \end{tabular}
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{关键发现}
+    \begin{itemize}
+      \item B1 从 0.29 $\to$ \textbf{0.86}（+0.57），zero-shot 差 conf 仅 5.8pp
+      \item CLIP \textbf{无需训练}，仅用文本 prompt 就能跨域区分 TP/FP
+      \item ``morphological'' prompt 在鼠肝最优，``medical'' 在 MultiOrg 最优
+      \item $\to$ 推进 A1: CLIP + SupCon 联合训练 + LOO 评估
     \end{itemize}
   \end{block}
 \end{frame}
@@ -1547,6 +1580,8 @@
         \item[\checkmark] \textbf{Phase 10 联邦：Global$>$Local +1.1pp}
         \item[\checkmark] 视觉原语文献调研（FORLA/TwVP/WIPES）
         \item[\checkmark] \textbf{跨域评估：4场景全部失效}
+        \item[\checkmark] \textbf{LOO 真跨域：DINOv2 仍然失败}
+        \item[\checkmark] \textbf{CLIP zero-shot：B1 0.29$\to$0.86（+0.57）}
       \end{itemize}
     \end{block}
     \column{0.48\textwidth}
@@ -1557,15 +1592,16 @@
         \item 联邦聚合：小 client +5.7pp
         \item object-centric 分解有效（同域）
         \item SupCon $\beta=0.1$ 最优
-        \item \textcolor{red}{跨域失效}：slot 域特定
+        \item \textcolor{red}{DINOv2 跨域失效}，\textbf{CLIP 语义对齐有效}
       \end{itemize}
     \end{alertblock}
   \end{columns}
   \vspace{0em}
   \begin{alertblock}{下一步}
     \begin{itemize}
-      \item 跨域泛化：多数据集联合训练（MultiOrg + 鼠肝 + Intestinal）
-      \item 更大数据量：100 crops $\to$ 16K crops（CTM 已验证数据量是关键）
+      \item A1: CLIP + SupCon 联合训练 + LOO（进行中）
+      \item B2: VLM 两步推理（TwVP 范式）
+      \item C1: 3D 时序数据集（OrganoID 4-day tracking）
       \item 论文撰写 + 专利申请
     \end{itemize}
   \end{alertblock}

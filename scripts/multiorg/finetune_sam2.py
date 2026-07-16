@@ -49,7 +49,7 @@ class MultiOrgSAM2Dataset(Dataset):
     """
 
     def __init__(self, manifest_path, image_size=1024):
-        with open(manifest_path) as f:
+        with open(manifest_path, encoding="utf-8") as f:
             self.manifest = json.load(f)
         self.image_size = image_size
 
@@ -505,7 +505,7 @@ def main():
             print(f"    ★ Best! Saved to {ckpt_path}")
 
     # Save history
-    with open(Path(args.dst) / 'training_history.json', 'w') as f:
+    with open(Path(args.dst) / 'training_history.json', 'w', encoding='utf-8') as f:
         json.dump(history, f, indent=2)
 
     print(f"\n{'='*60}")

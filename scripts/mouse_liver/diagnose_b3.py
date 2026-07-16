@@ -56,7 +56,7 @@ def check_batch(batch_name):
         for img_file in img_files:
             img_path = os.path.join(img_dir, img_file)
             try:
-                with Image.open(img_path) as img:
+                with Image.open(img_path, encoding="utf-8") as img:
                     sizes[img.size] += 1
             except Exception as e:
                 print(f"⚠️  无法打开 {img_file}: {e}")

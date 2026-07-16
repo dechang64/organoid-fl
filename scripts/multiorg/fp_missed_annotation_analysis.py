@@ -47,7 +47,7 @@ def load_gt_bboxes(json_path):
         centers: [(cx, cy), ...]
         polygons: [[[y1,x1],[y2,x2],...], ...]  (原始 napari 格式)
     """
-    with open(json_path, 'r') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
     bboxes = []
@@ -256,7 +256,7 @@ def export_napari_json(missed_candidates, output_path):
         # 文件名: class_plate_image_missed.json
         safe_name = img_label.replace('/', '_')
         out_file = os.path.join(output_path, f"{safe_name}_missed.json")
-        with open(out_file, 'w') as f:
+        with open(out_file, 'w', encoding='utf-8') as f:
             json.dump(napari_data, f, indent=2)
         
         total_exported += len(candidates)
@@ -355,7 +355,7 @@ def main():
     # 1. 加载 results
     print(f"\n{'='*60}")
     print(f"=== Loading results: {args.results_json} ===")
-    with open(args.results_json) as f:
+    with open(args.results_json, encoding="utf-8") as f:
         results = json.load(f)
     
     print(f"  Images: {len(results['per_image'])}")
@@ -425,7 +425,7 @@ def main():
     
     # 7. 保存分析结果
     analysis_path = output_dir / 'fp_gt_distance_analysis.json'
-    with open(analysis_path, 'w') as f:
+    with open(analysis_path, 'w', encoding='utf-8') as f:
         json.dump({
             'config': {
                 'results_json': args.results_json,
@@ -458,7 +458,7 @@ def main():
             'conf_mean': float(np.mean([c['confidence'] for c in candidates])),
             'categories': dict(Counter(c['category'] for c in candidates)),
         }
-    with open(summary_path, 'w') as f:
+    with open(summary_path, 'w', encoding='utf-8') as f:
         json.dump({
             'total_candidates': total_candidates,
             'conf_threshold': args.conf_threshold,

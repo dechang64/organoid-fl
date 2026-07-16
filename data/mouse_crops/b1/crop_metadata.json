@@ -1,0 +1,554 @@
+[
+  {
+    "cache_key": "b1_image_00_0",
+    "image": "b1/image_00",
+    "det_idx": 0,
+    "bbox": [
+      753.3993530273438,
+      511.7247009277344,
+      1491.7100830078125,
+      1403.1214599609375
+    ],
+    "rfdetr_conf": 0.9636150002479553,
+    "matched": true,
+    "match_iou": 0.9003214698163977,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_00_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_00_1",
+    "image": "b1/image_00",
+    "det_idx": 1,
+    "bbox": [
+      586.8903198242188,
+      0.0,
+      858.3345336914062,
+      133.1667938232422
+    ],
+    "rfdetr_conf": 0.6251459121704102,
+    "matched": true,
+    "match_iou": 0.8557945629256172,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_00_1.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_00_2",
+    "image": "b1/image_00",
+    "det_idx": 2,
+    "bbox": [
+      0.40811461210250854,
+      850.0729370117188,
+      801.5850830078125,
+      1935.9840087890625
+    ],
+    "rfdetr_conf": 0.3036505877971649,
+    "matched": false,
+    "match_iou": 0.0,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_00_2.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_00_3",
+    "image": "b1/image_00",
+    "det_idx": 3,
+    "bbox": [
+      110.76325988769531,
+      934.5167236328125,
+      339.63665771484375,
+      1126.0574951171875
+    ],
+    "rfdetr_conf": 0.3010246753692627,
+    "matched": true,
+    "match_iou": 0.8541781377806835,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_00_3.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_01_0",
+    "image": "b1/image_01",
+    "det_idx": 0,
+    "bbox": [
+      1521.444580078125,
+      283.9942626953125,
+      1948.8011474609375,
+      715.2899780273438
+    ],
+    "rfdetr_conf": 0.7134439945220947,
+    "matched": true,
+    "match_iou": 0.9247381261706948,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_01_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_01_1",
+    "image": "b1/image_01",
+    "det_idx": 1,
+    "bbox": [
+      2066.389404296875,
+      61.67233657836914,
+      2329.801513671875,
+      344.9774169921875
+    ],
+    "rfdetr_conf": 0.6404535174369812,
+    "matched": true,
+    "match_iou": 0.8996664058155326,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_01_1.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_01_2",
+    "image": "b1/image_01",
+    "det_idx": 2,
+    "bbox": [
+      259.5621337890625,
+      551.334716796875,
+      1666.196533203125,
+      1540.026123046875
+    ],
+    "rfdetr_conf": 0.5168785452842712,
+    "matched": true,
+    "match_iou": 0.9420285173349162,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_01_2.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_02_0",
+    "image": "b1/image_02",
+    "det_idx": 0,
+    "bbox": [
+      959.8875122070312,
+      460.4788513183594,
+      2112.387451171875,
+      1531.8890380859375
+    ],
+    "rfdetr_conf": 0.9909148216247559,
+    "matched": true,
+    "match_iou": 0.8952361022302856,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_02_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_02_1",
+    "image": "b1/image_02",
+    "det_idx": 1,
+    "bbox": [
+      1228.1409912109375,
+      1675.335205078125,
+      1520.4781494140625,
+      1929.560302734375
+    ],
+    "rfdetr_conf": 0.7061348557472229,
+    "matched": true,
+    "match_iou": 0.9117110883048344,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_02_1.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_02_2",
+    "image": "b1/image_02",
+    "det_idx": 2,
+    "bbox": [
+      526.2911376953125,
+      670.0962524414062,
+      743.8460083007812,
+      896.50927734375
+    ],
+    "rfdetr_conf": 0.5595456957817078,
+    "matched": true,
+    "match_iou": 0.9300630548386397,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_02_2.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_03_0",
+    "image": "b1/image_03",
+    "det_idx": 0,
+    "bbox": [
+      746.5479125976562,
+      718.8834228515625,
+      1372.0081787109375,
+      1365.3638916015625
+    ],
+    "rfdetr_conf": 0.7916737794876099,
+    "matched": true,
+    "match_iou": 0.9621374290529024,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_03_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 1
+  },
+  {
+    "cache_key": "b1_image_04_0",
+    "image": "b1/image_04",
+    "det_idx": 0,
+    "bbox": [
+      799.439453125,
+      1314.077392578125,
+      1154.4393310546875,
+      1697.5711669921875
+    ],
+    "rfdetr_conf": 0.6879538297653198,
+    "matched": true,
+    "match_iou": 0.9781544382821317,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_04_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 2
+  },
+  {
+    "cache_key": "b1_image_05_0",
+    "image": "b1/image_05",
+    "det_idx": 0,
+    "bbox": [
+      607.9713745117188,
+      701.291259765625,
+      1360.237548828125,
+      1527.2025146484375
+    ],
+    "rfdetr_conf": 0.8802387118339539,
+    "matched": true,
+    "match_iou": 0.9083266390066097,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_05_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 1
+  },
+  {
+    "cache_key": "b1_image_06_0",
+    "image": "b1/image_06",
+    "det_idx": 0,
+    "bbox": [
+      109.73030090332031,
+      361.38165283203125,
+      1079.0604248046875,
+      1451.68505859375
+    ],
+    "rfdetr_conf": 0.9947633147239685,
+    "matched": true,
+    "match_iou": 0.9224795178704285,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_06_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_06_1",
+    "image": "b1/image_06",
+    "det_idx": 1,
+    "bbox": [
+      1262.5108642578125,
+      651.404296875,
+      2177.005126953125,
+      1573.1807861328125
+    ],
+    "rfdetr_conf": 0.9217693209648132,
+    "matched": true,
+    "match_iou": 0.9430623574952247,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_06_1.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_06_2",
+    "image": "b1/image_06",
+    "det_idx": 2,
+    "bbox": [
+      1139.850341796875,
+      223.60536193847656,
+      1412.3057861328125,
+      497.61846923828125
+    ],
+    "rfdetr_conf": 0.6460887789726257,
+    "matched": true,
+    "match_iou": 0.8630344785305092,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_06_2.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 3
+  },
+  {
+    "cache_key": "b1_image_07_0",
+    "image": "b1/image_07",
+    "det_idx": 0,
+    "bbox": [
+      254.5522918701172,
+      514.3243408203125,
+      850.1599731445312,
+      1102.146240234375
+    ],
+    "rfdetr_conf": 0.8218181133270264,
+    "matched": true,
+    "match_iou": 0.9202829987720519,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_07_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 1
+  },
+  {
+    "cache_key": "b1_image_08_0",
+    "image": "b1/image_08",
+    "det_idx": 0,
+    "bbox": [
+      239.6698760986328,
+      1138.05224609375,
+      542.0630493164062,
+      1450.128662109375
+    ],
+    "rfdetr_conf": 0.9097909927368164,
+    "matched": true,
+    "match_iou": 0.9214920506970621,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_08_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 4
+  },
+  {
+    "cache_key": "b1_image_08_1",
+    "image": "b1/image_08",
+    "det_idx": 1,
+    "bbox": [
+      496.3938293457031,
+      849.1235961914062,
+      824.34765625,
+      1210.57421875
+    ],
+    "rfdetr_conf": 0.8515215516090393,
+    "matched": true,
+    "match_iou": 0.9740619948435285,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_08_1.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 4
+  },
+  {
+    "cache_key": "b1_image_08_2",
+    "image": "b1/image_08",
+    "det_idx": 2,
+    "bbox": [
+      1302.9158935546875,
+      771.1743774414062,
+      1873.379638671875,
+      1355.3094482421875
+    ],
+    "rfdetr_conf": 0.8031527996063232,
+    "matched": true,
+    "match_iou": 0.9157502872748285,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_08_2.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 4
+  },
+  {
+    "cache_key": "b1_image_08_3",
+    "image": "b1/image_08",
+    "det_idx": 3,
+    "bbox": [
+      818.8843383789062,
+      388.8025207519531,
+      1091.762939453125,
+      658.2315673828125
+    ],
+    "rfdetr_conf": 0.6156466603279114,
+    "matched": true,
+    "match_iou": 0.9335104717949982,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_08_3.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 4
+  },
+  {
+    "cache_key": "b1_image_09_0",
+    "image": "b1/image_09",
+    "det_idx": 0,
+    "bbox": [
+      276.4610595703125,
+      0.0,
+      800.0390014648438,
+      509.51849365234375
+    ],
+    "rfdetr_conf": 0.6881993412971497,
+    "matched": true,
+    "match_iou": 0.9502173684248958,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_09_0.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 2
+  },
+  {
+    "cache_key": "b1_image_09_1",
+    "image": "b1/image_09",
+    "det_idx": 1,
+    "bbox": [
+      1401.498779296875,
+      1114.2169189453125,
+      1955.529052734375,
+      1668.7974853515625
+    ],
+    "rfdetr_conf": 0.6295350790023804,
+    "matched": true,
+    "match_iou": 0.9475603135620464,
+    "area": 0,
+    "circularity": 0,
+    "solidity": 0,
+    "aspect_ratio": 0,
+    "crop_path": "/home/z/my-project/organoid-fl/data/mouse_crops/b1/crops/b1_image_09_1.png",
+    "image_size": [
+      2592,
+      1944
+    ],
+    "n_gt": 2
+  }
+]

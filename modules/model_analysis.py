@@ -112,7 +112,10 @@ def render():
                 yaxis_title="Accuracy (%)",
                 height=400,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            try:
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception:
+                st.caption("📊 Chart unavailable (plotly issue on Cloud)")
 
             gap = max(accs) - min(accs)
             if gap > 5:

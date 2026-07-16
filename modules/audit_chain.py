@@ -87,7 +87,14 @@ def render():
 
         # Timeline visualization
         fig = audit_timeline(df.tail(n_show))
-        st.plotly_chart(fig, use_container_width=True)
+        try:
+            try:
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception:
+                st.caption("📊 Chart unavailable (plotly issue on Cloud)")
+        except Exception:
+            # Fallback: show as text if plotly fails
+            st.caption("📊 Timeline chart (plotly unavailable on Cloud)")
     else:
         st.info("No blocks yet. Add test operations above.")
 

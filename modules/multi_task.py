@@ -137,7 +137,10 @@ def render():
 
         # Convergence chart
         fig = fl_convergence(history)
-        st.plotly_chart(fig, use_container_width=True)
+        try:
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception:
+            st.caption("📊 Chart unavailable (plotly issue on Cloud)")
 
         # Per-client breakdown
         if history and "client_metrics" in history[-1]:
@@ -160,7 +163,10 @@ def render():
                 yaxis_title="Accuracy (%)",
                 height=400,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            try:
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception:
+                st.caption("📊 Chart unavailable (plotly issue on Cloud)")
 
     # ── Methodology ──
     with st.expander("📖 Multi-Task FL Methodology"):

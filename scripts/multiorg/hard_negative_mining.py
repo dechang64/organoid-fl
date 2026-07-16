@@ -37,7 +37,7 @@ from collections import defaultdict
 def load_data_yaml(yaml_path):
     """加载 YOLO data.yaml"""
     import yaml
-    with open(yaml_path, 'r') as f:
+    with open(yaml_path, 'r', encoding='utf-8') as f:
         data = yaml.safe_load(f)
     return data
 
@@ -61,7 +61,7 @@ def load_yolo_labels(label_path, img_w, img_h):
     bboxes = []
     if not os.path.exists(label_path):
         return bboxes
-    with open(label_path, 'r') as f:
+    with open(label_path, 'r', encoding='utf-8') as f:
         for line in f:
             parts = line.strip().split()
             if len(parts) < 5:
@@ -211,7 +211,7 @@ def extract_fp_patches(model, data_yaml, output_dir, iou_threshold=0.3, conf=0.2
                 
                 # 空标签文件（负样本 = 无目标）
                 lbl_name = os.path.splitext(patch_name)[0] + '.txt'
-                open(os.path.join(neg_lbl_dir, lbl_name), 'w').close()
+                open(os.path.join(neg_lbl_dir, lbl_name), 'w', encoding='utf-8').close()
         
         if (i+1) % 100 == 0:
             print(f"  [{i+1}/{len(img_files)}] dets={total_dets} fps={total_fps} "
@@ -315,7 +315,7 @@ test: valid/images
 nc: 1
 names: ['organoid']
 """
-    with open(yaml_path, 'w') as f:
+    with open(yaml_path, 'w', encoding='utf-8') as f:
         f.write(yaml_content)
     print(f"  data.yaml: {yaml_path}")
     
@@ -378,7 +378,7 @@ def train_with_hnm(data_yaml, checkpoint, model_variant, epochs, imgsz, output_d
         'training_time_hours': hours,
     }
     log_path = os.path.join(output_dir, 'training_log.json')
-    with open(log_path, 'w') as f:
+    with open(log_path, 'w', encoding='utf-8') as f:
         json.dump(log, f, indent=2)
     print(f"  Log: {log_path}")
     

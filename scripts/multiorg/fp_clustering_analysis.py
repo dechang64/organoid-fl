@@ -135,7 +135,7 @@ def load_gt_annotations(data_root, image_path, annotator):
     if json_path is None:
         return []
     
-    with open(json_path) as f:
+    with open(json_path, encoding="utf-8") as f:
         annot = json.load(f)
     
     bboxes = []
@@ -621,7 +621,7 @@ def main():
     print(f"{'='*60}")
     print(f"=== Loading results: {args.results_json} ===")
     print(f"{'='*60}")
-    with open(args.results_json) as f:
+    with open(args.results_json, encoding="utf-8") as f:
         results = json.load(f)
     
     config = results['config']
@@ -738,9 +738,9 @@ def main():
     
     np.save(output_dir / "tp_embeddings.npy", tp_embeddings)
     np.save(output_dir / "fp_embeddings.npy", fp_embeddings)
-    with open(output_dir / "tp_info.json", 'w') as f:
+    with open(output_dir / "tp_info.json", 'w', encoding='utf-8') as f:
         json.dump(all_tp_info, f)
-    with open(output_dir / "fp_info.json", 'w') as f:
+    with open(output_dir / "fp_info.json", 'w', encoding='utf-8') as f:
         json.dump(all_fp_info, f)
     print(f"  Saved embeddings and info to {output_dir}")
     
@@ -765,7 +765,7 @@ def main():
         n_clusters=args.n_clusters, output_dir=output_dir
     )
     
-    with open(output_dir / "fp_cluster_summary.json", 'w') as f:
+    with open(output_dir / "fp_cluster_summary.json", 'w', encoding='utf-8') as f:
         json.dump(cluster_summary, f, indent=2)
     
     # ---- 5. t-SNE ----
@@ -781,7 +781,7 @@ def main():
         output_dir=output_dir, pca_dim=args.pca_dim
     )
     
-    with open(output_dir / "dpmm_verification.json", 'w') as f:
+    with open(output_dir / "dpmm_verification.json", 'w', encoding='utf-8') as f:
         json.dump(dpmm_results, f, indent=2)
     
     # ---- 7. 总结 ----

@@ -281,7 +281,10 @@ def _plot_similarity_distribution(similar_cases):
         height=400,
         showlegend=False,
     )
-    st.plotly_chart(fig, use_container_width=True)
+    try:
+        st.plotly_chart(fig, use_container_width=True)
+    except Exception:
+        st.caption("📊 Chart unavailable (plotly issue on Cloud)")
 
 
 def _plot_database_charts(rag: VisionRAG):
@@ -319,4 +322,7 @@ def _plot_database_charts(rag: VisionRAG):
     ), row=1, col=2)
 
     fig.update_layout(template="plotly_white", height=400, showlegend=False)
-    st.plotly_chart(fig, use_container_width=True)
+    try:
+        st.plotly_chart(fig, use_container_width=True)
+    except Exception:
+        st.caption("📊 Chart unavailable (plotly issue on Cloud)")

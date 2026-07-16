@@ -173,13 +173,13 @@ def main():
 
     # 保存 JSON 报告
     json_path = 'multiorg_structure_report.json'
-    with open(json_path, 'w') as f:
+    with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(full_report, f, indent=2, ensure_ascii=False, default=str)
     print(f"\n\nFull report saved: {json_path}")
 
     # 保存人类可读摘要
     txt_path = 'multiorg_structure_report.txt'
-    with open(txt_path, 'w') as f:
+    with open(txt_path, 'w', encoding='utf-8') as f:
         f.write(f"MultiOrg Structure Report\n{'='*70}\n")
         f.write(f"Source: {args.src}\n\n")
         for split, report in full_report['splits'].items():

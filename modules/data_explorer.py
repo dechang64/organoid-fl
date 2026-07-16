@@ -106,7 +106,10 @@ def render():
             title=f"Data Distribution (Non-IID={non_iid:.1f})",
         )
         fig.update_layout(template="plotly_white", height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        try:
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception:
+            st.caption("📊 Chart unavailable (plotly issue on Cloud)")
 
         if non_iid > 0:
             st.warning(f"⚠️ Non-IID={non_iid:.1f}: Data is unevenly distributed across clients. "

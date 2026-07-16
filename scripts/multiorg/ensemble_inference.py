@@ -427,7 +427,7 @@ def process_ensemble(rfdetr_model, yolo_model, src_dir, dst_dir,
     }
 
     report_path = os.path.join(dst_dir, 'ensemble_results.json')
-    with open(report_path, 'w') as f:
+    with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2, default=str)
 
     # 打印对比表

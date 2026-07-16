@@ -1,0 +1,12 @@
+
+============================================================
+  Cross-Domain Evaluation Pipeline (Cloud VM)
+  YOLOv12 crops → SupCon training → Cross-domain eval
+============================================================
+
+============================================================
+Generating crops: b1
+  YOLO checkpoint: /home/z/my-project/mouse_liver_organoid/runs/detect/runs/mouse_liver/exp1_b1_train/weights/best.pt
+  Images: /home/z/my-project/mouse_liver_data_correct/batch1/images
+  Annotations: /home/z/my-project/mouse_liver_data_correct/batch1/annotations.json
+============================================================

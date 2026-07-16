@@ -34,7 +34,7 @@ def load_annotations(json_path):
     Format: {'0': [[y1,x1],[y2,x2],[y3,x3],[y4,x4]], ...}
     NOTE: MultiOrg uses [row, col] = [y, x] order, NOT [x, y]!
     """
-    with open(json_path, 'r') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     annotations = []
@@ -205,7 +205,7 @@ def process_image(img_dir, output_img_dir, output_lbl_dir, class_id,
 
             patch_name = f"{split}_{class_name}_{plate_name}_{img_name}_tx{tx}_ty{ty}"
             tile_img.save(os.path.join(output_img_dir, f"{patch_name}.png"))
-            with open(os.path.join(output_lbl_dir, f"{patch_name}.txt"), 'w') as f:
+            with open(os.path.join(output_lbl_dir, f"{patch_name}.txt"), 'w', encoding='utf-8') as f:
                 f.write('\n'.join(yolo_lines))
 
             patch_count += 1
@@ -283,7 +283,7 @@ nc: {len(CLASS_NAMES)}
 names: {CLASS_NAMES}
 """
     yaml_path = os.path.join(dst_dir, 'data.yaml')
-    with open(yaml_path, 'w') as f:
+    with open(yaml_path, 'w', encoding='utf-8') as f:
         f.write(yaml_content)
     print(f"\nCreated {yaml_path}")
     return yaml_path

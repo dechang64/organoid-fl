@@ -1494,29 +1494,34 @@
   \end{alertblock}
 \end{frame}
 
-\begin{frame}{跨域泛化：MultiOrg $\to$ 鼠肝（进行中）}
-  \begin{block}{动机：传统方法跨域失败}
+\begin{frame}{跨域泛化：MultiOrg $\to$ 鼠肝 \& Intestinal（结果）}
+  \begin{block}{实验设置}
     \begin{itemize}
-      \item B1$\to$B2 zeroshot: F1=0.22（大目标$\to$小目标崩溃）
-      \item B1$\to$B3 zeroshot: F1=0.00（完全失效）
-      \item SAM2 fewshot: B2 F1=0.92, B3=0.67（需目标域标注）
+      \item SupCon checkpoint: MultiOrg 100 crops 训练（K=8, dim=128, $\tau$=0.07, $\beta$=0.1）
+      \item 评估: DINOv2 ViT-B/14 提取 embedding $\to$ slot attention $\to$ AUC/AP
+      \item 鼠肝: RF-DETR Small 检测（3 batch checkpoint），Intestinal: YOLOv12s 检测
     \end{itemize}
   \end{block}
   \vspace{0em}
-  \begin{alertblock}{Slot 跨域假设}
-    \begin{itemize}
-      \item DINOv2 冻结 $\to$ 不依赖目标域微调
-      \item Slot 学到的是 ``organoid 长什么样''（object-centric 原语）
-      \item 不是 ``MultiOrg 的 bbox 分布''
-      \item $\to$ \textbf{直接迁移到鼠肝应该有效}
-    \end{itemize}
+  \begin{alertblock}{结果：Slot 跨域失效}
+    \footnotesize
+    \begin{tabular}{lcccc}
+      \toprule
+      \textbf{数据集} & \textbf{Crops} & \textbf{Slot AUC} & \textbf{Conf AUC} & \textbf{融合提升} \\
+      \midrule
+      鼠肝 B1 (2592$\times$1944) & 26 & \textcolor{red}{0.29}（反预测） & 0.91 & 无 \\
+      鼠肝 B2 (4000$\times$3000) & 48 & \textcolor{red}{0.51}（随机） & 0.98 & 无 \\
+      鼠肝 B3 (4000$\times$3000) & 60 & \textcolor{red}{0.54}（随机） & 0.92 & 无 \\
+      Intestinal (84 val) & 2744 & \textcolor{red}{0.67} & 0.92 & +0.0005 \\
+      \bottomrule
+    \end{tabular}
   \end{alertblock}
   \vspace{0em}
-  \begin{block}{实验矩阵（G2 = 核心）}
+  \begin{block}{结论}
     \begin{itemize}
-      \item G2: MultiOrg best.pt $\to$ 鼠肝 B1/B2/B3（零标注跨域）
-      \item 判定标准：Slot AUC $>$ 0.55 $\to$ 跨域有效
-      \item 如果成功 $\to$ ``通用 organoid 原语''论文叙事
+      \item SupCon 学到的 TP/FP 区分是\textbf{域特定}的，不构成通用 organoid 原语
+      \item RF-DETR/YOLO confidence 跨域稳健（不依赖域知识）
+      \item 方向：需更大数据量 + 跨域训练（多数据集联合训练）
     \end{itemize}
   \end{block}
 \end{frame}
@@ -1541,6 +1546,7 @@
         \item[\checkmark] \textbf{C4 闭环：AP 0.829$\to$0.861}（+3.3pp）
         \item[\checkmark] \textbf{Phase 10 联邦：Global$>$Local +1.1pp}
         \item[\checkmark] 视觉原语文献调研（FORLA/TwVP/WIPES）
+        \item[\checkmark] \textbf{跨域评估：4场景全部失效}
       \end{itemize}
     \end{block}
     \column{0.48\textwidth}
@@ -1549,16 +1555,17 @@
         \item RF-DETR AP: 0.829 $\to$ \textbf{0.861}（+3.3pp）
         \item Combined ROC: \textbf{0.910}（+2.2pp）
         \item 联邦聚合：小 client +5.7pp
-        \item object-centric 分解有效
+        \item object-centric 分解有效（同域）
         \item SupCon $\beta=0.1$ 最优
+        \item \textcolor{red}{跨域失效}：slot 域特定
       \end{itemize}
     \end{alertblock}
   \end{columns}
   \vspace{0em}
   \begin{alertblock}{下一步}
     \begin{itemize}
-      \item 跨域泛化：MultiOrg $\to$ 鼠肝（进行中）
-      \item $\tau=0.5$ 消融（进行中）
+      \item 跨域泛化：多数据集联合训练（MultiOrg + 鼠肝 + Intestinal）
+      \item 更大数据量：100 crops $\to$ 16K crops（CTM 已验证数据量是关键）
       \item 论文撰写 + 专利申请
     \end{itemize}
   \end{alertblock}

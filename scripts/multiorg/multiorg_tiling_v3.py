@@ -36,7 +36,7 @@ def load_annotations(json_path):
     MultiOrg format: {'0': [[y1,x1],[y2,x2],[y3,x3],[y4,x4]], ...}
     NOTE: [row, col] = [y, x] order (napari convention)
     """
-    with open(json_path, 'r') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     annotations = []
@@ -266,7 +266,7 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
                             f"{CLASS_ID} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}"
                         )
                 lbl_path = os.path.join(output_lbl_dirs['any'], f"{patch_name}.txt")
-                with open(lbl_path, 'w') as f:
+                with open(lbl_path, 'w', encoding='utf-8') as f:
                     f.write('\n'.join(yolo_lines))
             else:
                 # 多标注者模式：每个标注者一个标签目录
@@ -282,7 +282,7 @@ def process_image_multi_rater(img_dir, output_img_dir, output_lbl_dirs,
                                 f"{CLASS_ID} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}"
                             )
                     lbl_path = os.path.join(output_lbl_dirs[ann_key], f"{patch_name}.txt")
-                    with open(lbl_path, 'w') as f:
+                    with open(lbl_path, 'w', encoding='utf-8') as f:
                         f.write('\n'.join(yolo_lines))
 
             patch_count += 1
@@ -430,7 +430,7 @@ nc: 1
 names: {CLASS_NAMES}
 """
     yaml_path = os.path.join(dst_dir, 'data.yaml')
-    with open(yaml_path, 'w') as f:
+    with open(yaml_path, 'w', encoding='utf-8') as f:
         f.write(yaml_content)
     print(f"\nCreated {yaml_path}")
     return yaml_path
@@ -453,7 +453,7 @@ def setup_default_val_labels(dst_dir):
 
     # Write a switch helper script
     switch_script = os.path.join(dst_dir, 'switch_val.bat')
-    with open(switch_script, 'w') as f:
+    with open(switch_script, 'w', encoding='utf-8') as f:
         f.write('@echo off\n')
         f.write('REM Usage: switch_val.bat t0 ^| t1_a ^| t1_b\n')
         f.write('set ANNOTATOR=%1\n')

@@ -1554,7 +1554,35 @@
       \item B1 从 0.29 $\to$ \textbf{0.86}（+0.57），zero-shot 差 conf 仅 5.8pp
       \item CLIP \textbf{无需训练}，仅用文本 prompt 就能跨域区分 TP/FP
       \item ``morphological'' prompt 在鼠肝最优，``medical'' 在 MultiOrg 最优
-      \item $\to$ 推进 A1: CLIP + SupCon 联合训练 + LOO 评估
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{训练破坏泛化：SupCon / CoOp LOO 结果}
+  \begin{alertblock}{所有监督训练都破坏 CLIP zero-shot 跨域能力}
+    \scriptsize
+    \begin{tabular}{lccccc}
+      \toprule
+      \textbf{数据集} & \textbf{DINOv2 LOO} & \textbf{CLIP zero-shot} & \textbf{CLIP+SupCon} & \textbf{CoOp} & \textbf{Conf} \\
+      \midrule
+      MultiOrg & — & 0.73 & 0.95 & 0.62 & 0.87 \\
+      鼠肝 B1 & 0.49 & \textbf{0.86} & 0.50 & 0.67 & 0.91 \\
+      鼠肝 B2 & 0.56 & \textbf{0.66} & 0.57 & 0.58 & 0.98 \\
+      鼠肝 B3 & 0.82 & \textbf{0.69} & 0.45 & 0.65 & 0.92 \\
+      Intestinal & 0.58 & \textbf{0.69} & 0.50 & 0.69 & 0.92 \\
+      \midrule
+      \textbf{平均} & 0.58 & \textbf{0.73} & 0.58 & 0.64 & \textbf{0.94} \\
+      \bottomrule
+    \end{tabular}
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{核心结论}
+    \begin{itemize}
+      \item CLIP zero-shot（无训练）= 最强跨域 slot（平均 0.73）
+      \item SupCon 训练 slot $\to$ B1 从 0.86 $\to$ 0.50（\textcolor{red}{-0.36}）
+      \item CoOp 训练 prompt $\to$ B1 从 0.86 $\to$ 0.67（\textcolor{red}{-0.19}，破坏更少但仍不如 zero-shot）
+      \item 和 NLP 一致：微调破坏预训练 zero-shot 泛化
+      \item $\to$ \textbf{不训练参数}，改用 prompt 工程 / VLM 推理 / 3D 时序
     \end{itemize}
   \end{block}
 \end{frame}
@@ -1582,6 +1610,7 @@
         \item[\checkmark] \textbf{跨域评估：4场景全部失效}
         \item[\checkmark] \textbf{LOO 真跨域：DINOv2 仍然失败}
         \item[\checkmark] \textbf{CLIP zero-shot：B1 0.29$\to$0.86（+0.57）}
+        \item[\checkmark] \textbf{训练破坏泛化：SupCon/CoOp 都不如 zero-shot}
       \end{itemize}
     \end{block}
     \column{0.48\textwidth}
@@ -1590,17 +1619,17 @@
         \item RF-DETR AP: 0.829 $\to$ \textbf{0.861}（+3.3pp）
         \item Combined ROC: \textbf{0.910}（+2.2pp）
         \item 联邦聚合：小 client +5.7pp
-        \item object-centric 分解有效（同域）
-        \item SupCon $\beta=0.1$ 最优
         \item \textcolor{red}{DINOv2 跨域失效}，\textbf{CLIP 语义对齐有效}
+        \item \textbf{所有训练都破坏 zero-shot 泛化}
+        \item CLIP zero-shot 平均 0.73 = 最强跨域
       \end{itemize}
     \end{alertblock}
   \end{columns}
   \vspace{0em}
   \begin{alertblock}{下一步}
     \begin{itemize}
-      \item A1: CLIP + SupCon 联合训练 + LOO（进行中）
-      \item B2: VLM 两步推理（TwVP 范式）
+      \item B2: VLM 两步推理（TwVP 范式，API 待恢复）
+      \item Prompt 工程 / 多 prompt 集成（无训练优化）
       \item C1: 3D 时序数据集（OrganoID 4-day tracking）
       \item 论文撰写 + 专利申请
     \end{itemize}

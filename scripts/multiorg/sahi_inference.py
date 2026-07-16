@@ -380,7 +380,7 @@ def inference_image(model, model_type, img_path, window_sizes=(640,),
 def load_ground_truth(json_path, img_w, img_h):
     """加载 ground truth (napari [row,col] format) → bbox list"""
     import json as json_mod
-    with open(json_path, 'r') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         data = json_mod.load(f)
 
     gts = []
@@ -404,7 +404,7 @@ def load_ground_truth_masks(json_path, img_w, img_h):
     """
     import json as json_mod
     import cv2
-    with open(json_path, 'r') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         data = json_mod.load(f)
 
     results = []
@@ -634,7 +634,7 @@ def process_test_set(model, model_type, src_dir, dst_dir,
     }
 
     report_path = os.path.join(dst_dir, 'sahi_results.json')
-    with open(report_path, 'w') as f:
+    with open(report_path, 'w', encoding='utf-8') as f:
         json.dump({'summary': summary, 'per_image': all_results}, f, indent=2)
 
     print(f"\n{'='*60}")

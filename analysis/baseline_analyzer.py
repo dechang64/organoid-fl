@@ -6,7 +6,7 @@ MultiOrg Baseline Analysis Script
 - Output: baseline_analysis.json + baseline_report.md
 
 Usage:
-    python baseline_analyzer.py --results C:\Users\decha\organoid-fl\runs\detect\baseline_test\v12s_1280
+    python baseline_analyzer.py --results C:/Users/decha/organoid-fl/runs/detect/baseline_test/v12s_1280
 """
 
 import os
@@ -30,7 +30,7 @@ def parse_args():
 def load_results_csv(csv_path):
     """Load Ultralytics results.csv → list of dicts."""
     results = []
-    with open(csv_path, 'r') as f:
+    with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             # Strip whitespace from keys
@@ -309,7 +309,7 @@ def main():
     val_text = ""
     val_path = results_dir / 'val_output.txt'
     if val_path.exists():
-        with open(val_path, 'r') as f:
+        with open(val_path, 'r', encoding='utf-8') as f:
             val_text = f.read()
     else:
         # Use default from known results
@@ -332,14 +332,14 @@ def main():
         'val_output': val_text,
     }
     json_path = output_dir / 'baseline_analysis.json'
-    with open(json_path, 'w') as f:
+    with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(analysis, f, indent=2)
     print(f"\nSaved: {json_path}")
     
     # Save report
     report = generate_report(convergence, per_class, fl_readiness, val_text)
     md_path = output_dir / 'baseline_report.md'
-    with open(md_path, 'w') as f:
+    with open(md_path, 'w', encoding='utf-8') as f:
         f.write(report)
     print(f"Saved: {md_path}")
     

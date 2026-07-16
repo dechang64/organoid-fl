@@ -64,7 +64,7 @@
 
 % -- Metadata ------------------------------------------------------------
 \title[Organoid-FL]{Organoid-FL: 类器官检测联邦学习平台}
-\subtitle{项目进展汇报 v7}
+\subtitle{项目进展汇报 v9}
 \date{2026年7月}
 
 \begin{document}
@@ -1183,6 +1183,233 @@
 
 
 % ========================================================================
+\section{CTM 持续思考实验}
+
+\begin{frame}{CTM：连续思维机器（Sakana AI, NeurIPS 2025）}
+  \begin{block}{核心创新}
+    \begin{itemize}
+      \item \textbf{NLMs}：每个神经元有私有权重（非共享）
+      \item \textbf{神经同步化}：时间相关性矩阵（非快照），Q 从同步化来
+      \item \textbf{Attention Q 从内部来}：模型自己决定看哪里（emergent active vision）
+      \item \textbf{Loss}：argmin(loss) + argmax(certainty) $\to$ 自适应计算
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{架构}
+    \begin{itemize}
+      \item DINOv2 ViT-B/14 冻结（86.6M params, 0 trainable）
+      \item CTM head 可训练（4.68M params）
+      \item 输入 224$\times$224 $\to$ 257 spatial tokens $\to$ 20 ticks 推理
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{CTM 全量训练结果（16198 crops, 50 epochs）}
+  \begin{block}{Test set 2445 samples（按图像分割，0 泄露）}
+    \begin{tabular}{lcc}
+      \toprule
+      \textbf{指标} & \textbf{AUC} & \textbf{说明} \\
+      \midrule
+      RF-DETR baseline & \textbf{0.893} & confidence 分数 \\
+      CTM final tick & 0.800 & 第 20 tick \\
+      CTM best tick & 0.801 & tick 17 \\
+      CTM certain tick & 0.800 & argmax certainty per sample \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{CTM 没超过 RF-DETR baseline（差 8.7pp）}
+    \begin{itemize}
+      \item Tick 1-2 AUC=0.20（反预测），tick 3 突跳 0.79
+      \item 之后 15 tick 只涨 0.8pp — ``thinking'' 效果极弱
+      \item Certainty 全程 $<$0.37，没有样本达到 0.8 阈值 — 自适应计算未启动
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{CTM 代码审计：5 个 Bug 修复}
+  \begin{alertblock}{数据泄露（Critical）}
+    按检测索引分割 train/val/test $\to$ 同图 crops 跨 split \\
+    修复：按 \textbf{image\_name} 分割 $\to$ 0 泄露 \\
+    效果：62 样本 val 0.907 $\to$ 2445 样本 test 0.800（水分 -10pp）
+  \end{alertblock}
+  \vspace{0em}
+  \begin{alertblock}{同步化零值污染（Critical）}
+    post\_acts\_history 预分配全零，每 tick 同步化混入当前 tick 的 0 值 \\
+    $\to$ 破坏时间相关性矩阵 \\
+    修复：改为 growing list，action synch 只看过去，output synch 看过去+当前
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{其他修复}
+    \begin{itemize}
+      \item acc\_best = acc\_certain 始终相同（都用 final tick）$\to$ 分别用 argmin/argmax
+      \item auc\_certain = auc\_final（certain\_probs 算了没存）$\to$ 独立存储
+      \item generate\_crops 重跑时 metadata 为空 $\to$ 已存在 crop 也加 metadata
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+
+% ========================================================================
+\section{视觉原语文献调研}
+
+\begin{frame}{文献调研：关键论文发现}
+  \begin{block}{核心论文}
+    \begin{tabular}{llp{6cm}}
+      \toprule
+      \textbf{论文} & \textbf{会议} & \textbf{贡献} \\
+      \midrule
+      FORLA & NeurIPS 2025 & 联邦 slot attention，无监督跨域表征 \\
+      TwVP & 2025 & 点/bbox 作为推理链中的空间原语 \\
+      WIPES & ICCV 2025 & 小波频域视觉原语 \\
+      Neuro-Symbolic & AAAI 2025 & 混合 CV + 逻辑推理消歧 \\
+      CZSL Survey & 2025 & 属性$\times$物体原语组合泛化 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{核心洞察}
+    \begin{itemize}
+      \item 当前 TP/FP 在\textbf{全局特征空间}不可分（DINOv2 PR-AUC=0.29）
+      \item 需要换一个特征空间：\textbf{object-centric 分解}（slot attention）
+      \item FORLA 直接命中：FL + object-centric + slot attention
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{Phase 8-11 实验设计}
+  \begin{block}{新增 4 个实验阶段}
+    \begin{tabular}{llp{5cm}c}
+      \toprule
+      \textbf{Phase} & \textbf{方法} & \textbf{假设} & \textbf{成本} \\
+      \midrule
+      8 & 小波频域（WIPES） & TP/FP 频域可分 & 零（CPU 30min） \\
+      9 & Slot Attention（FORLA） & object-centric 分解可分 & GPU 4-8h \\
+      10 & 联邦原语聚合 & 分布聚合 $>$ 参数聚合 & 2-3 天代码 \\
+      11 & 对比原语学习 & InfoNCE 强制拉开 TP/FP & 1 周 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{决策树}
+    Phase 8 PR-AUC $>$ 0.60 $\to$ 有效，进 Phase 9 提升 \\
+    Phase 8 $<$ 0.50 $\to$ 无效，直接进 Phase 9 换特征空间 \\
+    Phase 9 $>$ 0.50 $\to$ slot 有效，进 Phase 10 联邦 \\
+    Phase 9 $<$ 0.50 $\to$ 进 Phase 11 对比学习
+  \end{block}
+\end{frame}
+
+
+% ========================================================================
+\section{Phase 8 小波实验结果}
+
+\begin{frame}{Phase 8：小波频域原语分析（全量 16198 crops）}
+  \begin{block}{实验结果}
+    \begin{tabular}{llccc}
+      \toprule
+      \textbf{实验} & \textbf{特征空间} & \textbf{PR-AUC} & \textbf{ROC-AUC} & \textbf{维度} \\
+      \midrule
+      DINOv2 CLS（之前） & 768 维全局 embedding & 0.29 & — & 768 \\
+      形态学（之前） & circ/solidity/ar & $<$0.50 & — & 4 \\
+      \midrule
+      W1: Haar 2L & 28 维小波统计 & \alert{0.457} & 0.681 & 28 \\
+      W2: db4 3L & 40 维小波统计 & \alert{0.446} & 0.687 & 40 \\
+      W3: haar+morph & 32 维拼接 & 0.645 & 0.791 & 32 \\
+      \midrule
+      \textbf{RF-DETR baseline} & confidence & \textbf{0.819} & \textbf{0.893} & 1 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{假设被推翻：小波单独无效}
+    \begin{itemize}
+      \item PR-AUC 0.45 $<$ 0.50（随机），100 crops 小样本 inflated 了结果
+      \item 每个单特征 PR-AUC 都 $<$ 0.40（LL\_std=0.367 反预测）
+      \item W3 morph 补救了（+18.8pp），说明形态学+小波有\textbf{互补性}
+      \item 但仍远低于 RF-DETR 0.819
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+
+% ========================================================================
+\section{Phase 9 Slot Attention 结果}
+
+\begin{frame}{Phase 9：Slot Attention 原语提取（FORLA 路线）}
+  \begin{block}{架构}
+    \begin{itemize}
+      \item DINOv2 ViT-B/14 冻结（86.6M params, 0 trainable）
+      \item Slot Attention：K=8 slots, dim=128, 3 iters
+      \item 可训练参数：480K（CTM 4.68M 的 1/10）
+      \item 输入 224$\times$224 $\to$ DINOv2 spatial tokens [257,768] $\to$ Slot Attention $\to$ 8 slots [8,128] $\to$ classifier
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{block}{训练（16198 crops, 50 epochs, 冬生 3060）}
+    \begin{itemize}
+      \item Train: 6316 (3158TP + 3158FP, balanced)
+      \item Val: 2409 (666TP + 1743FP), Test: 2445 (805TP + 1640FP)
+      \item 128s/epoch, early stop ep36 (patience=15)
+      \item Best val AUC: 0.890 (ep21) $\approx$ RF-DETR 0.883
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Phase 9：Slot Attention 全方案对比}
+  \begin{block}{Test set 结果（2445 samples）}
+    \begin{tabular}{llccc}
+      \toprule
+      \textbf{方法} & \textbf{特征空间} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{vs RF-DETR} \\
+      \midrule
+      \textbf{RF-DETR confidence} & 1 维 & \textbf{0.888} & \textbf{0.828} & baseline \\
+      \rowcolor{green!20}
+      \textbf{Slot Attention} & 8$\times$128=1024 维 & \textbf{0.868} & \textbf{0.788} & \textbf{-2.0pp} \\
+      CTM (20 ticks) & 4.68M & 0.800 & — & -8.8pp \\
+      W3 haar+morph & 32 维 & 0.791 & 0.645 & -9.7pp \\
+      Phase 5 k-NN (形态学) & 6 维 & 0.739 & — & -14.9pp \\
+      W1 haar 2L & 28 维 & 0.681 & 0.457 & -20.7pp \\
+      VLM (100 crops) & LLM 评分 & 0.713 & — & -17.5pp \\
+      DINOv2 CLS & 768 维 & — & 0.29 & -53.8pp \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{关键发现}
+    \begin{itemize}
+      \item Slot Attention 是\textbf{所有替代方案中最强的}（-2.0pp vs RF-DETR）
+      \item Val AUC 0.890 $\approx$ RF-DETR 0.883 — val 上几乎追平
+      \item 过拟合轻：train acc ep36=0.878（CTM ep2=1.0）
+      \item 480K params，极轻量
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{Phase 9：决策树与下一步}
+  \begin{block}{决策树结果}
+    Phase 8 小波 PR-AUC = 0.45 $<$ 0.50 $\to$ 频域无效 \\
+    Phase 9 Slot PR-AUC = \textbf{0.788 $>$ 0.50} $\to$ \textbf{object-centric 分解有效！}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{缺失实验（高优先级）}
+    \begin{itemize}
+      \item \textbf{Slot + confidence 组合 AUC}：如果互补，combined 可能 $>$ 0.888
+      \item \textbf{Phase 11 对比学习}：InfoNCE 强制拉开 TP/FP $\to$ 目标 PR-AUC $>$ 0.85
+      \item \textbf{Phase 10 联邦 slot 聚合}：FORLA + FedCtx HNSW
+    \end{itemize}
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{为什么 Slot Attention 有效？}
+    \begin{itemize}
+      \item DINOv2 CLS = 全局 embedding，TP/FP 完全重叠（PR-AUC=0.29）
+      \item Slot Attention = object-centric 分解，每个 slot 学一个物体组件
+      \item TP 有 organoid 内部纹理结构 $\to$ slot 捕获
+      \item FP 是背景碎片 $\to$ slot 不同
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+
+% ========================================================================
 \section{总结}
 
 \begin{frame}{总结}
@@ -1195,24 +1422,28 @@
         \item[\checkmark] Ensemble + Orga-Dete 迁移：均失败
         \item[\checkmark] MPCA Identity Init 铁律发现
         \item[\checkmark] 鼠肝 bbox FL 全部完成（E4-E11）
-        \item[\checkmark] \textbf{B2 图片反序 Bug 修复}（mAP 0$\to$0.812）
-        \item[\checkmark] \textbf{鼠肝 v2 14 实验全部完成}
+        \item[\checkmark] 鼠肝 v2 14 实验全部完成
+        \item[\checkmark] \textbf{CTM 全量训练：test AUC=0.80}（$<$RF-DETR 0.89）
+        \item[\checkmark] \textbf{CTM 代码审计：5 bug 修复}（数据泄露+同步化零值）
+        \item[\checkmark] \textbf{Phase 8 小波实验：假设被推翻}
+        \item[\checkmark] \textbf{Phase 9 Slot Attention：PR-AUC=0.788}（-2.0pp）
+        \item[\checkmark] \textbf{视觉原语文献调研}（FORLA/TwVP/WIPES）
       \end{itemize}
     \end{block}
     \column{0.48\textwidth}
-    \begin{alertblock}{鼠肝 v2 关键结果}
+    \begin{alertblock}{Phase 9 关键结果}
       \begin{itemize}
-        \item B1 F1=\textbf{1.00}, B2 F1=\textbf{0.80}, B3=0.75
-        \item B2 fewshot F1=\textbf{0.92} $>$ full 0.80
-        \item F3 hard gate FL mAP50=\textbf{0.92}
-        \item 传统 CV 完全无效（F1=0）
-        \item Central 合并反而不如 B1 单独
+        \item Slot AUC=0.868，\textbf{最强替代方案}（-2.0pp）
+        \item Val AUC 0.890 $\approx$ RF-DETR 0.883
+        \item PR-AUC 0.788 $>$ 0.50 $\to$ object-centric 有效
+        \item 480K params（CTM 的 1/10），过拟合轻
+        \item DINOv2 CLS=0.29 $\to$ Slot=0.788（+49.8pp）
       \end{itemize}
     \end{alertblock}
   \end{columns}
   \vspace{0em}
   \begin{alertblock}{下一步}
-    bbox $\to$ SAM2 mask $\to$ 形态学特征 $\to$ FL 聚合 primitive 分布 $\to$ 论文撰写 + 专利申请
+    Slot + confidence 组合 $\to$ Phase 11 对比学习（InfoNCE）$\to$ Phase 10 联邦 slot 聚合 $\to$ 论文撰写 + 专利申请
   \end{alertblock}
 \end{frame}
 

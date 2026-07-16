@@ -1409,6 +1409,122 @@
 
 
 % ========================================================================
+\section{Phase 11 SupCon + C4 闭环}
+
+\begin{frame}{Phase 11：SupCon 对比学习（$\beta$ 消融）}
+  \begin{block}{Loss = CE + $\beta \times$ SupCon}
+    \begin{itemize}
+      \item SupCon (Khosla NeurIPS 2020)：TP-TP embedding 拉近，TP-FP 推远
+      \item Projection head: 128 $\to$ 256 $\to$ L2 normalize
+      \item $\beta=0.5$：SupCon 贡献 1.6 = CE 的 3x $\to$ 压制分类头
+      \item $\beta=0.1$：SupCon 贡献 0.32 $\to$ CE 主导，SupCon 辅助
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{$\beta$ 消融结果（$\tau=0.07$ 固定）}
+    \begin{tabular}{lccc}
+      \toprule
+      \textbf{指标} & \textbf{Phase 9} & \textbf{$\beta=0.5$} & \textbf{$\beta=0.1$} \\
+      \midrule
+      Slot AUC & 0.868 & 0.845 & \textbf{0.860} \\
+      Embedding AUC & --- & 0.859 & \textbf{0.868} \\
+      Combined AUC & 0.903 & 0.909 & \textbf{0.910} \\
+      \rowcolor{green!15}
+      Combined PR-AUC & 0.853 & 0.860 & \textbf{0.862} \\
+      Val best AUC & 0.890 & 0.917 & \textbf{0.922} \\
+      \bottomrule
+    \end{tabular}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{C4 闭环验证：Slot 过滤提升检测 AP}
+  \begin{block}{实验设计（方案 \S 7.6）}
+    \begin{itemize}
+      \item 用 SupCon 训练的 slot encoder 对 RF-DETR 检测框打分
+      \item 4 种过滤策略搜索最优参数
+      \item 评估指标：PR-AUC（=AP50 近似）
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{结果（$\beta=0.1$ embeddings）}
+    \begin{tabular}{lccc}
+      \toprule
+      \textbf{策略} & \textbf{AP} & \textbf{$\Delta$ AP} & \textbf{参数} \\
+      \midrule
+      Baseline (RF-DETR conf) & 0.829 & --- & --- \\
+      Hard filter & 0.834 & +0.5pp & thr=0.10 \\
+      Soft penalize ($\alpha$=0.5) & 0.860 & +3.1pp & conf$\times(1-0.5(1-s))$ \\
+      \rowcolor{green!15}
+      \textbf{Geometric mean} & \textbf{0.861} & \textbf{+3.3pp} & $conf^{0.8} \times slot^{0.2}$ \\
+      LR meta (5-fold) & 0.857 & +2.9pp & 5-fold LR \\
+      \bottomrule
+    \end{tabular}
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{结论}
+    RF-DETR AP 0.829 $\to$ 0.861（\textbf{+3.3pp}）\\
+    最优权重 $w_{slot}=0.20$（和 Phase 9 组合分析一致）\\
+    \textbf{C4 验证成功}：slot encoder 提升检测 mAP
+  \end{block}
+\end{frame}
+
+\begin{frame}{Phase 10：联邦 Slot 聚合（真 Plate$\times$Class）}
+  \begin{block}{6 个真实 client}
+    \begin{tabular}{lcccccc}
+      \toprule
+      \textbf{Client} & \textbf{N} & \textbf{TP\%} & \textbf{Local} & \textbf{Global} & \textbf{$\Delta$} & \textbf{Conf} \\
+      \midrule
+      Macros\_P23 & 328 & 23\% & 0.697 & \textbf{0.754} & \textbf{+5.7pp} & 0.891 \\
+      Normal\_P31 & 207 & 28\% & 0.792 & \textbf{0.830} & \textbf{+3.8pp} & 0.900 \\
+      Normal\_P37 & 283 & 17\% & 0.836 & 0.830 & -0.6pp & 0.915 \\
+      Macros\_P4 & 772 & 40\% & 0.821 & 0.810 & -1.1pp & 0.874 \\
+      Normal\_P15 & 597 & 39\% & 0.890 & 0.887 & -0.3pp & 0.919 \\
+      Normal\_P4 & 258 & 33\% & 0.896 & 0.885 & -1.0pp & 0.903 \\
+      \midrule
+      Mean & --- & --- & 0.822 & \textbf{0.833} & \textbf{+1.1pp} & 0.900 \\
+      \bottomrule
+    \end{tabular}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{关键洞察}
+    \begin{itemize}
+      \item 小 client / 低 TP 率获益最大（Plate\_23 +5.7pp）
+      \item 大 client 不获益（本地数据已足够）
+      \item Combined (kNN+conf) ROC=0.907（+1.9pp vs RF-DETR）
+      \item ``数据不动，知识动''：只共享 256 维 embedding
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{跨域泛化：MultiOrg $\to$ 鼠肝（进行中）}
+  \begin{block}{动机：传统方法跨域失败}
+    \begin{itemize}
+      \item B1$\to$B2 zeroshot: F1=0.22（大目标$\to$小目标崩溃）
+      \item B1$\to$B3 zeroshot: F1=0.00（完全失效）
+      \item SAM2 fewshot: B2 F1=0.92, B3=0.67（需目标域标注）
+    \end{itemize}
+  \end{block}
+  \vspace{0em}
+  \begin{alertblock}{Slot 跨域假设}
+    \begin{itemize}
+      \item DINOv2 冻结 $\to$ 不依赖目标域微调
+      \item Slot 学到的是 ``organoid 长什么样''（object-centric 原语）
+      \item 不是 ``MultiOrg 的 bbox 分布''
+      \item $\to$ \textbf{直接迁移到鼠肝应该有效}
+    \end{itemize}
+  \end{alertblock}
+  \vspace{0em}
+  \begin{block}{实验矩阵（G2 = 核心）}
+    \begin{itemize}
+      \item G2: MultiOrg best.pt $\to$ 鼠肝 B1/B2/B3（零标注跨域）
+      \item 判定标准：Slot AUC $>$ 0.55 $\to$ 跨域有效
+      \item 如果成功 $\to$ ``通用 organoid 原语''论文叙事
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+
+% ========================================================================
 \section{总结}
 
 \begin{frame}{总结}
@@ -1416,33 +1532,37 @@
     \column{0.48\textwidth}
     \begin{block}{已完成}
       \begin{itemize}
-        \item[\checkmark] SOTA 全面调研 + MultiOrg 77.8\%（超论文 +3.9pp）
-        \item[\checkmark] SAM2 三轮实验：微调=负优化；FP 抑制全面无效
-        \item[\checkmark] Ensemble + Orga-Dete 迁移：均失败
-        \item[\checkmark] MPCA Identity Init 铁律发现
-        \item[\checkmark] 鼠肝 bbox FL 全部完成（E4-E11）
-        \item[\checkmark] 鼠肝 v2 14 实验全部完成
-        \item[\checkmark] \textbf{CTM 全量训练：test AUC=0.80}（$<$RF-DETR 0.89）
-        \item[\checkmark] \textbf{CTM 代码审计：5 bug 修复}（数据泄露+同步化零值）
-        \item[\checkmark] \textbf{Phase 8 小波实验：假设被推翻}
-        \item[\checkmark] \textbf{Phase 9 Slot Attention：PR-AUC=0.788}（-2.0pp）
-        \item[\checkmark] \textbf{视觉原语文献调研}（FORLA/TwVP/WIPES）
+        \item[\checkmark] SOTA 全面调研 + MultiOrg 77.8\%
+        \item[\checkmark] SAM2 三轮 + FP 抑制 + Ensemble 均失败
+        \item[\checkmark] 鼠肝 v2 14 实验 + bbox FL 完成
+        \item[\checkmark] CTM 全量训练：AUC=0.80（$<$RF-DETR）
+        \item[\checkmark] Phase 8 小波：假设被推翻
+        \item[\checkmark] \textbf{Phase 9 Slot：PR-AUC=0.788}
+        \item[\checkmark] \textbf{Phase 9 组合：AP 0.903}（+1.5pp）
+        \item[\checkmark] \textbf{Phase 11 SupCon $\beta=0.1$：AP 0.910}
+        \item[\checkmark] \textbf{C4 闭环：AP 0.829$\to$0.861}（+3.3pp）
+        \item[\checkmark] \textbf{Phase 10 联邦：Global$>$Local +1.1pp}
+        \item[\checkmark] 视觉原语文献调研（FORLA/TwVP/WIPES）
       \end{itemize}
     \end{block}
     \column{0.48\textwidth}
-    \begin{alertblock}{Phase 9 关键结果}
+    \begin{alertblock}{核心成果}
       \begin{itemize}
-        \item Slot AUC=0.868，\textbf{最强替代方案}（-2.0pp）
-        \item Val AUC 0.890 $\approx$ RF-DETR 0.883
-        \item PR-AUC 0.788 $>$ 0.50 $\to$ object-centric 有效
-        \item 480K params（CTM 的 1/10），过拟合轻
-        \item DINOv2 CLS=0.29 $\to$ Slot=0.788（+49.8pp）
+        \item RF-DETR AP: 0.829 $\to$ \textbf{0.861}（+3.3pp）
+        \item Combined ROC: \textbf{0.910}（+2.2pp）
+        \item 联邦聚合：小 client +5.7pp
+        \item object-centric 分解有效
+        \item SupCon $\beta=0.1$ 最优
       \end{itemize}
     \end{alertblock}
   \end{columns}
   \vspace{0em}
   \begin{alertblock}{下一步}
-    Slot + confidence 组合 $\to$ Phase 11 对比学习（InfoNCE）$\to$ Phase 10 联邦 slot 聚合 $\to$ 论文撰写 + 专利申请
+    \begin{itemize}
+      \item 跨域泛化：MultiOrg $\to$ 鼠肝（进行中）
+      \item $\tau=0.5$ 消融（进行中）
+      \item 论文撰写 + 专利申请
+    \end{itemize}
   \end{alertblock}
 \end{frame}
 
