@@ -124,6 +124,7 @@ page = st.sidebar.radio(
         "📁 Data Explorer",
         "🔄 FL Training",
         "🎯 Detection (YOLOv11)",
+        "🔢 Counting (Enterprise)",
         "✂️ Segmentation (SAM2)",
         "🌌 Feature Space (DINOv2)",
         "🧩 Multi-Task FL",
@@ -151,6 +152,9 @@ elif page == "🔄 FL Training":
 elif page == "🎯 Detection (YOLOv11)":
     from modules import detection
     detection.render()
+elif page == "🔢 Counting (Enterprise)":
+    from modules import counting
+    counting.render()
 elif page == "✂️ Segmentation (SAM2)":
     from modules import segmentation
     segmentation.render()
