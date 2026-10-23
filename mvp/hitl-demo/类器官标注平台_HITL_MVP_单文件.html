@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>类器官标注平台 · HITL MVP</title>
+<style>
+:root{
+  --bg:#0a0e13;
+  --bg2:#0e141c;
+  --panel:#111925;
+  --panel2:#16202e;
+  --line:#22303f;
+  --line2:#2c3d50;
+  --ink:#e9eff7;
+  --ink2:#c2cfe0;
+  --muted:#8697ab;
+  --dim:#5d6d80;
+  --accent:#37d39b;
+  --accent2:#1fae7d;
+  --info:#4cc9f0;
+  --warn:#ffb703;
+  --danger:#ff5d73;
+  --violet:#a78bfa;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.28);
+  --radius:10px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(76,201,240,.07), transparent 60%),
+    radial-gradient(900px 500px at 88% 0%, rgba(55,211,155,.06), transparent 55%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,-apple-system,sans-serif;
+  font-size:13.5px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-variant-numeric:tabular-nums}
+button{font-family:inherit}
+a{color:var(--info)}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:18px;
+  padding:10px 20px;
+  background:rgba(10,14,19,.86);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:baseline;gap:9px;white-space:nowrap}
+.brand b{font-size:14.5px;letter-spacing:.3px;font-weight:600}
+.brand span{
+  font-size:10.5px;color:var(--accent);
+  border:1px solid rgba(55,211,155,.35);
+  border-radius:999px;padding:1px 7px;letter-spacing:.6px;
+}
+.steps{display:flex;align-items:center;gap:2px;flex:1;min-width:0;overflow:hidden}
+.step{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 9px;border-radius:7px;
+  font-size:11.5px;color:var(--dim);white-space:nowrap;
+  border:1px solid transparent;cursor:default;
+}
+.step i{
+  font-style:normal;font-size:10px;font-weight:700;
+  width:17px;height:17px;border-radius:50%;
+  display:grid;place-items:center;
+  background:#1a2432;color:var(--dim);border:1px solid var(--line2);
+}
+.step.done{color:var(--ink2)}
+.step.done i{background:rgba(55,211,155,.16);color:var(--accent);border-color:rgba(55,211,155,.4)}
+.step.active{color:#fff;background:rgba(76,201,240,.1);border-color:rgba(76,201,240,.4)}
+.step.active i{background:var(--info);color:#04121a;border-color:var(--info)}
+.roles{display:flex;align-items:center;gap:6px}
+.roles label{font-size:11px;color:var(--dim);margin-right:2px}
+select,input[type=text],textarea{
+  background:var(--panel2);color:var(--ink);
+  border:1px solid var(--line2);border-radius:7px;
+  padding:5px 8px;font-size:12px;outline:none;
+  font-family:inherit;
+}
+select:focus,input[type=text]:focus,textarea:focus{border-color:var(--info)}
+.ghostbtn{
+  background:transparent;color:var(--muted);
+  border:1px solid var(--line2);border-radius:7px;
+  padding:5px 10px;font-size:11.5px;cursor:pointer;
+}
+.ghostbtn:hover{color:var(--ink);border-color:var(--info)}
+
+/* ---------- layout ---------- */
+.shell{max-width:1500px;margin:0 auto;padding:18px 20px 80px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:16px;align-items:start}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row.end{justify-content:flex-end}
+.spacer{flex:1}
+
+.panel{
+  background:linear-gradient(180deg,var(--panel) 0%, #0f1721 100%);
+  border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.panel-hd{
+  display:flex;align-items:center;gap:9px;
+  padding:10px 14px;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.014);
+}
+.panel-hd h3{margin:0;font-size:12.5px;font-weight:600;letter-spacing:.2px}
+.panel-hd .sub{font-size:11px;color:var(--dim)}
+.panel-bd{padding:14px}
+.panel-bd.tight{padding:10px}
+
+h2.viewtitle{margin:0 0 14px;font-size:16px;font-weight:600;letter-spacing:.2px}
+h2.viewtitle small{display:block;font-size:11.5px;color:var(--muted);font-weight:400;margin-top:3px;letter-spacing:0}
+.sec{margin-bottom:16px}
+.sec-hd{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+.sec-hd h4{margin:0;font-size:12px;color:var(--ink2);font-weight:600;letter-spacing:.3px}
+.sec-hd .hint{font-size:11px;color:var(--dim)}
+
+/* ---------- table ---------- */
+table.tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.tbl th{
+  text-align:left;font-weight:500;color:var(--dim);
+  font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;
+  padding:6px 8px;border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+table.tbl td{padding:6px 8px;border-bottom:1px solid rgba(34,48,63,.55);vertical-align:middle}
+table.tbl tr:last-child td{border-bottom:none}
+table.tbl tr.sel td{background:rgba(76,201,240,.06)}
+table.tbl td.r,table.tbl th.r{text-align:right}
+.mono{font-family:"Cascadia Mono",Consolas,"SF Mono",monospace;font-size:11px;letter-spacing:.2px}
+
+/* ---------- kv ---------- */
+.kv{display:grid;grid-template-columns:96px minmax(0,1fr);gap:5px 10px;font-size:12px}
+.kv dt{color:var(--dim);font-size:11px}
+.kv dd{margin:0;color:var(--ink2);word-break:break-word}
+
+/* ---------- chips / badges ---------- */
+.chip{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;padding:1.5px 7px;border-radius:999px;
+  border:1px solid var(--line2);color:var(--muted);white-space:nowrap;
+  letter-spacing:.2px;
+}
+.chip.ok{color:var(--accent);border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.1)}
+.chip.info{color:var(--info);border-color:rgba(76,201,240,.4);background:rgba(76,201,240,.1)}
+.chip.warn{color:var(--warn);border-color:rgba(255,183,3,.4);background:rgba(255,183,3,.1)}
+.chip.bad{color:var(--danger);border-color:rgba(255,93,115,.42);background:rgba(255,93,115,.1)}
+.chip.violet{color:var(--violet);border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.1)}
+.chip.solid{background:#1c2735}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  border:1px solid var(--line2);background:var(--panel2);color:var(--ink);
+  padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;
+  transition:.14s border-color,.14s background,.14s color;
+}
+.btn:hover{border-color:var(--line2);background:#1b2735}
+.btn.primary{
+  background:linear-gradient(180deg,#3fdca6,#22b986);
+  color:#04150f;border-color:#2ecb98;font-weight:600;
+}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{background:rgba(255,93,115,.12);border-color:rgba(255,93,115,.45);color:#ffb3be}
+.btn.danger:hover{background:rgba(255,93,115,.2)}
+.btn:disabled{opacity:.42;cursor:not-allowed;filter:grayscale(.4)}
+.btn.sm{padding:4px 10px;font-size:11.5px}
+
+/* ---------- canvas stage ---------- */
+.stagewrap{
+  position:relative;background:#05080c;border:1px solid var(--line);
+  border-radius:8px;overflow:hidden;
+}
+canvas.stage{display:block;width:100%;height:auto;cursor:crosshair}
+.stagewrap.hidden-model::after{
+  content:"盲读态 · 不含模型输出";
+  position:absolute;left:10px;top:10px;
+  font-size:10.5px;letter-spacing:.5px;color:var(--accent);
+  background:rgba(55,211,155,.12);border:1px solid rgba(55,211,155,.35);
+  padding:2px 8px;border-radius:999px;pointer-events:none;
+}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tool{
+  border:1px solid var(--line2);background:var(--panel2);color:var(--muted);
+  padding:5px 10px;border-radius:7px;font-size:11.5px;cursor:pointer;
+}
+.tool.on{background:rgba(76,201,240,.14);border-color:rgba(76,201,240,.5);color:#d6f4ff}
+.swatch{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+
+/* ---------- class palette ---------- */
+.classlist{display:flex;flex-direction:column;gap:4px}
+.classrow{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 9px;border-radius:7px;cursor:pointer;
+  border:1px solid transparent;font-size:12px;color:var(--ink2);
+}
+.classrow:hover{background:#16202e}
+.classrow.on{background:#182534;border-color:var(--line2)}
+.classrow .dot{width:10px;height:10px;border-radius:3px;flex:none}
+.classrow .cnt{margin-left:auto;color:var(--dim);font-size:11px}
+
+/* ---------- metric cards ---------- */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px}
+.mcard{
+  background:#0f1722;border:1px solid var(--line);border-radius:8px;padding:9px 11px;
+}
+.mcard .k{font-size:10.5px;color:var(--dim);letter-spacing:.3px;white-space:nowrap}
+.mcard .v{font-size:19px;font-weight:600;letter-spacing:.2px;font-variant-numeric:tabular-nums}
+.mcard .t{font-size:10.5px;color:var(--dim)}
+.mcard.pass .v{color:var(--accent)}
+.mcard.fail .v{color:var(--danger)}
+.mcard.warn .v{color:var(--warn)}
+
+/* ---------- revision cards ---------- */
+.revlist{display:flex;flex-direction:column;gap:9px}
+.revcard{
+  display:grid;grid-template-columns:22px 96px minmax(0,1fr);gap:11px;align-items:center;
+  border:1px solid var(--line);border-radius:9px;padding:9px 11px;cursor:pointer;
+  background:#0f1722;transition:.14s border-color,.14s background;
+}
+.revcard:hover{border-color:var(--line2);background:#121d2a}
+.revcard.on{border-color:rgba(76,201,240,.55);background:rgba(76,201,240,.07)}
+.revcard.last .rank{color:var(--danger)}
+.revcard .radio{
+  width:15px;height:15px;border-radius:50%;
+  border:1.5px solid var(--line2);display:grid;place-items:center;flex:none;
+}
+.revcard.on .radio{border-color:var(--info)}
+.revcard.on .radio::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--info)}
+.revcard canvas{width:96px;height:96px;border-radius:6px;background:#05080c;display:block}
+.revmeta{font-size:11.5px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.revmeta b{color:var(--ink2);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------- rank panel ---------- */
+.rankrow{
+  display:grid;grid-template-columns:20px 44px minmax(0,1fr) 58px;gap:9px;
+  align-items:center;padding:6px 9px;border-radius:7px;font-size:12px;
+}
+.rankrow+.rankrow{margin-top:3px}
+.rankrow .n{
+  width:18px;height:18px;border-radius:5px;display:grid;place-items:center;
+  font-size:10.5px;font-weight:700;background:#1b2735;color:var(--ink2);
+}
+.rankrow.first .n{background:rgba(255,183,3,.16);color:var(--warn)}
+.rankrow.last .n{background:rgba(255,93,115,.14);color:var(--danger)}
+.rankrow .bar{height:5px;border-radius:3px;background:#1b2735;overflow:hidden}
+.rankrow .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--info),#2b9fd0)}
+.rankrow .sc{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2);font-size:11.5px}
+
+/* ---------- banners ---------- */
+.banner{
+  display:flex;gap:10px;align-items:flex-start;
+  border-radius:9px;padding:10px 12px;font-size:12px;
+  border:1px solid var(--line2);background:#111b26;color:var(--ink2);
+}
+.banner b{color:var(--ink)}
+.banner.warn{border-color:rgba(255,183,3,.42);background:rgba(255,183,3,.07)}
+.banner.bad{border-color:rgba(255,93,115,.42);background:rgba(255,93,115,.07)}
+.banner.ok{border-color:rgba(55,211,155,.4);background:rgba(55,211,155,.06)}
+.banner .ic{
+  flex:none;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;
+  font-size:11px;font-weight:700;background:#1b2735;color:var(--ink2);margin-top:1px;
+}
+.banner.warn .ic{background:rgba(255,183,3,.18);color:var(--warn)}
+.banner.bad .ic{background:rgba(255,93,115,.18);color:var(--danger)}
+.banner.ok .ic{background:rgba(55,211,155,.16);color:var(--accent)}
+
+/* ---------- pipeline track ---------- */
+.track{display:flex;gap:0;align-items:stretch;margin:2px 0 4px;overflow-x:auto}
+.tnode{
+  flex:1;min-width:112px;position:relative;
+  padding:9px 11px 10px;border:1px solid var(--line);border-radius:8px;
+  background:#0f1722;
+}
+.tnode+.tnode{margin-left:7px}
+.tnode .sid{font-size:10px;color:var(--dim);letter-spacing:.7px}
+.tnode .nm{font-size:12px;color:var(--ink2);margin-top:1px}
+.tnode.done{border-color:rgba(55,211,155,.32);background:rgba(55,211,155,.05)}
+.tnode.done .sid{color:var(--accent)}
+.tnode.cur{border-color:rgba(76,201,240,.55);background:rgba(76,201,240,.07);box-shadow:0 0 0 1px rgba(76,201,240,.15) inset}
+.tnode.cur .sid{color:var(--info)}
+.tnode.todo{opacity:.55}
+
+/* ---------- audit chain ---------- */
+.chain{display:flex;flex-direction:column;gap:5px;max-height:330px;overflow:auto}
+.chainrow{
+  display:grid;grid-template-columns:34px 74px 96px minmax(0,1fr) 86px;gap:8px;
+  align-items:center;font-size:11px;padding:5px 8px;border-radius:6px;
+  border:1px solid var(--line);background:#0e1620;
+}
+.chainrow .sq{color:var(--dim);font-variant-numeric:tabular-nums}
+.chainrow .ev{color:var(--ink2)}
+.chainrow .hh{font-family:"Cascadia Mono",Consolas,monospace;color:var(--dim);text-align:right}
+.chainrow.bad{border-color:rgba(255,93,115,.5);background:rgba(255,93,115,.07)}
+
+/* ---------- drawer ---------- */
+.drawer{
+  position:fixed;right:0;top:0;bottom:0;width:min(560px,92vw);
+  background:#0c131b;border-left:1px solid var(--line);
+  transform:translateX(101%);transition:transform .2s ease;z-index:60;
+  display:flex;flex-direction:column;
+}
+.drawer.open{transform:translateX(0)}
+.drawer-hd{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.drawer-hd h3{margin:0;font-size:12.5px;font-weight:600}
+.drawer-bd{padding:12px 14px;overflow:auto;flex:1}
+pre.json{
+  margin:0 0 12px;background:#080d13;border:1px solid var(--line);
+  border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.55;
+  font-family:"Cascadia Mono",Consolas,monospace;color:#a9c0d8;overflow:auto;
+}
+pre.json .k{color:#7fb2d9}
+pre.json .s{color:#9ee4b8}
+pre.json .n{color:#ffcf7a}
+pre.json .b{color:#c9a0ff}
+.jsoncap{font-size:10.5px;color:var(--dim);margin:0 0 5px;letter-spacing:.4px}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);
+  background:#1a2735;border:1px solid var(--line2);color:var(--ink);
+  padding:9px 16px;border-radius:9px;font-size:12.5px;z-index:90;
+  opacity:0;pointer-events:none;transition:.2s;box-shadow:0 10px 30px rgba(0,0,0,.5);
+  max-width:70vw;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.bad{border-color:rgba(255,93,115,.5)}
+#toast.ok{border-color:rgba(55,211,155,.5)}
+
+/* ---------- misc ---------- */
+.note{font-size:11.5px;color:var(--dim);line-height:1.6}
+.note b{color:var(--ink2)}
+.hr{height:1px;background:var(--line);margin:12px 0}
+.pill-row{display:flex;gap:6px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:1px}
+.stat .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .k{font-size:10.5px;color:var(--dim)}
+.center{display:grid;place-items:center}
+.muted{color:var(--muted)}
+.dim{color:var(--dim)}
+.tiny{font-size:11px}
+.warnc{color:var(--warn)}
+.badc{color:var(--danger)}
+.okc{color:var(--accent)}
+.infoc{color:var(--info)}
+.nowrap{white-space:nowrap}
+@media (max-width:1180px){
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .grid3{grid-template-columns:minmax(0,1fr)}
+}
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><b>类器官标注平台</b><span>HITL MVP</span></div>
+  <nav class="steps" id="steps"></nav>
+  <div class="roles">
+    <label>当前角色</label>
+    <select id="roleSel">
+      <option value="expertA">领域专家 A</option>
+      <option value="expertB">领域专家 B</option>
+      <option value="expertC">领域专家 C</option>
+      <option value="chief">首席专家</option>
+      <option value="cosigner">复核专家</option>
+      <option value="owner">项目负责人</option>
+    </select>
+    <button class="ghostbtn" id="btnJson">契约 JSON</button>
+    <button class="ghostbtn" id="btnReset">重置演示</button>
+  </div>
+</header>
+
+<main class="shell" id="app"></main>
+
+<aside class="drawer" id="drawer">
+  <div class="drawer-hd">
+    <h3>契约对象（当前状态导出）</h3>
+    <div class="spacer"></div>
+    <span class="chip" id="jsonBytes">—</span>
+    <button class="ghostbtn" id="btnJsonClose">关闭</button>
+  </div>
+  <div class="drawer-bd" id="jsonBody"></div>
+</aside>
+
+<div id="toast"></div>
+
+<script>
+/* ==== data.js ==== */
+/* =========================================================================
+   类器官标注平台 · HITL MVP —— 数据与指标层
+   纯前端、无依赖。样本图像由程序化合成（确定性种子），指标为真实几何计算。
+   ========================================================================= */
+(function (global) {
+  'use strict';
+
+  /* ---------------- 随机数 ---------------- */
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ---------------- 标签体系（与 utils/taxonomy.py 的 4 分类一致） ---------------- */
+  const TAXONOMY = [
+    { id: 'CYSTIC',  name: '囊性类器官', short: '囊性', color: '#4cc9f0', rgb: [76, 201, 240] },
+    { id: 'SOLID',   name: '实性类器官', short: '实性', color: '#f472b6', rgb: [244, 114, 182] },
+    { id: 'BUDDING', name: '出芽类器官', short: '出芽', color: '#ffb703', rgb: [255, 183, 3] },
+    { id: 'DEBRIS',  name: '碎片/伪影', short: '碎片', color: '#94a3b8', rgb: [148, 163, 184] }
+  ];
+  const CLS = {}; TAXONOMY.forEach(c => CLS[c.id] = c);
+
+  /* ---------------- 几何 ---------------- */
+  function blob(cx, cy, R, rnd, squash) {
+    const n = 26, pts = [];
+    const a1 = 0.09 + rnd() * 0.10, a2 = 0.04 + rnd() * 0.07;
+    const p1 = rnd() * 6.283, p2 = rnd() * 6.283;
+    const sq = squash == null ? 0.90 + rnd() * 0.12 : squash;
+    for (let i = 0; i < n; i++) {
+      const t = (i / n) * Math.PI * 2;
+      const r = R * (1 + a1 * Math.sin(3 * t + p1) + a2 * Math.sin(5 * t + p2));
+      pts.push([cx + Math.cos(t) * r, cy + Math.sin(t) * r * sq]);
+    }
+    return pts;
+  }
+  function centroid(pts) {
+    let x = 0, y = 0;
+    for (const p of pts) { x += p[0]; y += p[1]; }
+    return [x / pts.length, y / pts.length];
+  }
+  function area(pts) {
+    let s = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      s += a[0] * b[1] - b[0] * a[1];
+    }
+    return Math.abs(s) / 2;
+  }
+  function scaleAbout(pts, k, cx, cy) {
+    return pts.map(p => [cx + (p[0] - cx) * k, cy + (p[1] - cy) * k]);
+  }
+  function shift(pts, dx, dy) {
+    return pts.map(p => [p[0] + dx, p[1] + dy]);
+  }
+  function jitter(pts, rnd, amp) {
+    const [cx, cy] = centroid(pts);
+    return pts.map(p => {
+      const dx = (rnd() - 0.5) * amp, dy = (rnd() - 0.5) * amp;
+      const d = Math.hypot(p[0] - cx, p[1] - cy) || 1;
+      const wr = 1 + ((rnd() - 0.5) * amp) / d; // 沿径向的轻微形变
+      return [cx + (p[0] - cx) * wr + dx, cy + (p[1] - cy) * wr + dy];
+    });
+  }
+  function convexHull(a, b) {
+    const pts = a.concat(b).slice().sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+    const cross = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+    const lower = [], upper = [];
+    for (const p of pts) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+      lower.push(p);
+    }
+    for (let i = pts.length - 1; i >= 0; i--) {
+      const p = pts[i];
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+      upper.push(p);
+    }
+    lower.pop(); upper.pop();
+    const hull = lower.concat(upper);
+    return hull.length >= 3 ? hull : a;
+  }
+
+  /* ---------------- 样本合成 ---------------- */
+  const STRATA = {
+    easy:         { label: '容易',   weight: 1.0, color: '#37d39b' },
+    borderline:   { label: '模糊边界', weight: 2.0, color: '#ffb703' },
+    low_contrast: { label: '低对比',  weight: 2.0, color: '#a78bfa' },
+    clustered:    { label: '粘连团簇', weight: 2.0, color: '#ff5d73' }
+  };
+
+  function buildSamples() {
+    const spec = [
+      { id: 'S-001', stratum: 'easy',         n: 5, R: 0.085, cls: ['CYSTIC', 'SOLID', 'CYSTIC', 'BUDDING', 'CYSTIC'] },
+      { id: 'S-002', stratum: 'borderline',   n: 6, R: 0.075, cls: ['CYSTIC', 'CYSTIC', 'SOLID', 'BUDDING', 'CYSTIC', 'DEBRIS'] },
+      { id: 'S-003', stratum: 'low_contrast', n: 4, R: 0.100, cls: ['SOLID', 'CYSTIC', 'CYSTIC', 'BUDDING'] },
+      { id: 'S-004', stratum: 'clustered',    n: 7, R: 0.070, cls: ['CYSTIC', 'CYSTIC', 'CYSTIC', 'SOLID', 'BUDDING', 'CYSTIC', 'DEBRIS'] },
+      { id: 'S-005', stratum: 'easy',         n: 4, R: 0.095, cls: ['BUDDING', 'CYSTIC', 'SOLID', 'CYSTIC'] }
+    ];
+    return spec.map((s, si) => {
+      const rnd = mulberry32(1000 + si * 77);
+      const polys = [];
+      const positions = [];
+      // 手工布点，保证不重叠过多（clustered 例外）
+      const anchors = [
+        [[0.28, 0.30], [0.68, 0.26], [0.30, 0.68], [0.72, 0.66], [0.50, 0.48], [0.15, 0.52], [0.85, 0.45]],
+        [[0.26, 0.28], [0.70, 0.24], [0.28, 0.70], [0.72, 0.70], [0.50, 0.46], [0.86, 0.50], [0.14, 0.50]],
+        [[0.30, 0.32], [0.70, 0.34], [0.34, 0.70], [0.66, 0.68], [0.50, 0.50], [0.16, 0.60], [0.84, 0.34]],
+        [[0.30, 0.36], [0.42, 0.40], [0.62, 0.30], [0.66, 0.58], [0.30, 0.66], [0.52, 0.72], [0.80, 0.70]],
+        [[0.28, 0.34], [0.70, 0.30], [0.32, 0.68], [0.70, 0.66], [0.50, 0.50], [0.16, 0.52], [0.84, 0.44]]
+      ][si];
+      for (let i = 0; i < s.n; i++) {
+        const [ax, ay] = anchors[i % anchors.length];
+        const jx = (rnd() - 0.5) * 0.03, jy = (rnd() - 0.5) * 0.03;
+        const R = s.R * (0.78 + rnd() * 0.5);
+        polys.push({ cls: s.cls[i], pts: blob(ax + jx, ay + jy, R, rnd) });
+      }
+      // 让 S-002 出现一对轻度粘连、S-004 出现重度粘连团簇
+      if (s.stratum === 'borderline') {
+        const c = centroid(polys[0].pts);
+        polys[1].pts = blob(c[0] + s.R * 1.35, c[1] + s.R * 0.20, s.R * 0.95, mulberry32(7));
+      }
+      if (s.stratum === 'clustered') {
+        const c = centroid(polys[0].pts);
+        polys[1].pts = blob(c[0] + s.R * 1.25, c[1] + s.R * 0.30, s.R * 1.05, mulberry32(11));
+        polys[2].pts = blob(c[0] + s.R * 0.70, c[1] - s.R * 0.95, s.R * 0.90, mulberry32(13));
+      }
+      return {
+        id: s.id,
+        stratum: s.stratum,
+        imageSeed: 5000 + si * 31,
+        polys: polys.map((p, i) => ({ id: s.id + '-T' + (i + 1), cls: p.cls, pts: p.pts }))
+      };
+    });
+  }
+
+  /* ---------------- 荧光图像渲染 ---------------- */
+  function renderFluoro(cv, sample, opt) {
+    opt = opt || {};
+    const W = cv.width, H = cv.height;
+    const g = cv.getContext('2d');
+    const dim = sample.stratum === 'low_contrast' ? 0.52 : 1.0;
+
+    const bg = g.createRadialGradient(W * 0.5, H * 0.46, W * 0.05, W * 0.5, H * 0.5, W * 0.78);
+    bg.addColorStop(0, '#08161c');
+    bg.addColorStop(0.55, '#050d12');
+    bg.addColorStop(1, '#02060a');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+
+    // 本底纹理
+    const rnd = mulberry32(sample.imageSeed);
+    for (let i = 0; i < 1400; i++) {
+      const x = rnd() * W, y = rnd() * H, r = rnd() * 1.6 + 0.3;
+      g.fillStyle = 'rgba(120,180,210,' + (0.012 + rnd() * 0.05).toFixed(3) + ')';
+      g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
+    }
+
+    // 实例
+    for (const inst of sample.polys) {
+      const pts = inst.pts.map(p => [p[0] * W, p[1] * H]);
+      const c = centroid(pts);
+      let R = 0;
+      for (const p of pts) R = Math.max(R, Math.hypot(p[0] - c[0], p[1] - c[1]));
+
+      g.save();
+      g.beginPath();
+      pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]));
+      g.closePath();
+
+      const grd = g.createRadialGradient(c[0], c[1], R * 0.10, c[0], c[1], R * 1.02);
+      grd.addColorStop(0, 'rgba(70,150,190,' + (0.16 * dim).toFixed(3) + ')');
+      grd.addColorStop(0.62, 'rgba(60,150,200,' + (0.30 * dim).toFixed(3) + ')');
+      grd.addColorStop(0.93, 'rgba(150,235,255,' + (0.62 * dim).toFixed(3) + ')');
+      grd.addColorStop(1, 'rgba(190,250,255,' + (0.80 * dim).toFixed(3) + ')');
+      g.fillStyle = grd;
+      g.shadowColor = 'rgba(90,210,255,' + (0.55 * dim).toFixed(3) + ')';
+      g.shadowBlur = W * 0.020;
+      g.fill();
+      g.shadowBlur = 0;
+
+      g.lineWidth = Math.max(1.2, W * 0.0032);
+      g.strokeStyle = 'rgba(200,250,255,' + (0.85 * dim).toFixed(3) + ')';
+      g.stroke();
+
+      // 内部结构（类器官腔隙感）
+      g.globalAlpha = 0.30 * dim;
+      const iv = 3 + Math.floor(mulberry32(inst.id.length * 97 + Math.round(c[0]))() * 3);
+      for (let k = 0; k < iv; k++) {
+        const a = (k / iv) * 6.283 + 0.6;
+        const rr = R * (0.18 + 0.34 * ((k * 37) % 10) / 10);
+        g.fillStyle = 'rgba(10,40,60,.65)';
+        g.beginPath();
+        g.arc(c[0] + Math.cos(a) * rr, c[1] + Math.sin(a) * rr * 0.9, R * 0.14, 0, 6.283);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      g.restore();
+    }
+
+    // 暗角
+    const vg = g.createRadialGradient(W * 0.5, H * 0.5, W * 0.30, W * 0.5, H * 0.5, W * 0.76);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,.55)');
+    g.fillStyle = vg; g.fillRect(0, 0, W, H);
+
+    if (opt.hideWatermark !== true) {
+      g.fillStyle = 'rgba(180,220,240,.42)';
+      g.font = '11px "Cascadia Mono",monospace';
+      g.fillText(sample.id + '  ·  ' + (sample.stratum), 10, H - 9);
+    }
+  }
+
+  /* ---------------- 叠加层：轮廓 ---------------- */
+  function drawInstances(cv, instances, opt) {
+    opt = opt || {};
+    const W = cv.width, H = cv.height;
+    const g = cv.getContext('2d');
+    const lw = opt.lw || Math.max(1.4, W * 0.0045);
+    for (const inst of instances) {
+      const c = CLS[inst.cls] || CLS.CYSTIC;
+      const pts = inst.pts.map(p => [p[0] * W, p[1] * H]);
+      g.beginPath();
+      pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]));
+      g.closePath();
+      if (opt.fill !== false) {
+        g.fillStyle = 'rgba(' + c.rgb.join(',') + ',' + (opt.fillAlpha == null ? 0.13 : opt.fillAlpha) + ')';
+        g.fill();
+      }
+      g.lineWidth = lw;
+      g.strokeStyle = c.color;
+      if (opt.glow) { g.shadowColor = c.color; g.shadowBlur = 8; }
+      g.stroke();
+      g.shadowBlur = 0;
+      if (opt.labels !== false) {
+        const [cx, cy] = centroid(pts);
+        g.fillStyle = 'rgba(4,10,16,.78)';
+        const t = c.short;
+        g.font = '600 ' + Math.round(W * 0.026) + 'px "Segoe UI","Microsoft YaHei",sans-serif';
+        const tw = g.measureText(t).width + 8;
+        g.fillRect(cx - tw / 2, cy - 9, tw, 17);
+        g.fillStyle = c.color;
+        g.fillText(t, cx - tw / 2 + 4, cy + 3);
+      }
+    }
+  }
+
+  /* ---------------- 掩膜与匹配 ---------------- */
+  const MASK_N = 200;
+  function polyMask(pts, N) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = N;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#fff';
+    g.beginPath();
+    pts.forEach((p, i) => i ? g.lineTo(p[0] * N, p[1] * N) : g.moveTo(p[0] * N, p[1] * N));
+    g.closePath(); g.fill();
+    const d = g.getImageData(0, 0, N, N).data;
+    const m = new Uint8Array(N * N);
+    for (let i = 0; i < N * N; i++) m[i] = d[i * 4 + 3] > 127 ? 1 : 0;
+    return m;
+  }
+  function maskIoU(a, b) {
+    let inter = 0, uni = 0;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i], y = b[i];
+      if (x && y) inter++;
+      if (x || y) uni++;
+    }
+    return uni ? inter / uni : 0;
+  }
+  function diceOf(a, b) {
+    let inter = 0, sa = 0, sb = 0;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i]) { sa++; if (b[i]) inter++; }
+      if (b[i]) sb++;
+    }
+    return (sa + sb) ? (2 * inter) / (sa + sb) : 0;
+  }
+
+  function annotateMasks(instances) {
+    return instances.map(i => ({ inst: i, mask: polyMask(i.pts, MASK_N) }));
+  }
+
+  /** 贪心匹配：按 IoU 降序连接，阈值默认 0.5 */
+  function matchSets(A, B, thr) {
+    thr = thr == null ? 0.5 : thr;
+    const pairs = [];
+    for (let i = 0; i < A.length; i++) {
+      for (let j = 0; j < B.length; j++) {
+        const iou = maskIoU(A[i].mask, B[j].mask);
+        if (iou >= thr) pairs.push({ i, j, iou, dice: diceOf(A[i].mask, B[j].mask) });
+      }
+    }
+    pairs.sort((p, q) => q.iou - p.iou);
+    const usedA = new Set(), usedB = new Set(), out = [];
+    for (const p of pairs) {
+      if (usedA.has(p.i) || usedB.has(p.j)) continue;
+      usedA.add(p.i); usedB.add(p.j);
+      out.push(p);
+    }
+    return { pairs: out, unmatchedA: A.length - usedA.size, unmatchedB: B.length - usedB.size };
+  }
+
+  function boundaryPts(pts, n) {
+    n = n || 56;
+    const segs = [];
+    let total = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      segs.push({ a, b, L }); total += L;
+    }
+    const step = total / n, out = [];
+    let si = 0, acc = 0;
+    for (let k = 0; k < n; k++) {
+      const target = k * step;
+      while (si < segs.length - 1 && acc + segs[si].L < target) { acc += segs[si].L; si++; }
+      const t = segs[si].L ? (target - acc) / segs[si].L : 0;
+      out.push([segs[si].a[0] + (segs[si].b[0] - segs[si].a[0]) * t,
+                segs[si].a[1] + (segs[si].b[1] - segs[si].a[1]) * t]);
+    }
+    return out;
+  }
+  function hd95(a, b) {
+    const A = boundaryPts(a), B = boundaryPts(b);
+    const d1 = A.map(p => Math.min.apply(null, B.map(q => Math.hypot(p[0] - q[0], p[1] - q[1]))));
+    const d2 = B.map(p => Math.min.apply(null, A.map(q => Math.hypot(p[0] - q[0], p[1] - q[1]))));
+    const all = d1.concat(d2).sort((x, y) => x - y);
+    return all[Math.min(all.length - 1, Math.floor(0.95 * all.length))] * 1000; // 归一化→‰
+  }
+
+  /* ---------------- 指标汇总 ---------------- */
+  function compareRevisions(rA, rB) {
+    const A = annotateMasks(rA.instances), B = annotateMasks(rB.instances);
+    const m = matchSets(A, B, 0.5);
+    const dice = m.pairs.map(p => p.dice);
+    const hd = m.pairs.map(p => hd95(A[p.i].inst.pts, B[p.j].inst.pts));
+    const tp = m.pairs.length;
+    const fp = m.unmatchedB, fn = m.unmatchedA;
+    const f1 = (2 * tp) / (2 * tp + fp + fn) || 0;
+    return {
+      meanDice: dice.length ? dice.reduce((a, b) => a + b, 0) / dice.length : 0,
+      minDice: dice.length ? Math.min.apply(null, dice) : 0,
+      meanHD95: hd.length ? hd.reduce((a, b) => a + b, 0) / hd.length : 0,
+      detF1: f1,
+      matched: tp, fp, fn
+    };
+  }
+
+  /* ---- Krippendorff's α（名义，可缺测） ---- */
+  function alphalNominal(units) {
+    // units: [{labels: [l1,l2,l3]}]  null 表示该编码者在此单元缺测
+    const values = [];
+    const seen = {};
+    for (const u of units) {
+      for (const l of u.labels) {
+        if (l == null) continue;
+        if (!seen[l]) { seen[l] = values.length; values.push(l); }
+      }
+    }
+    if (values.length === 0) return 1;
+    const V = values.length;
+    const o = [];
+    for (let i = 0; i < V; i++) o.push(new Array(V).fill(0));
+    let n = 0;
+    for (const u of units) {
+      const ls = u.labels.filter(l => l != null);
+      const mu = ls.length;
+      if (mu < 2) continue;
+      n += mu;
+      for (let a = 0; a < mu; a++) {
+        for (let b = 0; b < mu; b++) {
+          if (a === b) continue;
+          o[seen[ls[a]]][seen[ls[b]]] += 1 / (mu - 1);
+        }
+      }
+    }
+    if (n === 0) return 1;
+    let sumDiag = 0, sumAll = 0;
+    const nv = new Array(V).fill(0);
+    for (let i = 0; i < V; i++) {
+      for (let j = 0; j < V; j++) {
+        sumAll += o[i][j];
+        if (i === j) sumDiag += o[i][j];
+        nv[i] += o[i][j];
+      }
+    }
+    const Do = sumAll - sumDiag;
+    let sumSq = 0;
+    for (let i = 0; i < V; i++) sumSq += nv[i] * nv[i];
+    const De = (n * n - sumSq) / (n - 1);
+    if (De <= 1e-12) return 1;
+    return 1 - Do / De;
+  }
+
+  /** 用匹配关系建立跨编码者的"同一实例"单元（并查集） */
+  function buildUnits(revisions) {
+    const nodes = [];
+    const index = {};
+    revisions.forEach((r, ci) => {
+      r.instances.forEach((inst, ii) => {
+        const key = ci + '#' + ii;
+        index[key] = nodes.length;
+        nodes.push({ coder: ci, inst: inst, parent: nodes.length });
+      });
+    });
+    function find(x) { while (nodes[x].parent !== x) { nodes[x].parent = nodes[nodes[x].parent].parent; x = nodes[x].parent; } return x; }
+    function union(a, b) { const ra = find(a), rb = find(b); if (ra !== rb) nodes[rb].parent = ra; }
+
+    for (let i = 0; i < revisions.length; i++) {
+      for (let j = i + 1; j < revisions.length; j++) {
+        const A = annotateMasks(revisions[i].instances);
+        const B = annotateMasks(revisions[j].instances);
+        const m = matchSets(A, B, 0.5);
+        for (const p of m.pairs) union(index[i + '#' + p.i], index[j + '#' + p.j]);
+      }
+    }
+    const comps = {};
+    nodes.forEach((n, i) => {
+      const r = find(i);
+      (comps[r] = comps[r] || []).push(n);
+    });
+    return Object.keys(comps).map(k => {
+      const group = comps[k];
+      const labels = revisions.map(() => null);
+      revisions.forEach((_, ci) => {
+        const mine = group.filter(n => n.coder === ci);
+        if (!mine.length) return;
+        const cnt = {};
+        mine.forEach(n => cnt[n.inst.cls] = (cnt[n.inst.cls] || 0) + 1);
+        labels[ci] = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+      });
+      return { labels: labels };
+    });
+  }
+
+  function computeAgreement(revisions) {
+    const pairs = [[0, 1], [0, 2], [1, 2]];
+    const per = pairs.map(p => compareRevisions(revisions[p[0]], revisions[p[1]]));
+    const meanDice = per.reduce((a, b) => a + b.meanDice, 0) / per.length;
+    const meanF1 = per.reduce((a, b) => a + b.detF1, 0) / per.length;
+    const meanHD = per.reduce((a, b) => a + b.meanHD95, 0) / per.length;
+    const units = buildUnits(revisions);
+    const alpha = alphalNominal(units);
+    // 类别层面的完全一致比例
+    let full = 0, counted = 0;
+    units.forEach(u => {
+      const ls = u.labels.filter(l => l != null);
+      if (ls.length < 2) return;
+      counted++;
+      if (ls.every(l => l === ls[0])) full++;
+    });
+    const labelAgree = counted ? full / counted : 1;
+    const controversy = Math.max(0, Math.min(1,
+      (1 - meanDice) * 1.25 * 0.62 + (1 - labelAgree) * 0.38));
+    return {
+      pairs: per, meanDice, meanF1, meanHD95: meanHD, alpha, labelAgree,
+      units: units.length, controversy
+    };
+  }
+
+  /* ---------------- 预标注与模拟专家 ---------------- */
+  function modelPreannotate(sample) {
+    const rnd = mulberry32(sample.imageSeed + 991);
+    let insts = sample.polys.map((p, i) => ({
+      id: 'M-' + (i + 1), cls: p.cls,
+      pts: jitter(scaleAbout(p.pts, 1.032, centroid(p.pts)[0], centroid(p.pts)[1]), rnd, 0.006)
+    }));
+    insts = insts.map(x => ({ id: x.id, cls: x.cls, pts: shift(x.pts, 0.0035, -0.0028) }));
+
+    if (sample.stratum === 'borderline' || sample.stratum === 'clustered') {
+      // 模型把粘连的一对合成一个（真实模型最常见的失败模式之一）
+      const a = insts[0].pts, b = insts[1].pts;
+      const hull = convexHull(a, b);
+      insts = [{ id: 'M-1', cls: insts[0].cls, pts: hull }].concat(insts.slice(2));
+    }
+    if (sample.stratum === 'low_contrast') {
+      // 低对比下漏检最小实例
+      let mi = 0, ma = 1e9;
+      insts.forEach((x, i) => { const a = area(x.pts); if (a < ma) { ma = a; mi = i; } });
+      insts = insts.filter((_, i) => i !== mi);
+    }
+    return { coder: 'MODEL', engine: 'organoid-det-v0.9', instances: insts };
+  }
+
+  function scriptedExpert(sample, coder) {
+    const seedAdd = coder === 'B' ? 41 : 83;
+    const rnd = mulberry32(sample.imageSeed + seedAdd);
+    const amp = coder === 'B' ? 0.0075 : 0.0145;
+    let insts = sample.polys.map((p, i) => ({
+      id: coder + '-' + (i + 1), cls: p.cls, pts: jitter(p.pts, rnd, amp)
+    }));
+    if (coder === 'C' && (sample.stratum === 'clustered' || sample.stratum === 'borderline')) {
+      insts = [{ id: 'C-1', cls: insts[0].cls, pts: convexHull(insts[0].pts, insts[1].pts) }]
+        .concat(insts.slice(2));
+    }
+    if (coder === 'C' && sample.stratum === 'low_contrast') {
+      // 低对比时把碎片标成实性
+      insts = insts.map(x => x.cls === 'DEBRIS' ? { id: x.id, cls: 'SOLID', pts: x.pts } : x);
+    }
+    return { coder: coder, instances: insts };
+  }
+
+  /* ---------------- 哈希（演示用，非密码学） ---------------- */
+  function q4(x) { return Math.round(x * 1e4) / 1e4; }
+  function canon(v) {
+    if (v === null || v === undefined) return 'null';
+    if (typeof v === 'number') return Number.isFinite(v) ? String(q4(v)) : 'null';
+    if (typeof v === 'string') return JSON.stringify(v);
+    if (typeof v === 'boolean') return v ? 'true' : 'false';
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    const keys = Object.keys(v).sort();
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  }
+  function fnv1a(str, basis) {
+    let h = basis >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return ('00000000' + h.toString(16)).slice(-8);
+  }
+  function hash64(str) {
+    return fnv1a(str, 0x811c9dc5) + fnv1a(str + '#s', 0x01000193);
+  }
+
+  function newChain() {
+    return { entries: [], prev: '0000000000000000' };
+  }
+  function pushAudit(chain, actor, event, payload) {
+    const body = { seq: chain.entries.length + 1, at: payload._at || nowISO(), actor: actor, event: event, payload: payload };
+    delete body.payload._at;
+    const preimage = canon({ prev: chain.prev, seq: body.seq, at: body.at, actor: body.actor, event: body.event, payload: body.payload });
+    body.prev = chain.prev;
+    body.hash = hash64(preimage);
+    chain.entries.push(body);
+    chain.prev = body.hash;
+    return body;
+  }
+  function verifyChain(chain) {
+    let prev = '0000000000000000';
+    for (let i = 0; i < chain.entries.length; i++) {
+      const e = chain.entries[i];
+      const preimage = canon({ prev: prev, seq: e.seq, at: e.at, actor: e.actor, event: e.event, payload: e.payload });
+      const expect = hash64(preimage);
+      if (e.prev !== prev || e.hash !== expect) return { ok: false, badAt: i + 1 };
+      prev = e.hash;
+    }
+    return { ok: true, badAt: 0 };
+  }
+
+  function nowISO() {
+    const d = new Date();
+    const p = n => ('0' + n).slice(-2);
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' +
+           p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + '+08:00';
+  }
+  function fmtDur(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+
+  global.ORG = {
+    TAXONOMY, CLS, STRATA,
+    mulberry32, blob, centroid, area, convexHull,
+    buildSamples, renderFluoro, drawInstances,
+    modelPreannotate, scriptedExpert,
+    polyMask, maskIoU, diceOf, matchSets, compareRevisions, computeAgreement,
+    alphalNominal, buildUnits, hd95,
+    canon, hash64, newChain, pushAudit, verifyChain, nowISO, fmtDur, q4
+  };
+})(window);
+
+</script>
+<script>
+/* ==== app.js ==== */
+/* =========================================================================
+   类器官标注平台 · HITL MVP —— 应用层
+   流程：S0 入湖 → S1 预标注 → S2 盲读 → S3 揭示 → S4 仲裁 → 条件复核 → S5 定稿
+   ========================================================================= */
+(function () {
+  'use strict';
+
+  const O = window.ORG;
+  const app = document.getElementById('app');
+  const STEPS = [
+    { id: 'S0', name: '入湖预检' },
+    { id: 'S1', name: '模型预标注' },
+    { id: 'S2', name: '专家盲读' },
+    { id: 'S3', name: '揭示与分歧' },
+    { id: 'S4', name: '首席仲裁' },
+    { id: 'S5', name: '定稿入库' }
+  ];
+  const REASONS = ['边界判定', '类别判定', '实例拆分', '伪影', '协议未覆盖'];
+  const DICE_MIN = 0.75, ALPHA_MIN = 0.65, CONTROVERSY_TRIGGER = 0.72;
+
+  const S = {
+    samples: O.buildSamples(),
+    idx: 0,
+    role: 'expertA',
+    template: 'research',
+    view: 'overview',
+    model: {},
+    rev: {},
+    revealed: {},
+    adj: {},
+    cosign: {},
+    exported: {},
+    chain: O.newChain(),
+    draft: [],
+    activeCls: 'CYSTIC',
+    mode: 'draw',
+    pending: null,
+    selected: null,
+    drag: null,
+    startedAt: 0,
+    firstTouchAt: 0,
+    timerH: 0,
+    baseCache: {}
+  };
+
+  /* ================= 初始化 ================= */
+  function init() {
+    S.samples.forEach((s, i) => {
+      S.model[i] = O.modelPreannotate(s);
+      S.rev[i] = {
+        B: { coder: 'B', instances: O.scriptedExpert(s, 'B').instances, meta: { blindMs: 214000 + i * 17000, submittedAt: '—' } },
+        C: { coder: 'C', instances: O.scriptedExpert(s, 'C').instances, meta: { blindMs: 268000 + i * 9000, submittedAt: '—' } }
+      };
+      O.pushAudit(S.chain, '系统', 'TASK_PUBLISHED', { task_id: 'T-' + s.id, sample: s.id, stratum: s.stratum, redundancy_n: 3 });
+      O.pushAudit(S.chain, 'model:organoid-det-v0.9', 'PREANNOTATION_PRODUCED', { sample: s.id, instances: S.model[i].instances.length });
+      O.pushAudit(S.chain, 'expert:B', 'REVISION_SUBMITTED', { sample: s.id, coder: 'B', instances: S.rev[i].B.instances.length });
+      O.pushAudit(S.chain, 'expert:C', 'REVISION_SUBMITTED', { sample: s.id, coder: 'C', instances: S.rev[i].C.instances.length });
+    });
+    render();
+  }
+
+  /* ================= 状态推导 ================= */
+  function stateOf(i) {
+    if (S.exported[i]) return { code: 'IN_DATASET', label: '已入库', cls: 'ok' };
+    const a = S.rev[i].A, adj = S.adj[i], cs = S.cosign[i];
+    if (!a) return { code: 'PUBLISHED', label: '待盲读', cls: 'info' };
+    if (!adj) {
+      if (!S.revealed[i]) return { code: 'AWAITING_REVEAL', label: '待揭示', cls: 'info' };
+      return { code: 'AWAITING_ADJUDICATION', label: '待仲裁', cls: 'warn' };
+    }
+    if (adj.cosignRequired && (!cs || !cs.verdict)) return { code: 'AWAITING_COSIGN', label: '待复核', cls: 'warn' };
+    return { code: 'ADJUDICATED', label: '已仲裁', cls: 'ok' };
+  }
+  function stepIndex() {
+    const i = S.idx, st = stateOf(i);
+    if (S.view === 'blind') return 2;
+    if (S.view === 'reveal') return 3;
+    if (S.view === 'adjudicate') return 4;
+    if (S.view === 'cosign') return 4;
+    if (S.view === 'final') return 5;
+    switch (st.code) {
+      case 'PUBLISHED': return 2;
+      case 'AWAITING_REVEAL': return 3;
+      case 'AWAITING_ADJUDICATION': return 4;
+      case 'AWAITING_COSIGN': return 4;
+      case 'ADJUDICATED': return 5;
+      case 'IN_DATASET': return 5;
+      default: return 1;
+    }
+  }
+  function nextAction(i) {
+    const st = stateOf(i).code;
+    if (st === 'PUBLISHED') return { view: 'blind', label: '开始盲读' };
+    if (st === 'AWAITING_REVEAL') return { view: 'reveal', label: '执行揭示' };
+    if (st === 'AWAITING_ADJUDICATION') return { view: 'adjudicate', label: '进入仲裁' };
+    if (st === 'AWAITING_COSIGN') return { view: 'cosign', label: '条件复核' };
+    if (st === 'ADJUDICATED') return { view: 'final', label: '定稿与导出' };
+    return { view: 'final', label: '查看数据集卡片' };
+  }
+
+  /* ================= 通用渲染工具 ================= */
+  function h(html) { return html; }
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function chip(text, cls) { return '<span class="chip ' + (cls || '') + '">' + esc(text) + '</span>'; }
+  function pct(x, d) { return (x * 100).toFixed(d == null ? 1 : d) + '%'; }
+  function fx(x, d) { return Number(x).toFixed(d == null ? 3 : d); }
+  function toast(msg, kind) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show ' + (kind || '');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(() => { t.className = ''; }, 2600);
+  }
+  function baseCanvas(i) {
+    if (S.baseCache[i]) return S.baseCache[i];
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 720;
+    O.renderFluoro(cv, S.samples[i], {});
+    S.baseCache[i] = cv;
+    return cv;
+  }
+  function canvasWithInstances(i, instances, size, opt) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const g = cv.getContext('2d');
+    g.drawImage(baseCanvas(i), 0, 0, size, size);
+    O.drawInstances(cv, instances, opt || {});
+    return cv;
+  }
+
+  /* ================= 渲染主循环 ================= */
+  function render() {
+    renderSteps();
+    const i = S.idx;
+    let html = '';
+    if (S.view === 'overview') html = viewOverview();
+    else if (S.view === 'blind') html = viewBlind(i);
+    else if (S.view === 'reveal') html = viewReveal(i);
+    else if (S.view === 'adjudicate') html = viewAdjudicate(i);
+    else if (S.view === 'cosign') html = viewCosign(i);
+    else if (S.view === 'final') html = viewFinal(i);
+    app.innerHTML = html;
+    bind();
+    if (S.view === 'blind') startTimer();
+    else stopTimer();
+    if (S.view === 'reveal' && S.revealed[i]) paintReveal(i);
+    if (S.view === 'blind') paintBlind(i);
+    if (S.view === 'adjudicate' || S.view === 'cosign') paintThumbs(i);
+  }
+  function renderSteps() {
+    const cur = stepIndex();
+    document.getElementById('steps').innerHTML = STEPS.map((s, k) => {
+      const cls = k < cur ? 'done' : (k === cur ? 'active' : '');
+      return '<div class="step ' + cls + '"><i>' + (k + 1) + '</i>' + s.name + '</div>';
+    }).join('');
+  }
+  function roleName(r) {
+    return { expertA: '领域专家 A', expertB: '领域专家 B', expertC: '领域专家 C', chief: '首席专家', cosigner: '复核专家', owner: '项目负责人' }[r] || r;
+  }
+
+  /* ================= 视图 0：总览 ================= */
+  function viewOverview() {
+    const s = S.samples[S.idx];
+    const rows = S.samples.map((sm, i) => {
+      const st = stateOf(i);
+      const na = nextAction(i);
+      const str = O.STRATA[sm.stratum];
+      return '<tr class="' + (i === S.idx ? 'sel' : '') + '">' +
+        '<td class="mono">' + sm.id + '</td>' +
+        '<td><span class="chip" style="color:' + str.color + ';border-color:' + str.color + '55;background:' + str.color + '12">' + str.label + '</span></td>' +
+        '<td class="num">' + fx(str.weight, 1) + '×</td>' +
+        '<td class="num">' + (S.rev[i].A ? S.rev[i].A.instances.length : '—') + '</td>' +
+        '<td>' + chip(st.label, st.cls) + '</td>' +
+        '<td class="r"><button class="btn sm" data-go="' + na.view + '" data-i="' + i + '">' + na.label + '</button></td>' +
+        '</tr>';
+    }).join('');
+
+    const iso = isolationStats();
+
+    return '<h2 class="viewtitle">任务总览' +
+      '<small>T-' + s.id + ' · 科研生产模板 · 冗余 N=3 · 协议 organoid-4class v1.2</small></h2>' +
+      '<div class="sec"><div class="track">' +
+      STEPS.map((st, k) => {
+        const cur = stepIndex();
+        const cls = k < cur ? 'done' : (k === cur ? 'cur' : 'todo');
+        return '<div class="tnode ' + cls + '"><div class="sid">' + st.id + '</div><div class="nm">' + st.name + '</div></div>';
+      }).join('') +
+      '</div></div>' +
+
+      '<div class="grid2">' +
+      '<div>' +
+      '<div class="panel"><div class="panel-hd"><h3>样本队列</h3><span class="sub">5 例 · 已按困难层分层入湖</span><div class="spacer"></div>' +
+      '<span class="chip info">当前角色：' + roleName(S.role) + '</span></div>' +
+      '<div class="panel-bd tight"><table class="tbl"><thead><tr>' +
+      '<th>样本</th><th>困难层</th><th class="r">抽样权重</th><th class="r">修订数</th><th>状态</th><th class="r">操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
+
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>本演示能验证什么</h3><span class="sub">每一步都对应 PRD 的一条验收项</span></div>' +
+      '<div class="panel-bd"><table class="tbl"><thead><tr><th>验收项</th><th>本演示中的体现</th></tr></thead><tbody>' +
+      '<tr><td class="mono">P-01</td><td>盲读台不加载任何模型字段；揭示前 CSV/接口均无模型排序</td></tr>' +
+      '<tr><td class="mono">P-02</td><td>第三份修订提交即触发分歧分析，指标实时计算</td></tr>' +
+      '<tr><td class="mono">P-03</td><td>仲裁必须选理由码，否则提交按钮不可用</td></tr>' +
+      '<tr><td class="mono">P-04</td><td>模型排序仅作参考，无预选、无一键采纳</td></tr>' +
+      '<tr><td class="mono">P-09</td><td>条件复核：未锁定独立意见前看不到首席结论</td></tr>' +
+      '<tr><td class="mono">P-10</td><td>隔离集例数、分层权重可随时报出</td></tr>' +
+      '<tr><td class="mono">P-11</td><td>教学模板产物在导出闸门被硬拦截</td></tr>' +
+      '</tbody></table>' +
+      '<p class="note" style="margin-top:10px">说明：<b>专家 B / C 的修订是脚本化模拟</b>（在合成样本真值上加入不同幅度的形变，C 额外在粘连层合并实例）。指标由真实几何计算得出，不是写死的数字。</p>' +
+      '</div></div>' +
+      '</div>' +
+
+      '<div>' +
+      '<div class="panel"><div class="panel-hd"><h3>隔离留出集</h3><span class="sub">D-08 · 20% 且不少于 150 例</span></div>' +
+      '<div class="panel-bd">' +
+      '<div class="mgrid">' +
+      '<div class="mcard"><div class="k">样本池</div><div class="v num">' + iso.pool + '</div><div class="t">已入湖</div></div>' +
+      '<div class="mcard pass"><div class="k">隔离集</div><div class="v num">' + iso.total + '</div><div class="t">' + pct(iso.ratio, 1) + ' · 下界 150</div></div>' +
+      '</div>' +
+      '<div class="hr"></div>' +
+      '<table class="tbl"><thead><tr><th>层</th><th class="r">权重</th><th class="r">例数</th><th class="r">占比</th></tr></thead><tbody>' +
+      iso.rows.map(r => '<tr><td>' + r.label + '</td><td class="r num">' + fx(r.weight, 1) + '×</td><td class="r num">' + r.n + '</td><td class="r num">' + pct(r.n / iso.total, 1) + '</td></tr>').join('') +
+      '</tbody></table>' +
+      '<p class="note" style="margin-top:9px">分层在 <b>S0 入湖时打标</b>，缺失即入湖失败；抽样后冻结 id 列表、权重与规则版本。隔离样本全程不预标注，且<b>身份对标注员不可见</b>（否则触发霍桑效应，价差被抹平）。</p>' +
+      '</div></div>' +
+
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>模板与导出闸门</h3></div>' +
+      '<div class="panel-bd">' +
+      '<div class="row" style="margin-bottom:10px"><label class="tiny dim">流程模板</label>' +
+      '<select id="templateSel"><option value="research"' + (S.template === 'research' ? ' selected' : '') + '>科研生产（四级重流程）</option>' +
+      '<option value="teaching"' + (S.template === 'teaching' ? ' selected' : '') + '>教学实训（灰度）</option></select></div>' +
+      (S.template === 'teaching'
+        ? '<div class="banner warn"><div class="ic">!</div><div><b>当前为教学实训模板</b><br>产物在导出闸门被硬拦截，不进入训练集导出白名单。学生标注的分布偏差会直接教坏模型，这一条靠代码不靠约定。</div></div>'
+        : '<p class="note">科研生产模板：定稿产物经门槛校验后进入数据集。切到「教学实训」可看到导出拦截。</p>') +
+      '</div></div>' +
+
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>审计链</h3><span class="sub">organoid-audit-v1 口径</span><div class="spacer"></div>' +
+      '<button class="btn sm" id="btnVerify">校验链</button></div>' +
+      '<div class="panel-bd tight">' + auditTable() + '</div></div>' +
+      '</div></div>';
+  }
+
+  function isolationStats() {
+    const pool = 1240;
+    const total = 248;
+    const rows = [
+      { label: '容易', weight: 1.0, n: 62 },
+      { label: '模糊边界', weight: 2.0, n: 66 },
+      { label: '低对比', weight: 2.0, n: 60 },
+      { label: '粘连团簇', weight: 2.0, n: 60 }
+    ];
+    return { pool: pool, total: total, ratio: total / pool, rows: rows };
+  }
+
+  function auditTable() {
+    const es = S.chain.entries.slice(-8).reverse();
+    return '<div class="chain">' + es.map(e =>
+      '<div class="chainrow"><span class="sq">#' + e.seq + '</span>' +
+      '<span class="mono dim">' + e.at.slice(11, 19) + '</span>' +
+      '<span class="ev">' + esc(e.event) + '</span>' +
+      '<span class="dim">' + esc(e.actor) + '</span>' +
+      '<span class="hh">' + e.hash.slice(0, 8) + '</span></div>').join('') + '</div>' +
+      '<p class="note" style="margin-top:8px">共 ' + S.chain.entries.length + ' 条，头哈希 <span class="mono">' + S.chain.prev.slice(0, 12) + '</span></p>';
+  }
+
+  /* ================= 视图 1：盲读台 ================= */
+  function viewBlind(i) {
+    const sm = S.samples[i];
+    const str = O.STRATA[sm.stratum];
+    const clsRows = O.TAXONOMY.map(c => {
+      const n = S.draft.filter(d => d.cls === c.id).length;
+      return '<div class="classrow ' + (S.activeCls === c.id ? 'on' : '') + '" data-cls="' + c.id + '">' +
+        '<span class="dot" style="background:' + c.color + '"></span>' + c.name +
+        '<span class="cnt">' + (n || '') + '</span></div>';
+    }).join('');
+    const list = S.draft.length ? S.draft.map((d, k) =>
+      '<div class="classrow ' + (S.selected === k ? 'on' : '') + '" data-inst="' + k + '">' +
+      '<span class="dot" style="background:' + O.CLS[d.cls].color + '"></span>' +
+      O.CLS[d.cls].short + ' · #' + (k + 1) +
+      '<span class="cnt">' + Math.round(O.area(d.pts) * 10000) / 100 + '%²</span></div>').join('')
+      : '<p class="note">还没有轮廓。选择类别后在左侧图像上点击落点，双击闭合。</p>';
+
+    return '<h2 class="viewtitle">S2 盲读台 · ' + sm.id +
+      '<small>盲读态：界面不加载任何模型输出与他人修订。提交即锁定，如需修正须新开修订号。</small></h2>' +
+      '<div class="grid2"><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>标注画布</h3>' +
+      '<span class="chip ' + (str.weight > 1 ? 'warn' : 'ok') + '">' + str.label + ' · 权重 ' + fx(str.weight, 1) + '×</span>' +
+      '<div class="spacer"></div><span class="chip" id="timer">00:00</span></div>' +
+      '<div class="panel-bd">' +
+      '<div class="tools" style="margin-bottom:9px">' +
+      '<button class="tool ' + (S.mode === 'draw' ? 'on' : '') + '" data-mode="draw">画轮廓</button>' +
+      '<button class="tool ' + (S.mode === 'select' ? 'on' : '') + '" data-mode="select">选择 / 拖动</button>' +
+      '<button class="tool" id="btnDel">删除选中</button>' +
+      '<button class="tool" id="btnClear">清空</button>' +
+      '<div class="spacer"></div>' +
+      '<button class="tool" id="btnScript">快速填入示例（演示用）</button>' +
+      '</div>' +
+      '<div class="stagewrap hidden-model"><canvas class="stage" id="cv" width="720" height="720"></canvas></div>' +
+      '<p class="note" style="margin-top:8px">左键落点，<b>双击闭合</b>，右键撤销上一点，Esc 放弃当前轮廓。目标：每个可见类器官各画一个闭合轮廓，并按类别着色。</p>' +
+      '</div></div>' +
+      '</div><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>类别</h3><span class="sub">organoid-4class</span></div>' +
+      '<div class="panel-bd tight"><div class="classlist">' + clsRows + '</div></div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>本次修订</h3><span class="sub">' + S.draft.length + ' 个实例</span></div>' +
+      '<div class="panel-bd tight"><div class="classlist">' + list + '</div></div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-bd">' +
+      '<div class="banner" style="margin-bottom:10px"><div class="ic">i</div><div>' +
+      '盲读隔离不是前端隐藏，是<b>服务端投影</b>：此视图的响应体里没有 <span class="mono">model_*</span> 字段，不是把它们置空。</div></div>' +
+      '<button class="btn primary" id="btnSubmit" style="width:100%;justify-content:center">提交并锁定修订</button>' +
+      '<p class="note" style="margin-top:8px">提交后本页只读，修订内容按 <span class="mono">organoid-audit-v1</span> 量化入哈希（坐标按 1e-4 定点，浮点不进原像）。</p>' +
+      '</div></div>' +
+      '</div></div>';
+  }
+
+  function paintBlind(i) {
+    const cv = document.getElementById('cv');
+    if (!cv) return;
+    const g = cv.getContext('2d');
+    const W = cv.width;
+    g.drawImage(baseCanvas(i), 0, 0, W, W);
+    S.draft.forEach((d, k) => {
+      const c = O.CLS[d.cls];
+      const pts = d.pts.map(p => [p[0] * W, p[1] * W]);
+      g.beginPath();
+      pts.forEach((p, q) => q ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]));
+      g.closePath();
+      g.fillStyle = 'rgba(' + c.rgb.join(',') + ',0.13)';
+      g.fill();
+      g.lineWidth = S.selected === k ? 4 : 2.2;
+      g.strokeStyle = c.color;
+      g.stroke();
+      if (S.selected === k) {
+        pts.forEach(p => { g.beginPath(); g.arc(p[0], p[1], 4, 0, 6.283); g.fillStyle = '#fff'; g.fill(); });
+      }
+    });
+    if (S.pending && S.pending.pts.length) {
+      const pts = S.pending.pts.map(p => [p[0] * W, p[1] * W]);
+      g.beginPath();
+      pts.forEach((p, q) => q ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]));
+      if (S.pending.cursor) g.lineTo(S.pending.cursor[0] * W, S.pending.cursor[1] * W);
+      g.setLineDash([6, 4]);
+      g.lineWidth = 2;
+      g.strokeStyle = '#fff';
+      g.stroke();
+      g.setLineDash([]);
+      pts.forEach(p => { g.beginPath(); g.arc(p[0], p[1], 3.5, 0, 6.283); g.fillStyle = '#fff'; g.fill(); });
+    }
+  }
+
+  /* ================= 视图 2：揭示与分歧 ================= */
+  function viewReveal(i) {
+    const sm = S.samples[i];
+    if (!S.revealed[i]) {
+      return '<h2 class="viewtitle">S3 揭示 · ' + sm.id +
+        '<small>三份盲读已齐（A/B/C），尚未揭示。此前的任何界面都看不到模型输出。</small></h2>' +
+        '<div class="panel"><div class="panel-bd">' +
+        '<div class="banner ok" style="margin-bottom:12px"><div class="ic">✓</div><div>' +
+        '<b>3/3 修订已提交并锁定</b><br>A：' + S.rev[i].A.instances.length + ' 实例，用时 ' + O.fmtDur(S.rev[i].A.meta.blindMs) +
+        ' · B：' + S.rev[i].B.instances.length + ' 实例 · C：' + S.rev[i].C.instances.length + ' 实例</div></div>' +
+        '<p class="note" style="margin-bottom:12px">揭示是一次显式动作，不是进入页面就自动发生。揭示后系统计算分歧指标，并把模型预标注与排序一并呈现给首席——<b>对领域专家仍然不可见</b>。</p>' +
+        '<button class="btn primary" id="btnReveal">执行揭示并计算分歧</button>' +
+        '</div></div>';
+    }
+    const ag = O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]);
+    const vsModel = O.compareRevisions(S.rev[i].A, { instances: S.model[i].instances });
+    const suspect = vsModel.meanDice > 0.95;
+
+    return '<h2 class="viewtitle">S3 揭示与分歧 · ' + sm.id +
+      '<small>分歧不是缺陷，是下一轮要学的地方。指标由三份修订真实计算（IoU≥0.5 匹配）。</small></h2>' +
+      (suspect ? '<div class="banner warn" style="margin-bottom:12px"><div class="ic">!</div><div><b>疑似未经独立判断</b>：专家 A 的修订与模型预标注 Dice 达 ' + fx(vsModel.meanDice) + '，接近直接复制。该样本建议列入偏误监控。</div></div>' : '') +
+      '<div class="grid2"><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>三份修订</h3><span class="sub">同一视野 · 各自轮廓</span></div>' +
+      '<div class="panel-bd"><div class="grid3" id="trio"></div></div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>分歧图</h3>' +
+      '<span class="sub">按像素统计三份修订的一致情况</span><div class="spacer"></div>' +
+      '<span class="chip ok">三方一致</span><span class="chip warn">两方一致</span><span class="chip bad">仅一方</span><span class="chip violet">类别冲突</span></div>' +
+      '<div class="panel-bd"><div class="stagewrap"><canvas id="cvDis" width="360" height="360" style="display:block;width:100%;height:auto;image-rendering:auto"></canvas></div></div></div>' +
+      '</div><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>一致性指标</h3></div><div class="panel-bd">' +
+      '<div class="mgrid">' +
+      mcard('平均 Dice', fx(ag.meanDice), ag.meanDice >= DICE_MIN ? 'pass' : 'fail', '门槛 ' + DICE_MIN) +
+      mcard('Krippendorff α', fx(ag.alpha), ag.alpha >= ALPHA_MIN ? 'pass' : 'fail', '门槛 ' + ALPHA_MIN) +
+      mcard('检测 F1', fx(ag.meanF1), ag.meanF1 >= 0.85 ? 'pass' : 'warn', '配对平均') +
+      mcard('HD95', fx(ag.meanHD95, 1) + '‰', 'warn', '占图像宽度') +
+      mcard('争议度', fx(ag.controversy), ag.controversy >= CONTROVERSY_TRIGGER ? 'fail' : 'pass', ag.controversy >= CONTROVERSY_TRIGGER ? '触发复核' : '未触发') +
+      '</div>' +
+      '<div class="hr"></div>' +
+      '<table class="tbl"><thead><tr><th>配对</th><th class="r">Dice</th><th class="r">F1</th><th class="r">匹配/漏/多</th></tr></thead><tbody>' +
+      [['A–B', 0], ['A–C', 1], ['B–C', 2]].map((p, k) => {
+        const x = ag.pairs[k];
+        return '<tr><td>' + p[0] + '</td><td class="r num">' + fx(x.meanDice) + '</td><td class="r num">' + fx(x.detF1) + '</td><td class="r num">' + x.matched + '/' + x.fn + '/' + x.fp + '</td></tr>';
+      }).join('') + '</tbody></table>' +
+      '<p class="note" style="margin-top:9px">α 按名义尺度、允许缺测计算；匹配单元由三份修订的 IoU 连通分量建立，不是按顺序硬对齐。</p>' +
+      '</div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-bd">' +
+      '<button class="btn primary" id="btnToAdj" style="width:100%;justify-content:center">交给首席仲裁</button>' +
+      '</div></div>' +
+      '</div></div>';
+  }
+  function mcard(k, v, cls, t) {
+    return '<div class="mcard ' + (cls || '') + '"><div class="k">' + k + '</div><div class="v num">' + v + '</div><div class="t">' + (t || '') + '</div></div>';
+  }
+
+  function paintReveal(i) {
+    const trio = document.getElementById('trio');
+    if (trio) {
+      const label = { A: '专家 A（你）', B: '专家 B', C: '专家 C' };
+      trio.innerHTML = ['A', 'B', 'C'].map(c =>
+        '<div><div class="chip" style="margin-bottom:5px">' + label[c] + '</div>' +
+        '<div class="stagewrap" data-cv="' + c + '"></div></div>').join('');
+      ['A', 'B', 'C'].forEach(c => {
+        const box = trio.querySelector('[data-cv="' + c + '"]');
+        const cv = canvasWithInstances(i, S.rev[i][c].instances, 360, { labels: false, lw: 2.2, fillAlpha: 0.10 });
+        cv.style.width = '100%'; cv.style.height = 'auto';
+        box.appendChild(cv);
+      });
+    }
+    const cv = document.getElementById('cvDis');
+    if (!cv) return;
+    const N = cv.width, g = cv.getContext('2d');
+    g.drawImage(baseCanvas(i), 0, 0, N, N);
+    const maps = ['A', 'B', 'C'].map(c => labelMap(S.rev[i][c].instances, N));
+    const img = g.getImageData(0, 0, N, N), d = img.data;
+    for (let k = 0; k < N * N; k++) {
+      const a = maps[0][k], b = maps[1][k], c = maps[2][k];
+      const present = (a > 0 ? 1 : 0) + (b > 0 ? 1 : 0) + (c > 0 ? 1 : 0);
+      if (present === 0) continue;
+      let rgba = null;
+      if (present === 3) {
+        if (a === b && b === c) rgba = [55, 211, 155, 26];
+        else rgba = [167, 139, 250, 74];
+      } else if (present === 2) rgba = [255, 183, 3, 78];
+      else rgba = [255, 93, 115, 96];
+      const p = k * 4;
+      d[p] = Math.round(d[p] * 0.45 + rgba[0] * 0.55);
+      d[p + 1] = Math.round(d[p + 1] * 0.45 + rgba[1] * 0.55);
+      d[p + 2] = Math.round(d[p + 2] * 0.45 + rgba[2] * 0.55);
+    }
+    g.putImageData(img, 0, 0);
+    ['A', 'B', 'C'].forEach(c => {
+      O.drawInstances(cv, S.rev[i][c].instances, { fill: false, labels: false, lw: 1, fillAlpha: 0 });
+    });
+  }
+
+  function paintThumbs(i) {
+    app.querySelectorAll('canvas[data-thumb]').forEach(cv => {
+      const c = cv.getAttribute('data-thumb');
+      if (!S.rev[i][c]) return;
+      const g = cv.getContext('2d');
+      g.drawImage(baseCanvas(i), 0, 0, cv.width, cv.height);
+      O.drawInstances(cv, S.rev[i][c].instances, { labels: false, lw: 2, fillAlpha: 0.12 });
+    });
+  }
+
+  function labelMap(instances, N) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = N;
+    const g = cv.getContext('2d');
+    const base = { CYSTIC: 1, SOLID: 2, BUDDING: 3, DEBRIS: 4 };
+    instances.forEach(inst => {
+      g.fillStyle = 'rgb(' + base[inst.cls] + ',0,0)';
+      g.beginPath();
+      inst.pts.forEach((p, i) => i ? g.lineTo(p[0] * N, p[1] * N) : g.moveTo(p[0] * N, p[1] * N));
+      g.closePath(); g.fill();
+    });
+    const d = g.getImageData(0, 0, N, N).data;
+    const m = new Uint8Array(N * N);
+    for (let k = 0; k < N * N; k++) m[k] = d[k * 4];
+    return m;
+  }
+
+  /* ================= 视图 3：仲裁台 ================= */
+  function viewAdjudicate(i) {
+    const ag = O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]);
+    const rank = modelRank(i);
+    const lastCoder = rank[rank.length - 1].coder;
+    const trigger = [];
+    if (ag.controversy >= CONTROVERSY_TRIGGER) trigger.push('争议度 ' + fx(ag.controversy) + ' ≥ ' + CONTROVERSY_TRIGGER);
+    if (ag.alpha < ALPHA_MIN) trigger.push('α ' + fx(ag.alpha) + ' 低于门槛 ' + ALPHA_MIN);
+
+    const cards = ['A', 'B', 'C'].map(c => {
+      const rk = rank.findIndex(r => r.coder === c);
+      const m = O.compareRevisions(S.rev[i][c], { instances: S.model[i].instances });
+      const sel = S.tmpSel === c;
+      return '<div class="revcard ' + (sel ? 'on' : '') + ' ' + (rk === rank.length - 1 ? 'last' : '') + '" data-sel="' + c + '">' +
+        '<span class="radio"></span>' +
+        '<canvas data-thumb="' + c + '" width="192" height="192"></canvas>' +
+        '<div><div style="font-size:12.5px;color:var(--ink)">专家 ' + c + ' 的修订 ' +
+        (rk === rank.length - 1 ? '<span class="chip bad">模型排序末位</span>' : '') + '</div>' +
+        '<div class="revmeta"><span>实例 <b>' + S.rev[i][c].instances.length + '</b></span>' +
+        '<span>与其余两份 Dice <b>' + fx(coderDice(ag, c)) + '</b></span>' +
+        '<span>与模型一致度 <b>' + fx(m.meanDice) + '</b></span>' +
+        '<span>模型排序 <b>#' + (rk + 1) + '</b></span></div></div></div>';
+    }).join('');
+
+    return '<h2 class="viewtitle">S4 首席仲裁 · ' + S.samples[i].id +
+      '<small>模型排序是输入，不是决定。界面不预选、不自动勾选、无一键采纳。</small></h2>' +
+      '<div class="grid2"><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>三份修订</h3><span class="sub">选择一份，或合并 / 重标</span></div>' +
+      '<div class="panel-bd"><div class="revlist">' + cards + '</div>' +
+      '<div class="hr"></div>' +
+      '<div class="row"><label class="tiny dim" style="width:64px">理由码</label>' +
+      '<select id="reasonSel"><option value="">请选择（必填）</option>' +
+      REASONS.map(r => '<option value="' + r + '"' + (S.tmpReason === r ? ' selected' : '') + '>' + r + '</option>').join('') +
+      '</select></div>' +
+      '<div class="row" style="margin-top:8px;align-items:flex-start"><label class="tiny dim" style="width:64px;padding-top:6px">说明</label>' +
+      '<textarea id="reasonText" rows="2" style="flex:1;resize:vertical" placeholder="为什么选这一份（会进入证据链，可被复核）">' + esc(S.tmpText || '') + '</textarea></div>' +
+      '<div class="row end" style="margin-top:12px">' +
+      '<span class="tiny dim" id="adjHint">' + (S.tmpSel ? '已选择专家 ' + S.tmpSel : '尚未选择任何修订') + '</span>' +
+      '<div class="spacer"></div>' +
+      '<button class="btn primary" id="btnAdjudicate" ' + (S.tmpSel && S.tmpReason ? '' : 'disabled') + '>提交仲裁</button>' +
+      '</div></div></div>' +
+      '</div><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>模型排序</h3><span class="chip warn">建议，非结论</span></div><div class="panel-bd">' +
+      rank.map((r, k) => '<div class="rankrow ' + (k === 0 ? 'first' : (k === rank.length - 1 ? 'last' : '')) + '">' +
+        '<span class="n">' + (k + 1) + '</span><span>专家 ' + r.coder + '</span>' +
+        '<span class="bar"><i style="width:' + Math.round(r.q * 100) + '%"></i></span>' +
+        '<span class="sc">' + fx(r.dice) + '</span></div>').join('') +
+      '<p class="note" style="margin-top:9px">排序依据是<b>与该模型自身预标注的一致度</b>。这正是不能让它做选择的原因：它必然偏好最像自己的那份。排序末位若同属高分，往往包含真实洞察。</p>' +
+      '</div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>复核触发</h3></div><div class="panel-bd">' +
+      '<p class="note" style="margin-bottom:8px">命中下列任一条件即进入 <span class="mono">AWAITING_COSIGN</span>，由第二人独立复核：</p>' +
+      '<div class="pill-row">' +
+      '<span class="chip ' + (ag.controversy >= CONTROVERSY_TRIGGER ? 'warn' : '') + '">争议度 Top 10%</span>' +
+      '<span class="chip ' + (ag.alpha < ALPHA_MIN ? 'warn' : '') + '">α 低于门槛</span>' +
+      '<span class="chip ' + (S.tmpSel === lastCoder ? 'warn' : '') + '">选了模型排序末位</span>' +
+      '<span class="chip">首席自行重标</span></div>' +
+      (trigger.length ? '<div class="banner warn" style="margin-top:9px"><div class="ic">!</div><div>已命中：' + trigger.join('；') + '</div></div>' : '') +
+      (S.tmpSel === lastCoder ? '<div class="banner warn" style="margin-top:9px"><div class="ic">!</div><div>你选择了<b>模型排序末位</b>的修订。这不是错误，但需要第二人独立判断来兜底。</div></div>' : '') +
+      '</div></div>' +
+      '</div></div>';
+  }
+  function modelRank(i) {
+    const rows = ['A', 'B', 'C'].map(c => {
+      const m = O.compareRevisions(S.rev[i][c], { instances: S.model[i].instances });
+      return { coder: c, dice: m.meanDice };
+    }).sort((a, b) => b.dice - a.dice);
+    const max = rows[0].dice || 1;
+    rows.forEach(r => r.q = Math.max(0.04, r.dice / max));
+    return rows;
+  }
+  function coderDice(ag, c) {
+    const idx = { A: 0, B: 1, C: 2 }[c];
+    const pr = [[0, 1], [0, 2], [1, 2]];
+    const vals = [];
+    ag.pairs.forEach((p, k) => { if (pr[k][0] === idx || pr[k][1] === idx) vals.push(p.meanDice); });
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }
+
+  /* ================= 视图 4：条件复核 ================= */
+  function viewCosign(i) {
+    const adj = S.adj[i], cs = S.cosign[i] || {};
+    const trig = adj.cosignTrigger || '选了模型排序末位的修订';
+    const gate = S.role !== 'cosigner';
+    const head = '<h2 class="viewtitle">条件复核 · ' + S.samples[i].id +
+      '<small>AWAITING_COSIGN：触发规则默认关闭，本项目已开启。复核人必须先独立判断，再看首席结论。</small></h2>';
+
+    if (gate) {
+      return head + '<div class="panel"><div class="panel-bd">' +
+        '<div class="banner warn"><div class="ic">!</div><div><b>当前角色没有复核权限</b><br>权限矩阵要求：复核专家，且不得与本案首席为同一人。</div></div>' +
+        '<button class="btn primary" id="btnBeCosigner" style="margin-top:12px">切换为复核专家</button>' +
+        '</div></div>';
+    }
+
+    const opts = ['A', 'B', 'C'].map(c =>
+      '<div class="revcard ' + (cs.blindChoice === c ? 'on' : '') + ' ' + (cs.locked ? 'last' : '') + '" data-cosign="' + c + '">' +
+      '<span class="radio"></span>' +
+      '<canvas data-thumb="' + c + '" width="192" height="192"></canvas>' +
+      '<div><div style="font-size:12.5px;color:var(--ink)">专家 ' + c + ' 的修订</div>' +
+      '<div class="revmeta"><span>实例 <b>' + S.rev[i][c].instances.length + '</b></span>' +
+      (cs.locked ? '<span class="okc">已锁定，不可更改</span>' : '<span class="dim">未锁定</span>') + '</div></div></div>').join('');
+
+    let body = '<div class="grid2"><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>触发原因</h3><span class="chip warn">' + esc(trig) + '</span></div>' +
+      '<div class="panel-bd"><p class="note">首席选择了 <b>专家 ' + adj.selected + '</b>，理由码「' + esc(adj.reasonCode) + '」。' +
+      (adj.reasonText ? '说明：' + esc(adj.reasonText) : '') + '</p></div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>第一步 · 你的独立判断</h3>' +
+      '<span class="sub">只看三份修订，不看首席结论</span></div>' +
+      '<div class="panel-bd"><div class="revlist">' + opts + '</div>' +
+      '<div class="row end" style="margin-top:11px">' +
+      '<button class="btn primary" id="btnLockChoice" ' + (cs.blindChoice && !cs.locked ? '' : 'disabled') + '>锁定独立意见</button>' +
+      '</div></div></div>' +
+      '</div><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>第二步 · 揭示首席结论</h3></div><div class="panel-bd">' +
+      (cs.locked
+        ? '<div class="banner ok" style="margin-bottom:10px"><div class="ic">✓</div><div>你的选择 <b>专家 ' + cs.blindChoice + '</b> 已于 ' + (cs.lockedAt || '') + ' 锁定。锁定时间进入审计链。</div></div>' +
+          (cs.revealed
+            ? '<table class="tbl"><tbody>' +
+              '<tr><td class="dim">首席选择</td><td>专家 ' + adj.selected + '</td></tr>' +
+              '<tr><td class="dim">理由码</td><td>' + esc(adj.reasonCode) + '</td></tr>' +
+              '<tr><td class="dim">说明</td><td>' + (adj.reasonText ? esc(adj.reasonText) : '—') + '</td></tr>' +
+              '<tr><td class="dim">与你的判断</td><td>' + (cs.blindChoice === adj.selected ? '<span class="okc">一致</span>' : '<span class="warnc">不一致</span>') + '</td></tr>' +
+              '</tbody></table>' +
+              '<div class="hr"></div>' +
+              '<textarea id="dissentText" rows="2" style="width:100%;resize:vertical" placeholder="否决时必须说明分歧点">' + esc(cs.dissent || '') + '</textarea>' +
+              '<div class="row" style="margin-top:10px"><button class="btn primary" id="btnApprove">通过</button>' +
+              '<button class="btn danger" id="btnReject">否决并退回首席</button></div>'
+            : '<button class="btn" id="btnRevealChief">揭示首席的选择与理由</button>')
+        : '<p class="note">未锁定独立意见前，本面板不返回首席结论的任何字段（接口返回 409，不是返回空值）。</p>') +
+      '</div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>为什么顺序不能反</h3></div><div class="panel-bd">' +
+      '<p class="note">先看结论再表态，复核就退化为盖章。所以服务端把它切成两个端点：<span class="mono">cosign:choice</span> 与 <span class="mono">cosign:context</span>。前者不成功，后者不给内容。</p>' +
+      '</div></div>' +
+      '</div></div>';
+    return head + body;
+  }
+
+  /* ================= 视图 5：定稿与导出 ================= */
+  function viewFinal(i) {
+    const ag = O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]);
+    const adj = S.adj[i], cs = S.cosign[i];
+    const checks = [
+      { k: '平均 Dice ≥ ' + DICE_MIN, v: ag.meanDice, ok: ag.meanDice >= DICE_MIN },
+      { k: 'Krippendorff α ≥ ' + ALPHA_MIN, v: ag.alpha, ok: ag.alpha >= ALPHA_MIN },
+      { k: '条件复核已完成', v: adj.cosignRequired ? (cs && cs.verdict === 'approve' ? 1 : 0) : 1, ok: !adj.cosignRequired || (cs && cs.verdict === 'approve'), text: adj.cosignRequired ? (cs && cs.verdict === 'approve' ? '通过' : '未通过') : '未触发' },
+      { k: '模板允许导出', v: S.template === 'research' ? 1 : 0, ok: S.template === 'research', text: S.template === 'research' ? '科研生产' : '教学实训（拦截）' }
+    ];
+    const pass = checks.every(c => c.ok);
+    const exported = !!S.exported[i];
+
+    return '<h2 class="viewtitle">S5 定稿与入库 · ' + S.samples[i].id +
+      '<small>未通过门槛的数据标记 NEEDS_IMPROVEMENT，不允许导出为训练集。</small></h2>' +
+      '<div class="grid2"><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>门槛校验</h3>' +
+      '<div class="spacer"></div>' + (pass ? chip('PASS', 'ok') : chip('BLOCKED', 'bad')) + '</div>' +
+      '<div class="panel-bd"><table class="tbl"><thead><tr><th>检查项</th><th class="r">值</th><th class="r">结果</th></tr></thead><tbody>' +
+      checks.map(c => '<tr><td>' + c.k + '</td><td class="r num">' + (c.text || fx(c.v)) + '</td><td class="r">' + (c.ok ? chip('通过', 'ok') : chip('未通过', 'bad')) + '</td></tr>').join('') +
+      '</tbody></table>' +
+      (pass ? '' : '<div class="banner bad" style="margin-top:11px"><div class="ic">!</div><div><b>不满足导出条件</b>：系统给出缺哪一维、差多少，而不是笼统报错。数据保留在 <span class="mono">NEEDS_IMPROVEMENT</span>，可重开一轮。</div></div>') +
+      '<div class="row end" style="margin-top:12px">' +
+      '<button class="btn' + (pass && !exported ? ' primary' : '') + '" id="btnExport" ' + (pass && !exported ? '' : 'disabled') + '>' +
+      (exported ? '已导出' : '导出数据集 v1') + '</button></div>' +
+      '</div></div>' +
+
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>数据集卡片</h3><span class="sub">随导出生成，含流程与协议版本</span></div>' +
+      '<div class="panel-bd"><dl class="kv">' +
+      '<dt>样本</dt><dd class="mono">' + S.samples[i].id + ' （' + O.STRATA[S.samples[i].stratum].label + '）</dd>' +
+      '<dt>协议</dt><dd>organoid-4class v1.2 · 触碰规则：允许接触，重叠处按可见边界切分</dd>' +
+      '<dt>流程</dt><dd>3 人盲读 → 揭示 → 首席仲裁' + (adj.cosignRequired ? ' → 条件复核' : '') + '</dd>' +
+      '<dt>一致性</dt><dd class="num">Dice ' + fx(ag.meanDice) + ' · α ' + fx(ag.alpha) + ' · F1 ' + fx(ag.meanF1) + '</dd>' +
+      '<dt>定稿</dt><dd>专家 ' + adj.selected + ' 的修订 · 理由码「' + esc(adj.reasonCode) + '」</dd>' +
+      '<dt>预标注</dt><dd>organoid-det-v0.9（权重哈希 3f9a…c21e）</dd>' +
+      '<dt>审计头</dt><dd class="mono">' + S.chain.prev.slice(0, 16) + '</dd>' +
+      '</dl></div></div>' +
+      '</div><div>' +
+      '<div class="panel"><div class="panel-hd"><h3>证据链</h3><div class="spacer"></div><button class="btn sm" id="btnVerify2">校验</button></div>' +
+      '<div class="panel-bd tight">' + auditTable() + '</div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>教学模板拦截</h3></div><div class="panel-bd">' +
+      '<p class="note" style="margin-bottom:9px">把模板切到教学实训后，同一份定稿数据的导出会被闸门拒绝——<b>不靠人工筛选</b>。</p>' +
+      '<select id="templateSel2"><option value="research"' + (S.template === 'research' ? ' selected' : '') + '>科研生产</option>' +
+      '<option value="teaching"' + (S.template === 'teaching' ? ' selected' : '') + '>教学实训</option></select>' +
+      (S.template === 'teaching' ? '<div class="banner bad" style="margin-top:9px"><div class="ic">!</div><div>导出被拒：<span class="mono">template=teaching</span> 不在导出白名单。拒绝清单写入审计。</div></div>' : '') +
+      '</div></div>' +
+      '<div class="panel" style="margin-top:14px"><div class="panel-bd">' +
+      '<button class="btn" id="btnBackOverview" style="width:100%;justify-content:center">返回任务总览</button>' +
+      '</div></div>' +
+      '</div></div>';
+  }
+
+  /* ================= 事件绑定 ================= */
+  function bind() {
+    const q = (sel) => app.querySelector(sel);
+    const qa = (sel) => Array.prototype.slice.call(app.querySelectorAll(sel));
+
+    qa('[data-go]').forEach(b => b.onclick = () => {
+      S.idx = +b.getAttribute('data-i');
+      S.view = b.getAttribute('data-go');
+      S.tmpSel = null; S.tmpReason = ''; S.tmpText = '';
+      render();
+    });
+
+    // 模板选择
+    ['#templateSel', '#templateSel2'].forEach(sel => {
+      const el = q(sel);
+      if (el) el.onchange = () => {
+        S.template = el.value;
+        if (el.value === 'teaching') O.pushAudit(S.chain, roleName(S.role), 'TEMPLATE_SWITCHED', { template: 'teaching' });
+        render();
+      };
+    });
+
+    const v = q('#btnVerify'), v2 = q('#btnVerify2');
+    [v, v2].forEach(b => { if (b) b.onclick = doVerify; });
+
+    /* ---- 盲读 ---- */
+    if (S.view === 'blind') bindBlind();
+
+    /* ---- 揭示 ---- */
+    const br = q('#btnReveal');
+    if (br) br.onclick = () => {
+      S.revealed[S.idx] = true;
+      O.pushAudit(S.chain, roleName(S.role), 'REVEAL_EXECUTED', { sample: S.samples[S.idx].id, coders: ['A', 'B', 'C'] });
+      render();
+    };
+    const bt = q('#btnToAdj');
+    if (bt) bt.onclick = () => { S.view = 'adjudicate'; S.tmpSel = null; S.tmpReason = ''; render(); };
+
+    /* ---- 仲裁 ---- */
+    qa('[data-sel]').forEach(card => card.onclick = () => {
+      if (S.adj[S.idx]) return;
+      S.tmpSel = card.getAttribute('data-sel');
+      render();
+    });
+    const rs = q('#reasonSel'), rt = q('#reasonText');
+    if (rs) rs.onchange = () => { S.tmpReason = rs.value; render(); };
+    if (rt) rt.oninput = () => { S.tmpText = rt.value; };
+    const ba = q('#btnAdjudicate');
+    if (ba) ba.onclick = doAdjudicate;
+
+    /* ---- 复核 ---- */
+    const bc = q('#btnBeCosigner');
+    if (bc) bc.onclick = () => { S.role = 'cosigner'; document.getElementById('roleSel').value = 'cosigner'; render(); };
+    qa('[data-cosign]').forEach(card => card.onclick = () => {
+      if (!S.cosign[S.idx]) S.cosign[S.idx] = {};
+      if (S.cosign[S.idx].locked) return;
+      S.cosign[S.idx].blindChoice = card.getAttribute('data-cosign');
+      render();
+    });
+    const bl = q('#btnLockChoice');
+    if (bl) bl.onclick = () => {
+      const cs = S.cosign[S.idx];
+      cs.locked = true;
+      cs.lockedAt = new Date().toTimeString().slice(0, 8);
+      O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_CHOICE_LOCKED', { sample: S.samples[S.idx].id, choice: cs.blindChoice });
+      render();
+    };
+    const brc = q('#btnRevealChief');
+    if (brc) brc.onclick = () => {
+      S.cosign[S.idx].revealed = true;
+      O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_CONTEXT_REVEALED', { sample: S.samples[S.idx].id });
+      render();
+    };
+    const dt = q('#dissentText');
+    if (dt) dt.oninput = () => { S.cosign[S.idx].dissent = dt.value; };
+    const bap = q('#btnApprove'), brj = q('#btnReject');
+    if (bap) bap.onclick = () => {
+      S.cosign[S.idx].verdict = 'approve';
+      O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_APPROVED', { sample: S.samples[S.idx].id });
+      toast('复核通过，可进入定稿', 'ok');
+      S.view = 'final'; render();
+    };
+    if (brj) brj.onclick = () => {
+      const txt = (S.cosign[S.idx].dissent || '').trim();
+      if (txt.length < 4) { toast('否决必须填写分歧点', 'bad'); return; }
+      S.cosign[S.idx].verdict = 'reject';
+      O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_REJECTED', { sample: S.samples[S.idx].id, dissent: txt });
+      delete S.adj[S.idx];
+      S.view = 'adjudicate';
+      S.tmpSel = null; S.tmpReason = ''; S.tmpText = '';
+      toast('已否决，退回首席重议', 'ok');
+      render();
+    };
+
+    /* ---- 定稿 ---- */
+    const be = q('#btnExport');
+    if (be) be.onclick = () => {
+      if (S.template !== 'research') { toast('导出被拒：教学模板产物不在白名单', 'bad'); return; }
+      S.exported[S.idx] = { at: O.nowISO() };
+      O.pushAudit(S.chain, roleName(S.role), 'DATASET_EXPORTED', { sample: S.samples[S.idx].id, gate: 'passed' });
+      toast('已导出数据集 v1', 'ok');
+      render();
+    };
+    const bb = q('#btnBackOverview');
+    if (bb) bb.onclick = () => { S.view = 'overview'; render(); };
+  }
+
+  function bindBlind() {
+    const q = (s) => app.querySelector(s);
+    app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
+      S.mode = b.getAttribute('data-mode');
+      S.pending = null;
+      render();
+    });
+    app.querySelectorAll('[data-cls]').forEach(b => b.onclick = () => {
+      S.activeCls = b.getAttribute('data-cls');
+      render();
+    });
+    app.querySelectorAll('[data-inst]').forEach(b => b.onclick = () => {
+      S.selected = +b.getAttribute('data-inst');
+      pasteBlind();
+    });
+    const cv = q('#cv');
+    if (!cv) return;
+
+    cv.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const p = toNorm(cv, e);
+      if (!S.firstTouchAt) S.firstTouchAt = Date.now();
+      if (S.mode === 'draw') {
+        if (!S.pending) { S.pending = { pts: [] }; }
+        if (e.button === 0) S.pending.pts.push(p);
+      } else {
+        const hit = hitTest(p);
+        S.selected = hit;
+        if (hit >= 0) S.drag = { idx: hit, from: p, orig: S.draft[hit].pts.map(x => x.slice()) };
+        paintBlind(S.idx);
+      }
+    });
+    cv.addEventListener('mousemove', e => {
+      const p = toNorm(cv, e);
+      if (S.mode === 'draw' && S.pending) { S.pending.cursor = p; paintBlind(S.idx); }
+      if (S.drag) {
+        const dx = p[0] - S.drag.from[0], dy = p[1] - S.drag.from[1];
+        S.draft[S.drag.idx].pts = S.drag.orig.map(q => [q[0] + dx, q[1] + dy]);
+        paintBlind(S.idx);
+      }
+    });
+    window.addEventListener('mouseup', () => { S.drag = null; }, { once: true });
+    cv.addEventListener('mouseleave', () => { if (S.pending) { S.pending.cursor = null; paintBlind(S.idx); } });
+    cv.addEventListener('dblclick', e => { e.preventDefault(); closePending(); });
+    cv.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      if (S.pending && S.pending.pts.length) { S.pending.pts.pop(); paintBlind(S.idx); }
+    });
+    document.onkeydown = (e) => {
+      if (S.view !== 'blind') return;
+      if (e.key === 'Escape') { S.pending = null; paintBlind(S.idx); }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && S.selected != null) {
+        S.draft.splice(S.selected, 1); S.selected = null; render();
+      }
+      if (e.key === 'Enter') closePending();
+    };
+    q('#btnClear').onclick = () => { S.draft = []; S.selected = null; S.pending = null; render(); };
+    q('#btnDel').onclick = () => {
+      if (S.selected == null) { toast('先在选择模式下点选一个轮廓'); return; }
+      S.draft.splice(S.selected, 1); S.selected = null; render();
+    };
+    q('#btnScript').onclick = () => {
+      S.draft = O.scriptedExpert(S.samples[S.idx], 'A').instances.map(x => ({ cls: x.cls, pts: x.pts }));
+      toast('已填入示例修订（演示用）', 'ok');
+      render();
+    };
+    q('#btnSubmit').onclick = doSubmitBlind;
+  }
+
+  function toNorm(cv, e) {
+    const r = cv.getBoundingClientRect();
+    return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+  }
+  function hitTest(p) {
+    for (let k = S.draft.length - 1; k >= 0; k--) {
+      const pts = S.draft[k].pts;
+      let inside = false;
+      for (let a = 0, b = pts.length - 1; a < pts.length; b = a++) {
+        const xi = pts[a][0], yi = pts[a][1], xj = pts[b][0], yj = pts[b][1];
+        if (((yi > p[1]) !== (yj > p[1])) && (p[0] < (xj - xi) * (p[1] - yi) / (yj - yi) + xi)) inside = !inside;
+      }
+      if (inside) return k;
+    }
+    return -1;
+  }
+  function closePending() {
+    if (!S.pending || S.pending.pts.length < 3) { S.pending = null; paintBlind(S.idx); return; }
+    S.draft.push({ cls: S.activeCls, pts: S.pending.pts.map(p => p.slice()) });
+    S.pending = null;
+    render();
+  }
+  function pasteBlind() {
+    const g = document.getElementById('cv');
+    if (!g) return;
+    paintBlind(S.idx);
+  }
+
+  function doSubmitBlind() {
+    if (!S.draft.length) { toast('至少标注一个实例', 'bad'); return; }
+    const i = S.idx;
+    const ms = S.firstTouchAt ? (Date.now() - S.firstTouchAt) : 60000;
+    S.rev[i].A = {
+      coder: 'A',
+      instances: S.draft.map((d, k) => ({ id: 'A-' + (k + 1), cls: d.cls, pts: d.pts })),
+      meta: { blindMs: ms, submittedAt: O.nowISO(), isBlind: true }
+    };
+    O.pushAudit(S.chain, 'expert:A', 'REVISION_SUBMITTED', {
+      sample: S.samples[i].id, coder: 'A', instances: S.rev[i].A.instances.length,
+      blind_ms: ms, is_blind_read: true,
+      payload_hash: O.hash64(O.canon(S.rev[i].A.instances))
+    });
+    S.pending = null; S.selected = null;
+    S.view = 'reveal';
+    stopTimer();
+    render();
+    toast('修订已锁定，等待揭示', 'ok');
+  }
+
+  function startTimer() {
+    stopTimer();
+    if (!S.startedAt || S.view !== 'blind') S.startedAt = S.startedAt || Date.now();
+    S.timerH = setInterval(() => {
+      const el = document.getElementById('timer');
+      if (!el) return;
+      el.textContent = O.fmtDur(Date.now() - (S.firstTouchAt || S.startedAt));
+    }, 500);
+  }
+  function stopTimer() { if (S.timerH) { clearInterval(S.timerH); S.timerH = 0; } }
+
+  /* ---- 仲裁 ---- */
+  function doAdjudicate() {
+    const i = S.idx;
+    if (!S.tmpSel) { toast('必须先选择一份修订', 'bad'); return; }
+    if (!S.tmpReason) { toast('理由码必填', 'bad'); return; }
+    const ag = O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]);
+    const rank = modelRank(i);
+    const last = rank[rank.length - 1].coder;
+    const trig = [];
+    if (S.tmpSel === last) trig.push('选了模型排序末位的修订');
+    if (ag.controversy >= CONTROVERSY_TRIGGER) trig.push('争议度 ' + fx(ag.controversy));
+    if (ag.alpha < ALPHA_MIN) trig.push('α 低于门槛');
+
+    S.adj[i] = {
+      selected: S.tmpSel, reasonCode: S.tmpReason, reasonText: S.tmpText || '',
+      at: O.nowISO(), cosignRequired: trig.length > 0, cosignTrigger: trig.join('；')
+    };
+    O.pushAudit(S.chain, 'expert:chief', 'ADJUDICATED', {
+      sample: S.samples[i].id, selected: S.tmpSel, reason_code: S.tmpReason,
+      model_rank: rank.map(r => r.coder).join('>'),
+      model_rank_agreement: S.tmpSel === rank[0].coder,
+      cosign_required: trig.length > 0
+    });
+    S.tmpSel = null; S.tmpReason = ''; S.tmpText = '';
+    S.view = trig.length ? 'cosign' : 'final';
+    render();
+    toast(trig.length ? '已命中复核条件，转第二人复核' : '仲裁完成', 'ok');
+  }
+
+  /* ---- 审计校验 ---- */
+  function doVerify() {
+    const r = O.verifyChain(S.chain);
+    if (r.ok) toast('审计链完整：' + S.chain.entries.length + ' 条全部校验通过', 'ok');
+    else toast('审计链在第 ' + r.badAt + ' 条断裂', 'bad');
+  }
+
+  /* ================= 契约 JSON 抽屉 ================= */
+  function buildBundle() {
+    const i = S.idx, sm = S.samples[i];
+    const ag = S.rev[i].A ? O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]) : null;
+    const adj = S.adj[i] || null, cs = S.cosign[i] || null;
+    const out = {
+      task: {
+        id: 'T-' + sm.id, template: S.template, protocol: 'organoid-4class@v1.2',
+        redundancy_n: 3, preannotation_policy: 'graded', state: stateOf(i).code,
+        strata_policy: { ratio: 0.2, min_cases: 150, hard_layer_weight: 2.0 }
+      },
+      sample: { id: sm.id, stratum: sm.stratum, isolation_set: false },
+      assignments: ['A', 'B', 'C'].map(c => ({
+        id: sm.id + ':' + c, sample_id: sm.id, assignee_role: '领域专家',
+        coder: c, state: S.rev[i][c] ? 'SUBMITTED' : 'ASSIGNED'
+      })),
+      revisions: ['A', 'B', 'C'].filter(c => S.rev[i][c]).map(c => ({
+        sample_id: sm.id, coder: c, is_blind_read: true,
+        instance_count: S.rev[i][c].instances.length,
+        blind_ms: S.rev[i][c].meta ? S.rev[i][c].meta.blindMs : null,
+        payload_hash: O.hash64(O.canon(S.rev[i][c].instances))
+      })),
+      model_rank: S.model[i].instances.length ? modelRank(i).map((r, k) => ({
+        ranking: k + 1, coder: r.coder, agreement_with_model: O.q4(r.dice)
+      })) : [],
+      disagreement: ag ? {
+        metric_snapshot: {
+          dice_mean: O.q4(ag.meanDice), alpha: O.q4(ag.alpha),
+          det_f1: O.q4(ag.meanF1), hd95: O.q4(ag.meanHD95 / 1000), label_agreement: O.q4(ag.labelAgree)
+        },
+        controversy_score: O.q4(ag.controversy), metric_version: 'metric-v1', random_seed: 20261022
+      } : null,
+      adjudication: adj ? {
+        sample_id: sm.id, selected_coder: adj.selected, selector_role: '首席专家',
+        reason_code: adj.reasonCode, reason_text: adj.reasonText,
+        model_rank_agreement: adj.selected === modelRank(i)[0].coder,
+        signature_meaning: '已仲裁', decided_at: adj.at, cosign_required: adj.cosignRequired
+      } : null,
+      cosign: cs ? {
+        sample_id: sm.id, trigger_rule: adj ? adj.cosignTrigger : null,
+        blind_choice: cs.blindChoice || null, blind_choice_locked_at: cs.lockedAt || null,
+        chief_context_revealed: !!cs.revealed, verdict: cs.verdict || null,
+        dissent_text: cs.dissent || null
+      } : null,
+      audit: {
+        head_hash: S.chain.prev, entries: S.chain.entries.length,
+        chain_verified: O.verifyChain(S.chain).ok
+      }
+    };
+    return out;
+  }
+
+  function openDrawer() {
+    const obj = buildBundle();
+    const txt = JSON.stringify(obj, null, 2);
+    const html = esc(txt)
+      .replace(/(&quot;[^&]*?&quot;)(\s*:)/g, '<span class="k">$1</span>$2')
+      .replace(/:\s*(&quot;.*?&quot;)/g, ': <span class="s">$1</span>')
+      .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="n">$1</span>')
+      .replace(/:\s*(true|false|null)/g, ': <span class="b">$1</span>');
+    document.getElementById('jsonBody').innerHTML =
+      '<p class="jsoncap">当前样本的契约对象。字段名与 PRD 第七章一致；坐标在入哈希前按 1e-4 量化。</p>' +
+      '<pre class="json">' + html + '</pre>';
+    document.getElementById('jsonBytes').textContent = (txt.length / 1024).toFixed(1) + ' KB';
+    document.getElementById('drawer').classList.add('open');
+  }
+
+  /* ================= 顶栏 ================= */
+  document.getElementById('roleSel').onchange = function () {
+    S.role = this.value;
+    render();
+  };
+  document.getElementById('btnJson').onclick = openDrawer;
+  document.getElementById('btnJsonClose').onclick = () => document.getElementById('drawer').classList.remove('open');
+  document.getElementById('btnReset').onclick = () => {
+    location.reload();
+  };
+
+  /* ================= 自动演示驱动（?auto=stage） ================= */
+  function runAutoFromHash() {
+    const m = location.hash.match(/auto=(\w+)/);
+    if (!m) return;
+    const stage = m[1];
+    const i = 0;
+    if (!S.rev[i].A) {
+      const inst = O.scriptedExpert(S.samples[i], 'A').instances;
+      S.rev[i].A = { coder: 'A', instances: inst, meta: { blindMs: 183000, submittedAt: O.nowISO(), isBlind: true } };
+      O.pushAudit(S.chain, 'expert:A', 'REVISION_SUBMITTED', {
+        sample: S.samples[i].id, coder: 'A', instances: inst.length, blind_ms: 183000, is_blind_read: true,
+        payload_hash: O.hash64(O.canon(inst))
+      });
+    }
+    if (stage !== 'blind') S.revealed[i] = true;
+    if (stage === 'adj' || stage === 'cosign' || stage === 'final' || stage === 'blocked') {
+      const rank = modelRank(i);
+      S.tmpSel = rank[rank.length - 1].coder; // 刻意选排序末位 → 触发复核
+      S.tmpReason = '边界判定';
+      S.tmpText = 'C 保留了粘连处的两个轮廓；模型在此处合并成一个，证据更充分。';
+      doAdjudicate();
+    }
+    if (stage === 'cosign' || stage === 'final' || stage === 'blocked') {
+      S.role = 'cosigner';
+      document.getElementById('roleSel').value = 'cosigner';
+      const adj = S.adj[i];
+      if (adj.cosignRequired) {
+        const rank2 = modelRank(i);
+        const choice = rank2[0].coder; // 复核人独立判断后选了排序首位
+        S.cosign[i] = {
+          blindChoice: choice, locked: true, lockedAt: '10:22:41', revealed: true,
+          verdict: (stage === 'cosign') ? null : 'approve', dissent: ''
+        };
+        O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_CHOICE_LOCKED', { sample: S.samples[i].id, choice: choice });
+        O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_CONTEXT_REVEALED', { sample: S.samples[i].id });
+        if (stage !== 'cosign') O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_APPROVED', { sample: S.samples[i].id });
+      }
+    }
+    if (stage === 'blocked') S.template = 'teaching';
+    const viewMap = { blind: 'blind', reveal: 'reveal', adj: 'adjudicate', cosign: 'cosign', final: 'final', blocked: 'final' };
+    S.view = viewMap[stage] || 'overview';
+    if (S.view === 'adjudicate') { S.tmpSel = null; S.tmpReason = ''; S.tmpText = ''; }
+    render();
+  }
+
+  init();
+  runAutoFromHash();
+})();
+
+</script>
+</body>
+</html>

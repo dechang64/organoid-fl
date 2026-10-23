@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>类器官标注平台 · HITL MVP</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><b>类器官标注平台</b><span>HITL MVP</span></div>
+  <nav class="steps" id="steps"></nav>
+  <div class="roles">
+    <label>当前角色</label>
+    <select id="roleSel">
+      <option value="expertA">领域专家 A</option>
+      <option value="expertB">领域专家 B</option>
+      <option value="expertC">领域专家 C</option>
+      <option value="chief">首席专家</option>
+      <option value="cosigner">复核专家</option>
+      <option value="owner">项目负责人</option>
+    </select>
+    <button class="ghostbtn" id="btnJson">契约 JSON</button>
+    <button class="ghostbtn" id="btnReset">重置演示</button>
+  </div>
+</header>
+
+<main class="shell" id="app"></main>
+
+<aside class="drawer" id="drawer">
+  <div class="drawer-hd">
+    <h3>契约对象（当前状态导出）</h3>
+    <div class="spacer"></div>
+    <span class="chip" id="jsonBytes">—</span>
+    <button class="ghostbtn" id="btnJsonClose">关闭</button>
+  </div>
+  <div class="drawer-bd" id="jsonBody"></div>
+</aside>
+
+<div id="toast"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
