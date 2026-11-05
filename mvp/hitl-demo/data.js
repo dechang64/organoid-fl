@@ -554,8 +554,11 @@
   function nowISO() {
     const d = new Date();
     const p = n => ('0' + n).slice(-2);
+    /* 审计时间戳必须带真实本地时区偏移——硬编码 +08:00 会让跨时区机器产生失真元数据 */
+    const off = -d.getTimezoneOffset();
+    const tz = (off >= 0 ? '+' : '-') + p(Math.floor(Math.abs(off) / 60)) + ':' + p(Math.abs(off) % 60);
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' +
-           p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + '+08:00';
+           p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + tz;
   }
   function fmtDur(ms) {
     const s = Math.max(0, Math.round(ms / 1000));

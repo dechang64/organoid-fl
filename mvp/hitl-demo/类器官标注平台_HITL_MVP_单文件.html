@@ -951,8 +951,11 @@ pre.json .b{color:#c9a0ff}
   function nowISO() {
     const d = new Date();
     const p = n => ('0' + n).slice(-2);
+    /* 审计时间戳必须带真实本地时区偏移——硬编码 +08:00 会让跨时区机器产生失真元数据 */
+    const off = -d.getTimezoneOffset();
+    const tz = (off >= 0 ? '+' : '-') + p(Math.floor(Math.abs(off) / 60)) + ':' + p(Math.abs(off) % 60);
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' +
-           p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + '+08:00';
+           p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + tz;
   }
   function fmtDur(ms) {
     const s = Math.max(0, Math.round(ms / 1000));
@@ -1037,15 +1040,32 @@ pre.json .b{color:#c9a0ff}
   }
 
   /* ================= 状态推导 ================= */
+  /* 门槛判定只此一份实现：stateOf 与 S5 视图共用，避免两处判定漂移 */
+  function gateCheck(i) {
+    const ag = O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]);
+    const adj = S.adj[i], cs = S.cosign[i];
+    const checks = [
+      { k: '平均 Dice ≥ ' + DICE_MIN, v: ag.meanDice, ok: ag.meanDice >= DICE_MIN },
+      { k: 'Krippendorff α ≥ ' + ALPHA_MIN, v: ag.alpha, ok: ag.alpha >= ALPHA_MIN },
+      { k: '条件复核已完成', v: adj.cosignRequired ? (cs && cs.verdict === 'approve' ? 1 : 0) : 1, ok: !adj.cosignRequired || (cs && cs.verdict === 'approve'), text: adj.cosignRequired ? (cs && cs.verdict === 'approve' ? '通过' : '未通过') : '未触发' },
+      { k: '模板允许导出', v: S.template === 'research' ? 1 : 0, ok: S.template === 'research', text: S.template === 'research' ? '科研生产' : '教学实训（拦截）' }
+    ];
+    return { pass: checks.every(c => c.ok), checks: checks, agreement: ag };
+  }
   function stateOf(i) {
     if (S.exported[i]) return { code: 'IN_DATASET', label: '已入库', cls: 'ok' };
     const a = S.rev[i].A, adj = S.adj[i], cs = S.cosign[i];
-    if (!a) return { code: 'PUBLISHED', label: '待盲读', cls: 'info' };
+    if (!a) {
+      const started = (i === S.idx && S.firstTouchAt) || (S.work[i] && S.work[i].firstTouchAt);
+      return started ? { code: 'IN_BLIND_READ', label: '盲读中', cls: 'warn' }
+                     : { code: 'PUBLISHED', label: '待盲读', cls: 'info' };
+    }
     if (!adj) {
       if (!S.revealed[i]) return { code: 'AWAITING_REVEAL', label: '待揭示', cls: 'info' };
       return { code: 'AWAITING_ADJUDICATION', label: '待仲裁', cls: 'warn' };
     }
     if (adj.cosignRequired && (!cs || !cs.verdict)) return { code: 'AWAITING_COSIGN', label: '待复核', cls: 'warn' };
+    if (!gateCheck(i).pass) return { code: 'NEEDS_IMPROVEMENT', label: '门槛未过', cls: 'bad' };
     return { code: 'ADJUDICATED', label: '已仲裁', cls: 'ok' };
   }
   function stepIndex() {
@@ -1057,9 +1077,11 @@ pre.json .b{color:#c9a0ff}
     if (S.view === 'final') return 5;
     switch (st.code) {
       case 'PUBLISHED': return 2;
+      case 'IN_BLIND_READ': return 2;
       case 'AWAITING_REVEAL': return 3;
       case 'AWAITING_ADJUDICATION': return 4;
       case 'AWAITING_COSIGN': return 4;
+      case 'NEEDS_IMPROVEMENT': return 5;
       case 'ADJUDICATED': return 5;
       case 'IN_DATASET': return 5;
       default: return 1;
@@ -1067,10 +1089,11 @@ pre.json .b{color:#c9a0ff}
   }
   function nextAction(i) {
     const st = stateOf(i).code;
-    if (st === 'PUBLISHED') return { view: 'blind', label: '开始盲读' };
+    if (st === 'PUBLISHED' || st === 'IN_BLIND_READ') return { view: 'blind', label: '开始盲读' };
     if (st === 'AWAITING_REVEAL') return { view: 'reveal', label: '执行揭示' };
     if (st === 'AWAITING_ADJUDICATION') return { view: 'adjudicate', label: '进入仲裁' };
     if (st === 'AWAITING_COSIGN') return { view: 'cosign', label: '条件复核' };
+    if (st === 'NEEDS_IMPROVEMENT') return { view: 'final', label: '查看缺项 / 重开一轮' };
     if (st === 'ADJUDICATED') return { view: 'final', label: '定稿与导出' };
     return { view: 'final', label: '查看数据集卡片' };
   }
@@ -1186,7 +1209,7 @@ pre.json .b{color:#c9a0ff}
 
       '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>本演示能验证什么</h3><span class="sub">每一步都对应 PRD 的一条验收项</span></div>' +
       '<div class="panel-bd"><table class="tbl"><thead><tr><th>验收项</th><th>本演示中的体现</th></tr></thead><tbody>' +
-      '<tr><td class="mono">P-01</td><td>盲读台不加载任何模型字段；揭示前 CSV/接口均无模型排序</td></tr>' +
+      '<tr><td class="mono">P-01</td><td>盲读台不加载任何模型字段；揭示前任何视图与接口均无模型排序，模型输出对领域专家全程不可见</td></tr>' +
       '<tr><td class="mono">P-02</td><td>第三份修订提交即触发分歧分析，指标实时计算</td></tr>' +
       '<tr><td class="mono">P-03</td><td>仲裁必须选理由码，否则提交按钮不可用</td></tr>' +
       '<tr><td class="mono">P-04</td><td>模型排序仅作参考，无预选、无一键采纳</td></tr>' +
@@ -1240,15 +1263,33 @@ pre.json .b{color:#c9a0ff}
     return { pool: pool, total: total, ratio: total / pool, rows: rows };
   }
 
+  /* 审计链按角色/阶段投影：盲读期不显示预标注事件与他人提交事件（S-12）；
+     复核人未揭示时看不到 ADJUDICATED 事件（其 payload 含首席选择与排序）。 */
+  function myCoder() { return { expertA: 'A', expertB: 'B', expertC: 'C' }[S.role] || null; }
+  function isAnnotator() { return ['expertA', 'expertB', 'expertC'].indexOf(S.role) >= 0; }
+  function projectAudit(entries) {
+    const blind = !revealedNow();
+    const csBlind = cosignerBlindNow();
+    const me = myCoder();
+    return entries.filter(e => {
+      if (blind) {
+        if (e.event === 'PREANNOTATION_PRODUCED') return false;
+        if (e.event === 'REVISION_SUBMITTED' && !(me && e.payload.coder === me)) return false;
+      }
+      if (csBlind && e.event === 'ADJUDICATED') return false;
+      return true;
+    });
+  }
   function auditTable() {
-    const es = S.chain.entries.slice(-8).reverse();
+    const visible = projectAudit(S.chain.entries);
+    const es = visible.slice(-8).reverse();
     return '<div class="chain">' + es.map(e =>
       '<div class="chainrow"><span class="sq">#' + e.seq + '</span>' +
       '<span class="mono dim">' + e.at.slice(11, 19) + '</span>' +
       '<span class="ev">' + esc(e.event) + '</span>' +
       '<span class="dim">' + esc(e.actor) + '</span>' +
       '<span class="hh">' + e.hash.slice(0, 8) + '</span></div>').join('') + '</div>' +
-      '<p class="note" style="margin-top:8px">共 ' + S.chain.entries.length + ' 条，头哈希 <span class="mono">' + S.chain.prev.slice(0, 12) + '</span></p>';
+      '<p class="note" style="margin-top:8px">共 ' + S.chain.entries.length + ' 条（当前角色/阶段投影可见 ' + visible.length + ' 条），头哈希 <span class="mono">' + S.chain.prev.slice(0, 12) + '</span></p>';
   }
 
   /* ================= 视图 1：盲读台 ================= */
@@ -1343,8 +1384,8 @@ pre.json .b{color:#c9a0ff}
         '<small>三份盲读已齐（A/B/C），尚未揭示。此前的任何界面都看不到模型输出。</small></h2>' +
         '<div class="panel"><div class="panel-bd">' +
         '<div class="banner ok" style="margin-bottom:12px"><div class="ic">✓</div><div>' +
-        '<b>3/3 修订已提交并锁定</b><br>A：' + S.rev[i].A.instances.length + ' 实例，用时 ' + O.fmtDur(S.rev[i].A.meta.blindMs) +
-        ' · B：' + S.rev[i].B.instances.length + ' 实例 · C：' + S.rev[i].C.instances.length + ' 实例</div></div>' +
+        '<b>3/3 修订已提交并锁定</b><br>你的修订：' + S.rev[i].A.instances.length + ' 实例，用时 ' + O.fmtDur(S.rev[i].A.meta.blindMs) +
+        '。其余两位专家已提交——<b>其实例数与内容在揭示前对任何人都不可见</b>（时间侧信道防护，见实施方案 S-12）。</div></div>' +
         '<p class="note" style="margin-bottom:12px">揭示是一次显式动作，不是进入页面就自动发生。揭示后系统计算分歧指标，并把模型预标注与排序一并呈现给首席——<b>对领域专家仍然不可见</b>。</p>' +
         '<button class="btn primary" id="btnReveal">执行揭示并计算分歧</button>' +
         '</div></div>';
@@ -1459,6 +1500,12 @@ pre.json .b{color:#c9a0ff}
 
   /* ================= 视图 3：仲裁台 ================= */
   function viewAdjudicate(i) {
+    if (isAnnotator()) {
+      return '<h2 class="viewtitle">S4 首席仲裁 · ' + S.samples[i].id + '</h2>' +
+        '<div class="panel"><div class="panel-bd"><div class="banner warn"><div class="ic">!</div><div>' +
+        '<b>仲裁台仅首席专家可用</b><br>模型排序、各修订与模型的一致度属于首席的仲裁输入，对领域专家不可见——揭示后也是（P-01：模型输出对领域专家全程不可见）。</div></div>' +
+        '<button class="btn primary" id="btnSwitchChief" style="margin-top:12px">切换为首席专家</button></div></div>';
+    }
     if (cosignerBlindNow()) {
       return '<h2 class="viewtitle">S4 首席仲裁 · ' + S.samples[i].id + '</h2>' +
         '<div class="panel"><div class="panel-bd"><div class="banner warn"><div class="ic">!</div><div>' +
@@ -1515,7 +1562,7 @@ pre.json .b{color:#c9a0ff}
       '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>复核触发</h3></div><div class="panel-bd">' +
       '<p class="note" style="margin-bottom:8px">命中下列任一条件即进入 <span class="mono">AWAITING_COSIGN</span>，由第二人独立复核：</p>' +
       '<div class="pill-row">' +
-      '<span class="chip ' + (ag.controversy >= CONTROVERSY_TRIGGER ? 'warn' : '') + '">争议度 Top 10%</span>' +
+      '<span class="chip ' + (ag.controversy >= CONTROVERSY_TRIGGER ? 'warn' : '') + '">争议度 ≥ ' + CONTROVERSY_TRIGGER + '</span>' +
       '<span class="chip ' + (ag.alpha < ALPHA_MIN ? 'warn' : '') + '">α 低于门槛</span>' +
       '<span class="chip ' + (S.tmpSel === lastCoder ? 'warn' : '') + '">选了模型排序末位</span>' +
       '<span class="chip">首席自行重标</span></div>' +
@@ -1603,15 +1650,11 @@ pre.json .b{color:#c9a0ff}
 
   /* ================= 视图 5：定稿与导出 ================= */
   function viewFinal(i) {
-    const ag = O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]);
+    const g = gateCheck(i);
+    const ag = g.agreement;
     const adj = S.adj[i], cs = S.cosign[i];
-    const checks = [
-      { k: '平均 Dice ≥ ' + DICE_MIN, v: ag.meanDice, ok: ag.meanDice >= DICE_MIN },
-      { k: 'Krippendorff α ≥ ' + ALPHA_MIN, v: ag.alpha, ok: ag.alpha >= ALPHA_MIN },
-      { k: '条件复核已完成', v: adj.cosignRequired ? (cs && cs.verdict === 'approve' ? 1 : 0) : 1, ok: !adj.cosignRequired || (cs && cs.verdict === 'approve'), text: adj.cosignRequired ? (cs && cs.verdict === 'approve' ? '通过' : '未通过') : '未触发' },
-      { k: '模板允许导出', v: S.template === 'research' ? 1 : 0, ok: S.template === 'research', text: S.template === 'research' ? '科研生产' : '教学实训（拦截）' }
-    ];
-    const pass = checks.every(c => c.ok);
+    const checks = g.checks;
+    const pass = g.pass;
     const exported = !!S.exported[i];
 
     return '<h2 class="viewtitle">S5 定稿与入库 · ' + S.samples[i].id +
@@ -1622,7 +1665,8 @@ pre.json .b{color:#c9a0ff}
       '<div class="panel-bd"><table class="tbl"><thead><tr><th>检查项</th><th class="r">值</th><th class="r">结果</th></tr></thead><tbody>' +
       checks.map(c => '<tr><td>' + c.k + '</td><td class="r num">' + (c.text || fx(c.v)) + '</td><td class="r">' + (c.ok ? chip('通过', 'ok') : chip('未通过', 'bad')) + '</td></tr>').join('') +
       '</tbody></table>' +
-      (pass ? '' : '<div class="banner bad" style="margin-top:11px"><div class="ic">!</div><div><b>不满足导出条件</b>：系统给出缺哪一维、差多少，而不是笼统报错。数据保留在 <span class="mono">NEEDS_IMPROVEMENT</span>，可重开一轮。</div></div>') +
+      (pass ? '' : '<div class="banner bad" style="margin-top:11px"><div class="ic">!</div><div><b>不满足导出条件</b>：系统给出缺哪一维、差多少，而不是笼统报错。数据保留在 <span class="mono">NEEDS_IMPROVEMENT</span>，可重开一轮。</div></div>' +
+      '<div class="row end" style="margin-top:10px"><button class="btn" id="btnReopen">重开一轮（NEEDS_IMPROVEMENT → PUBLISHED）</button></div>') +
       '<div class="row end" style="margin-top:12px">' +
       '<button class="btn' + (pass && !exported ? ' primary' : '') + '" id="btnExport" ' + (pass && !exported ? '' : 'disabled') + '>' +
       (exported ? '已导出' : '导出数据集 v1') + '</button></div>' +
@@ -1676,7 +1720,7 @@ pre.json .b{color:#c9a0ff}
       const el = q(sel);
       if (el) el.onchange = () => {
         S.template = el.value;
-        if (el.value === 'teaching') O.pushAudit(S.chain, roleName(S.role), 'TEMPLATE_SWITCHED', { template: 'teaching' });
+        O.pushAudit(S.chain, roleName(S.role), 'TEMPLATE_SWITCHED', { template: el.value });
         render();
       };
     });
@@ -1710,6 +1754,8 @@ pre.json .b{color:#c9a0ff}
     if (ba) ba.onclick = doAdjudicate;
     const bbk = q('#btnBackCosign');
     if (bbk) bbk.onclick = () => { S.view = 'cosign'; render(); };
+    const bsc = q('#btnSwitchChief');
+    if (bsc) bsc.onclick = () => { S.role = 'chief'; document.getElementById('roleSel').value = 'chief'; render(); };
 
     /* ---- 复核 ---- */
     const bc = q('#btnBeCosigner');
@@ -1767,6 +1813,22 @@ pre.json .b{color:#c9a0ff}
     };
     const bb = q('#btnBackOverview');
     if (bb) bb.onclick = () => { S.view = 'overview'; render(); };
+    /* 重开一轮：NEEDS_IMPROVEMENT → PUBLISHED（PRD 4.8）。盲读与全部仲裁/复核状态作废，
+       已揭示标记复位——重开后是全新一轮盲读，不能继承上一轮的揭示状态。 */
+    const bro = q('#btnReopen');
+    if (bro) bro.onclick = () => {
+      const i = S.idx;
+      delete S.rev[i].A; delete S.adj[i]; delete S.cosign[i];
+      S.revealed[i] = false;
+      S.work[i] = { draft: [], selected: null, pending: null, startedAt: 0, firstTouchAt: 0 };
+      if (S.idx === i) { S.draft = []; S.selected = null; S.pending = null; S.startedAt = 0; S.firstTouchAt = 0; }
+      O.pushAudit(S.chain, roleName(S.role), 'TASK_REOPENED', {
+        sample: S.samples[i].id, reason: 'gate_failed', from: 'NEEDS_IMPROVEMENT', to: 'PUBLISHED'
+      });
+      toast('已重开一轮：盲读作废重来，揭示状态复位', 'ok');
+      S.view = 'overview';
+      render();
+    };
   }
 
   function bindBlind() {
@@ -1884,6 +1946,7 @@ pre.json .b{color:#c9a0ff}
   function doSubmitBlind() {
     if (!S.draft.length) { toast('至少标注一个实例', 'bad'); return; }
     const i = S.idx;
+    if (S.rev[i].A) { toast('修订已提交并锁定；如需修正须走 NEEDS_IMPROVEMENT 重开一轮，不得覆盖', 'bad'); return; }
     const ms = S.firstTouchAt ? (Date.now() - S.firstTouchAt) : 60000;
     S.rev[i].A = {
       coder: 'A',
@@ -1963,6 +2026,13 @@ pre.json .b{color:#c9a0ff}
     const i = S.idx, sm = S.samples[i];
     const ag = S.rev[i].A ? O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]) : null;
     const adj = S.adj[i] || null, cs = S.cosign[i] || null;
+    const blindPhase = !revealedNow();
+    const annotator = isAnnotator();
+    const me = myCoder();
+    /* 投影规则（P-01 / S-12 / P-09）：
+       - 盲读期 + 标注员：同伴的 assignments/revisions/分歧快照全部不出现在响应体里；
+       - 模型排序对领域专家全程不可见（揭示后也是），只供首席/项目负责人/已揭示的复核人；
+       - 复核人未揭示首席结论时，adjudication 只剩复核所需字段。 */
     const out = {
       task: {
         id: 'T-' + sm.id, template: S.template, protocol: 'organoid-4class@v1.2',
@@ -1970,20 +2040,33 @@ pre.json .b{color:#c9a0ff}
         strata_policy: { ratio: 0.2, min_cases: 150, hard_layer_weight: 2.0 }
       },
       sample: { id: sm.id, stratum: sm.stratum, isolation_set: false },
-      assignments: ['A', 'B', 'C'].map(c => ({
-        id: sm.id + ':' + c, sample_id: sm.id, assignee_role: '领域专家',
-        coder: c, state: S.rev[i][c] ? 'SUBMITTED' : 'ASSIGNED'
-      })),
-      revisions: ['A', 'B', 'C'].filter(c => S.rev[i][c]).map(c => ({
-        sample_id: sm.id, coder: c, is_blind_read: true,
-        instance_count: S.rev[i][c].instances.length,
-        blind_ms: S.rev[i][c].meta ? S.rev[i][c].meta.blindMs : null,
-        payload_hash: O.hash64(O.canon(S.rev[i][c].instances))
-      })),
-      model_rank: (revealedNow() && !cosignerBlindNow()) ? modelRank(i).map((r, k) => ({
+      assignments: (blindPhase && annotator)
+        ? ['A', 'B', 'C'].filter(c => c === me).map(c => ({
+            id: sm.id + ':' + c, sample_id: sm.id, assignee_role: '领域专家',
+            coder: c, state: S.rev[i][c] ? 'SUBMITTED' : 'ASSIGNED',
+            projection_note: 'peer_assignments_withheld_during_blind_phase'
+          }))
+        : ['A', 'B', 'C'].map(c => ({
+            id: sm.id + ':' + c, sample_id: sm.id, assignee_role: '领域专家',
+            coder: c, state: S.rev[i][c] ? 'SUBMITTED' : 'ASSIGNED'
+          })),
+      revisions: (blindPhase && annotator)
+        ? ['A', 'B', 'C'].filter(c => c === me && S.rev[i][c]).map(c => ({
+            sample_id: sm.id, coder: c, is_blind_read: true,
+            instance_count: S.rev[i][c].instances.length,
+            blind_ms: S.rev[i][c].meta ? S.rev[i][c].meta.blindMs : null,
+            payload_hash: O.hash64(O.canon(S.rev[i][c].instances))
+          }))
+        : ['A', 'B', 'C'].filter(c => S.rev[i][c]).map(c => ({
+            sample_id: sm.id, coder: c, is_blind_read: true,
+            instance_count: S.rev[i][c].instances.length,
+            blind_ms: (blindPhase && c !== me) ? null : (S.rev[i][c].meta ? S.rev[i][c].meta.blindMs : null),
+            payload_hash: O.hash64(O.canon(S.rev[i][c].instances))
+          })),
+      model_rank: (revealedNow() && !annotator && !cosignerBlindNow()) ? modelRank(i).map((r, k) => ({
         ranking: k + 1, coder: r.coder, agreement_with_model: O.q4(r.dice)
       })) : [],
-      disagreement: ag ? {
+      disagreement: (ag && !(blindPhase && annotator)) ? {
         metric_snapshot: {
           dice_mean: O.q4(ag.meanDice), alpha: O.q4(ag.alpha),
           det_f1: O.q4(ag.meanF1), hd95: O.q4(ag.meanHD95 / 1000), label_agreement: O.q4(ag.labelAgree)
@@ -2022,7 +2105,7 @@ pre.json .b{color:#c9a0ff}
       .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="n">$1</span>')
       .replace(/:\s*(true|false|null)/g, ': <span class="b">$1</span>');
     document.getElementById('jsonBody').innerHTML =
-      '<p class="jsoncap">当前样本的契约对象（按当前角色与阶段投影：未揭示时不含 model_rank；复核人未揭示首席结论时不含 selected_coder）。字段名与 PRD 第七章一致；坐标在入哈希前按 1e-4 量化。</p>' +
+      '<p class="jsoncap">当前样本的契约对象（按当前角色与阶段投影：盲读期对标注员不含同伴修订与分歧快照；模型排序对领域专家全程不可见；复核人未揭示首席结论时不含 selected_coder）。字段名与 PRD 第七章一致；坐标在入哈希前按 1e-4 量化。</p>' +
       '<pre class="json">' + html + '</pre>';
     document.getElementById('jsonBytes').textContent = (txt.length / 1024).toFixed(1) + ' KB';
     document.getElementById('drawer').classList.add('open');
@@ -2045,11 +2128,13 @@ pre.json .b{color:#c9a0ff}
     if (!m) return;
     const stage = m[1];
     const i = 0;
-    if (!S.rev[i].A) {
+    /* blind 阶段不预建 A 修订：观众要亲手画完提交（提交守卫要求 A 不存在） */
+    if (!S.rev[i].A && stage !== 'blind') {
       const inst = O.scriptedExpert(S.samples[i], 'A').instances;
       S.rev[i].A = { coder: 'A', instances: inst, meta: { blindMs: 183000, submittedAt: O.nowISO(), isBlind: true } };
       O.pushAudit(S.chain, 'expert:A', 'REVISION_SUBMITTED', {
         sample: S.samples[i].id, coder: 'A', instances: inst.length, blind_ms: 183000, is_blind_read: true,
+        demo_auto_driven: true, note: 'scripted_revision_for_demo_drive_not_human_blind_read',
         payload_hash: O.hash64(O.canon(inst))
       });
     }
