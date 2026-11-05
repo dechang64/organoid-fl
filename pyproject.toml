@@ -1,0 +1,155 @@
+# ── pyproject.toml ──
+# Tooling configuration for the Organoid-FL repository.
+#
+# There is intentionally no [project] table: this is a research repository, not
+# a publishable package. Dependencies are declared in requirements.txt (the
+# portable set) and requirements_local.txt (the workstation set, which adds
+# torchvision, ultralytics and streamlit), with development tools in
+# requirements-dev.txt.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# pytest
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# `tests/conftest.py` and `tests/__init__.py` both force pandas to import before
+# torch. Do not remove them: importing pyarrow after torch kills the interpreter
+# with an access violation and no traceback. That is what previously made eight
+# test modules unrunnable — see utils/import_order.py.
+#
+# `-ra` surfaces the skip reasons, because several tests are conditional on
+# optional heavy dependencies (torch, pyarrow, sam2) and a silent skip is easy
+# to mistake for a pass.
+addopts = "-ra --strict-markers --strict-config"
+filterwarnings = [
+    # The repository's own deprecation notices are asserted deliberately by
+    # tests/test_taxonomy.py, so they must remain errors-visible rather than
+    # suppressed here.
+    "default::DeprecationWarning",
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ruff — lint
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+extend-exclude = [
+    # Generated / vendored / bulky data.
+    ".venv",
+    "node_modules",
+    "datasets",
+    "results",
+    "runs",
+    "runs_v2",
+    "output",
+    "fl_classify_results",
+    "fl_detect_results",
+    "sam2_checkpoints",
+    "__pycache__",
+    # Exploration and archive code. `scripts/` alone accounts for ~1730 of the
+    # ~1899 findings a repo-wide run reports; these are one-off investigation
+    # and figure-generation scripts, and `fl/` is the superseded prototype that
+    # `analysis/fl_engine.py` replaced. Linting them would produce a permanently
+    # red build without protecting any maintained code path. Re-include a
+    # directory here once it is being actively worked on again.
+    "scripts",
+    "fl",
+    "presentation",
+    "research",
+    "python",
+    "proto",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes: undefined names, unused imports/variables
+    "B",     # flake8-bugbear: probable bugs
+    "PLE",   # pylint errors
+    "PLW",   # pylint warnings
+    "RUF",   # ruff-specific
+]
+
+ignore = [
+    # ── Justified exceptions, with the measurement behind each ──
+
+    # 22 pre-existing violations, all long human-readable strings (docstrings,
+    # printed report lines, plot titles). ruff format does not wrap string
+    # literals, so enforcing E501 here would force manual re-wrapping of prose
+    # that reads worse when broken. Line length is still enforced for code by
+    # the formatter.
+    "E501",
+
+    # 5 pre-existing sites: the full-width `，`/`：`/`（）` punctuation in
+    # analysis/grpc_client.py. This is a Chinese-language project and that
+    # punctuation is correct there, not an accidental homoglyph.
+    "RUF001",
+    "RUF002",
+    "RUF003",
+
+    # 8 pre-existing sites where a module-level mutable singleton is the
+    # intended design: lazily built model caches in
+    # data/hcmi_organoids/hcmi_zeroshot_eval.py, the gRPC default client, and
+    # the taxonomy override in utils/constants.py. Each is a deliberate
+    # process-wide cache or configuration switch; moving them into a class or a
+    # container would add indirection without removing the shared state.
+    "PLW0603",
+
+    # 5 pre-existing sites in the data-preparation scripts where a loop
+    # variable is reassigned to clamp a value (for example reusing x1 after
+    # `x1 = max(0, x1)`). Harmless because the original value is not needed
+    # again, and rewriting to a second name would obscure the clamp.
+    "PLW2901",
+
+    # 5 pre-existing `if cond: return` one-liners in the small bootstrap script.
+    "E701",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests legitimately reach for private helpers and build deliberately malformed
+# inputs to exercise error paths.
+"tests/*" = ["SLF001"]
+# The archive/exploration scripts under data/ predate the current layout and are
+# not part of the importable package. They are still linted for real bugs (F, B)
+# but not held to the import-hygiene rules that assume a package structure.
+"data/**" = ["E402"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ruff — formatter
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tool.ruff.format]
+# Keep the repository's existing single-quote/double-quote mix as-is rather than
+# triggering a repo-wide reformat of files nobody is currently editing.
+quote-style = "preserve"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# mypy
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tool.mypy]
+python_version = "3.10"
+# The codebase is annotation-heavy but not yet fully typed. These settings keep
+# the signal focused on real errors rather than on missing annotations.
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+# Third-party packages without stubs: silence only the import, not the code.
+ignore_missing_imports = true
+# Re-exported names appear "unused" through facade modules such as
+# utils/constants.py.
+implicit_reexport = true
+exclude = [
+    '^\.venv/',
+    '^node_modules/',
+    '^datasets/',
+    '^results/',
+    '^output/',
+]

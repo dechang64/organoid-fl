@@ -1,0 +1,128 @@
+{
+  "spec_version": "organoid-audit-v1",
+  "note": "Shared cross-language audit-chain vectors. Both the Python and the Rust implementation must reproduce every sha256 exactly. Regenerate with tools/gen_audit_vectors.py only when the spec version changes.",
+  "vectors": [
+    {
+      "name": "genesis",
+      "index": 0,
+      "timestamp": "2026-01-01T00:00:00Z",
+      "operation": "genesis",
+      "details": {
+        "message": "Organoid-FL Audit Chain initialized"
+      },
+      "prev_hash": "0",
+      "nonce": 0,
+      "preimage": "{\"details\":{\"message\":\"Organoid-FL Audit Chain initialized\"},\"index\":0,\"nonce\":0,\"operation\":\"genesis\",\"prev_hash\":\"0\",\"timestamp\":\"2026-01-01T00:00:00Z\"}",
+      "sha256": "85980aecf36e6419cdc7e754a5114965d2705ea511df744c853c572bdf6ac729"
+    },
+    {
+      "name": "insert_counts",
+      "index": 1,
+      "timestamp": "2026-01-01T00:00:01Z",
+      "operation": "insert",
+      "details": {
+        "count": 10
+      },
+      "prev_hash": "0",
+      "nonce": 0,
+      "preimage": "{\"details\":{\"count\":10},\"index\":1,\"nonce\":0,\"operation\":\"insert\",\"prev_hash\":\"0\",\"timestamp\":\"2026-01-01T00:00:01Z\"}",
+      "sha256": "6f7ff81ae11f8b44125a4718b3009a11235acd68110aadedcf47ef88e4ed23f5"
+    },
+    {
+      "name": "search_with_results",
+      "index": 2,
+      "timestamp": "2026-01-01T00:00:02Z",
+      "operation": "search",
+      "details": {
+        "k": 5,
+        "result_count": 5
+      },
+      "prev_hash": "3f786850e387550fdab836ed7e6dc881de23001b",
+      "nonce": 0,
+      "preimage": "{\"details\":{\"k\":5,\"result_count\":5},\"index\":2,\"nonce\":0,\"operation\":\"search\",\"prev_hash\":\"3f786850e387550fdab836ed7e6dc881de23001b\",\"timestamp\":\"2026-01-01T00:00:02Z\"}",
+      "sha256": "5790236fa08f9bb9d7799514938e3d3a3b30046bf1160aa7b05d83543297329b"
+    },
+    {
+      "name": "nested_details_and_nonzero_nonce",
+      "index": 7,
+      "timestamp": "2026-01-01T00:00:07Z",
+      "operation": "fl_round",
+      "details": {
+        "round": 3,
+        "clients": [
+          1,
+          2,
+          3
+        ],
+        "gated": true,
+        "note": null,
+        "nested": {
+          "b": [
+            1,
+            2
+          ],
+          "a": "z"
+        }
+      },
+      "prev_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "nonce": 42,
+      "preimage": "{\"details\":{\"clients\":[1,2,3],\"gated\":true,\"nested\":{\"a\":\"z\",\"b\":[1,2]},\"note\":null,\"round\":3},\"index\":7,\"nonce\":42,\"operation\":\"fl_round\",\"prev_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"timestamp\":\"2026-01-01T00:00:07Z\"}",
+      "sha256": "59881bc39e47aeaf8c7685b86cdf8fad9a3470e65a82a2d660106f8153f94684"
+    },
+    {
+      "name": "unicode_payload",
+      "index": 8,
+      "timestamp": "2026-01-01T00:00:08Z",
+      "operation": "label_change",
+      "details": {
+        "label": "类器官",
+        "note": "smiley 😀 and tab\t"
+      },
+      "prev_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "nonce": 0,
+      "preimage": "{\"details\":{\"label\":\"类器官\",\"note\":\"smiley 😀 and tab\\t\"},\"index\":8,\"nonce\":0,\"operation\":\"label_change\",\"prev_hash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"timestamp\":\"2026-01-01T00:00:08Z\"}",
+      "sha256": "ae0a03c66872716e3460c7091bb2ec4f51cba68afdba64d31e78890fec397533"
+    },
+    {
+      "name": "empty_details",
+      "index": 9,
+      "timestamp": "2026-01-01T00:00:09Z",
+      "operation": "system",
+      "details": {},
+      "prev_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "nonce": 0,
+      "preimage": "{\"details\":{},\"index\":9,\"nonce\":0,\"operation\":\"system\",\"prev_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"timestamp\":\"2026-01-01T00:00:09Z\"}",
+      "sha256": "36ae96646c8aca9df295df9a71c3eaca616d35d820b853c45c6b8a9748a7cf6a"
+    },
+    {
+      "name": "metrics_with_in_domain_floats",
+      "index": 10,
+      "timestamp": "2026-01-01T00:00:10Z",
+      "operation": "fl_round",
+      "details": {
+        "accuracy": 0.95,
+        "loss": 0.123456,
+        "lr": 0.001,
+        "tiny": 0.0001
+      },
+      "prev_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "nonce": 0,
+      "preimage": "{\"details\":{\"accuracy\":0.95,\"loss\":0.123456,\"lr\":0.001,\"tiny\":0.0001},\"index\":10,\"nonce\":0,\"operation\":\"fl_round\",\"prev_hash\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"timestamp\":\"2026-01-01T00:00:10Z\"}",
+      "sha256": "4bc3776202d2f96b940b4f3938c3addc75e1baeb63ed7109f6cda7108f783947"
+    },
+    {
+      "name": "float_boundary_just_inside",
+      "index": 11,
+      "timestamp": "2026-01-01T00:00:11Z",
+      "operation": "calibration",
+      "details": {
+        "pixel_size_um": 0.0001,
+        "field_width_um": 99999999999.5
+      },
+      "prev_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "nonce": 0,
+      "preimage": "{\"details\":{\"field_width_um\":99999999999.5,\"pixel_size_um\":0.0001},\"index\":11,\"nonce\":0,\"operation\":\"calibration\",\"prev_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"timestamp\":\"2026-01-01T00:00:11Z\"}",
+      "sha256": "96f256d0da10a560eb9fef990c9889842fc096e5b5525860e5baa3f3a1a0611b"
+    }
+  ]
+}
