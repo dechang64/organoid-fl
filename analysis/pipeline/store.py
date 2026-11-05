@@ -24,6 +24,7 @@ Design notes:
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from typing import Any, Iterator, Mapping, Optional
 
@@ -87,7 +88,9 @@ class SQLiteStore:
 
     # ── entities ─────────────────────────────────────────────────────
 
-    def put(self, entity: ContractEntity, *, overwrite: bool = False) -> None:
+    def put(
+        self, entity: ContractEntity, *, overwrite: bool = False, key: Optional[str] = None
+    ) -> None:
         """Persist one contract entity, immutably by default.
 
         Immutability is the default on purpose: every entity in PRD 7.2 is a
@@ -96,15 +99,21 @@ class SQLiteStore:
         genuinely means to replace a record — the state-machine advance that
         rewrites a Task with a new aggregate state, for example — says so with
         ``overwrite=True`` and the audit chain says why.
+
+        ``key`` overrides the row key for the one entity that has no ``id`` of its
+        own: ``StratumLabel`` is 1:1 with a sample (PRD 7.2 lists no id field), so
+        it is keyed by ``sample_id``. Defaulting to ``payload["id"]`` keeps every
+        other entity's key derived from the record rather than from the caller.
         """
         payload = entity.to_dict()
-        import json
 
         text = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         kind = entity.ENTITY
-        entity_id = str(payload.get("id", ""))
+        entity_id = key if key is not None else str(payload.get("id", ""))
         if not entity_id:
-            raise StoreError(f"{type(entity).__name__} has no id; it cannot be stored")
+            raise StoreError(
+                f"{type(entity).__name__} has no id; pass key= to say what it is keyed by"
+            )
         try:
             self._conn.execute(
                 "INSERT INTO entities (kind, id, payload, content_hash) VALUES (?, ?, ?, ?)",

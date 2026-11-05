@@ -1,9 +1,13 @@
 # ── analysis/pipeline/service.py ──
-"""The M1 write path: create task → publish → blind submit → reveal → read back.
+"""The write path and the projected read path.
 
-This is the vertical slice PRD 10.4 defines for M1 ("写路径：创建任务 → 盲读提交
-→ 落库 → 写审计 → 读回"), assembled from the M0 contracts instead of beside
-them:
+M1 (PRD 10.4) is "创建任务 → 盲读提交 → 落库 → 写审计 → 读回". M2 adds the two
+things that make the revealed stage usable and auditable: disagreement analysis
+triggered by the workflow itself (P-02), and a read path that hands every viewer
+a *projected* payload rather than the raw rows (P-01). The supplement revision
+(P-06) closes the same stage.
+
+Assembled from the M0 contracts instead of beside them:
 
 * every state change goes through ``analysis.contracts.state_machine``, so the
   role cast and the guards are enforced in the one place all callers share —
@@ -22,20 +26,35 @@ role may perform an operation, and this service verifies that this *person*
 holds that role *on this sample* through a real Assignment. A role without an
 assignment is the "anyone can switch the role dropdown" defect the tester hit
 in the MVP (G-2).
+
+Why the read path lives here
+----------------------------
+``view_task`` is the only method a client should ever call to learn what a
+sample contains. ``read_back`` exists for verifiers and returns everything on
+purpose; giving a client that one is how the eleven MVP leaks happened, because
+"the view filters it" is not a control. Here the projection is applied to the
+data before it leaves the process, and the sections a viewer may not see are
+absent from the response rather than blanked.
 """
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional
+import json
+import time
+from typing import Any, Iterable, Mapping, Optional
 
 from analysis.contracts.entities import (
+    AnnotationProtocol,
     Assignment,
     ContractValidationError,
+    Disagreement,
     Revision,
+    StratumLabel,
     Task,
 )
 from analysis.contracts.enums import AssignmentState, Role, SampleState
 from analysis.contracts.hashing import content_hash
+from analysis.contracts.projection import ProjectionContext, project_task
 from analysis.contracts.state_machine import (
     IllegalTransition,
     TransitionFacts,
@@ -45,7 +64,14 @@ from analysis.contracts.state_machine import (
 )
 from analysis.contracts.templates import get_template
 from analysis.pipeline.chain import PersistentAuditChain
+from analysis.pipeline.disagreement import (
+    DisagreementError,
+    compute_disagreement as analyse_disagreement,
+)
+from analysis.pipeline.geometry import CoderPayload, GeometryError
 from analysis.pipeline.store import StoreError, SQLiteStore
+from analysis.pipeline.stratum import StratumRuleError
+from analysis.pipeline.stratum import label_stratum as build_stratum_label
 
 
 class ServiceError(ValueError):
@@ -71,6 +97,7 @@ class AnnotationService:
         template: str,
         image_scope: Iterable[str],
         protocol_id: str,
+        protocol: Optional[AnnotationProtocol] = None,
         preannotation_policy: str = "reveal_after_blind",
         redundancy_n: Optional[int] = None,
         deadline: Optional[str] = None,
@@ -81,8 +108,19 @@ class AnnotationService:
         ``redundancy_n`` defaults to the template's default (3 for research,
         1 for teaching); D-07 lets a project lower it to the template's range
         floor, which the Task constructor validates.
+
+        ``protocol`` is optional because M1 tasks were created without one, but a
+        task without a stored protocol cannot be projected (``view_task``): the
+        viewer would receive labels with no statement of the rules that produced
+        them, and PRD 7.4 requires the rules to travel with the data.
         """
         spec = get_template(template)
+        if protocol is not None and protocol.id != protocol_id:
+            raise ServiceError(
+                f"protocol.id {protocol.id!r} does not match protocol_id "
+                f"{protocol_id!r}; storing both would let the row and the record "
+                "name different rules"
+            )
         task = Task(
             id=task_id,
             node_id=node_id,
@@ -96,6 +134,8 @@ class AnnotationService:
             deadline=deadline,
         )
         self.store.put(task)
+        if protocol is not None:
+            self.store.put(protocol)
         for sample_id in task.image_scope:
             self.store.set_sample_state(task_id, sample_id, SampleState.DRAFT.value, reveal_done=False)
         self.chain.append(
@@ -110,6 +150,66 @@ class AnnotationService:
             timestamp=now,
         )
         return task
+
+    # ── ingestion: the difficulty stratum ────────────────────────────
+
+    def label_stratum(
+        self,
+        task_id: str,
+        sample_id: str,
+        *,
+        signals: Mapping[str, Any],
+        rule_name: str = "provisional_v1",
+        allow_provisional: bool = False,
+        now: Optional[str] = None,
+    ) -> StratumLabel:
+        """Record a sample's difficulty stratum at ingestion (D-08, Q-07).
+
+        Allowed only before the sample is worked on. After the first blind read
+        the stratum would be a label informed by the very difficulty it claims to
+        predict, and PRD 4.8 is explicit that it cannot be reconstructed later —
+        so it is written once, immutably, and a relabel needs a new decision.
+
+        ``allow_provisional`` is the Q-07 gate: the only rule that ships is
+        provisional, and using it is an explicit act rather than a default.
+        """
+        task = self._task(task_id)
+        if sample_id not in task.image_scope:
+            raise ServiceError(f"sample {sample_id!r} is not in task {task_id!r}")
+        state = self._sample_state(task_id, sample_id)
+        if state is not SampleState.DRAFT and state is not SampleState.PUBLISHED:
+            raise ServiceError(
+                f"sample {sample_id} is {state.value}; strata are assigned at ingestion, "
+                "before anyone reads the sample. Labelling it now would use the "
+                "annotation as evidence for the label it is supposed to test."
+            )
+        try:
+            label = build_stratum_label(
+                sample_id,
+                signals,
+                rule_name=rule_name,
+                allow_provisional=allow_provisional,
+                labeled_at=now,
+            )
+        except StratumRuleError as exc:
+            raise ServiceError(str(exc)) from exc
+        self.store.put(label, key=sample_id)
+        self.chain.append(
+            "stratum_labeled",
+            {
+                "task_id": task_id,
+                "sample_id": sample_id,
+                "stratum": label.stratum.value,
+                "rule_version": label.rule_version,
+                "label_hash": label.content_hash(),
+            },
+            timestamp=now,
+        )
+        return label
+
+    def stratum(self, sample_id: str) -> Optional[StratumLabel]:
+        payload = self.store.get("stratum_label", sample_id)
+        return None if payload is None else StratumLabel.from_dict(payload)
 
     # ── publish ──────────────────────────────────────────────────────
 
@@ -146,6 +246,17 @@ class AnnotationService:
                     f"{person!r} holds {role.value!r}, which template "
                     f"{spec.template!r} does not cast for begin_blind_read; allowed: "
                     f"{sorted(r.value for r in admitted)}"
+                )
+
+        if spec.requires_stratum:
+            unlabelled = [s for s in task.image_scope if self.store.get("stratum_label", s) is None]
+            if unlabelled:
+                raise ServiceError(
+                    f"template {spec.template!r} requires a difficulty stratum for every "
+                    f"sample, and {len(unlabelled)} sample(s) have none: "
+                    f"{unlabelled[:5]}. D-08: ingestion fails rather than defaulting to "
+                    "'easy', because the stratum keys the held-out split and cannot be "
+                    "reconstructed after the work is done."
                 )
 
         result = self._apply_per_sample(task, "publish", actor_id=actor_id, actor_role=Role.PROJECT_OWNER)
@@ -215,6 +326,16 @@ class AnnotationService:
             )
         existing = self._revisions_for_assignment(assignment.id)
         revision_no = len(existing) + 1
+        # Parsed before it becomes a Revision, not when somebody first reads the
+        # sample: a payload the metric layer cannot measure is a submission that
+        # will block adjudication later, and refusing it now is the only point
+        # where the coder is still there to fix it.
+        try:
+            CoderPayload.parse(payload)
+        except GeometryError as exc:
+            raise ServiceError(
+                f"payload for sample {sample_id} is not a measurable annotation: {exc}"
+            ) from exc
         ref = self.store.put_blob(payload, stored_at=now or _now())
         revision = Revision(
             id=f"{assignment.id}:r{revision_no}",
@@ -286,6 +407,26 @@ class AnnotationService:
             actor_role=Role.SYSTEM,
             now=now,
         )
+        # P-02: the analysis is triggered by the workflow, not by somebody
+        # remembering to run it. Computing it here (rather than at reveal) is what
+        # makes the 60-second requirement achievable: at this instant all the
+        # inputs exist, and nothing has to wait for a human to open a screen.
+        # Nothing is exposed yet — AWAITING_REVEAL projects as the blind stage, so
+        # no viewer can see the result before the reveal grants it.
+        if task.redundancy_n >= 2:
+            try:
+                self.compute_disagreement(task_id, sample_id, now=now, triggered_by="auto")
+            except (ServiceError, DisagreementError) as exc:
+                # The submission is valid and stays; the analysis failed. Recorded
+                # rather than raised, because unwinding would discard a committed
+                # revision over a downstream problem — but not swallowed either:
+                # ``reveal`` refuses until the analysis exists, so the failure
+                # cannot reach a signed record.
+                self.chain.append(
+                    "disagreement_failed",
+                    {"task_id": task_id, "sample_id": sample_id, "reason": str(exc)[:500]},
+                    timestamp=now,
+                )
 
     # ── reveal ───────────────────────────────────────────────────────
 
@@ -305,6 +446,16 @@ class AnnotationService:
                 f"sample {sample_id} is {state.value}; reveal is granted only from "
                 "AWAITING_REVEAL (P-07: there is no edge for anything else)"
             )
+        if task.redundancy_n >= 2:
+            try:
+                self.compute_disagreement(task_id, sample_id, now=now, triggered_by="reveal")
+            except (ServiceError, DisagreementError) as exc:
+                raise ServiceError(
+                    f"cannot reveal sample {sample_id}: the disagreement analysis "
+                    f"cannot be produced ({exc}). PRD 4.6 enters IN_REVIEW with "
+                    "「分歧分析已出」as its precondition, so revealing without it would "
+                    "put the sample in a state the table says it cannot be in."
+                ) from exc
         # The flag goes down *before* the transition, because the "revealed"
         # guard reads it from the facts: setting it after the transition would
         # be writing the evidence for a decision already taken.
@@ -332,6 +483,291 @@ class AnnotationService:
             timestamp=now,
         )
         return self._task(task_id)
+
+    # ── disagreement analysis (S3) ───────────────────────────────────
+
+    def compute_disagreement(
+        self,
+        task_id: str,
+        sample_id: str,
+        *,
+        now: Optional[str] = None,
+        force: bool = False,
+        triggered_by: str = "manual",
+    ) -> Optional[Disagreement]:
+        """Compute and persist the disagreement record for one sample (P-02).
+
+        Runs on the *blind* revisions only. A supplement is written after its
+        author has seen the others' work, so including it would break the
+        independence that α and the pairwise metrics are defined on — the numbers
+        would look like agreement while measuring something else. A supplement
+        therefore does not change the metric set; it is recorded, and the
+        adjudication view shows it next to the blind read it derives from.
+
+        Returns the existing record when the input set has not changed, so the
+        automation can call this without either duplicating audit events or
+        needing a dirty flag.
+        """
+        _ = self._task(task_id)
+        state = self._sample_state(task_id, sample_id)
+        if state in (
+            SampleState.DRAFT,
+            SampleState.PUBLISHED,
+            SampleState.IN_BLIND_READ,
+            SampleState.NEEDS_IMPROVEMENT,
+        ):
+            raise ServiceError(
+                f"sample {sample_id} is {state.value}; disagreement analysis compares a "
+                "complete set of independent reads, and a partial set would report "
+                "agreement between however many people happened to have submitted"
+            )
+        blind = [r for r in self._revisions_for_sample(task_id, sample_id) if r.is_blind_read]
+        if len(blind) < 2:
+            raise ServiceError(
+                f"sample {sample_id} has {len(blind)} blind revision(s); at least two are "
+                "needed to measure disagreement"
+            )
+        payloads = {r.author_id: self.store.get_blob(r.payload_ref) for r in blind}
+        try:
+            result = analyse_disagreement(sample_id, payloads)
+        except DisagreementError as exc:
+            raise ServiceError(str(exc)) from exc
+
+        previous = self._disagreements_for_sample(task_id, sample_id)
+        for record in previous:
+            if record.metric_snapshot.get("revision_set_hash") == result.revision_set_hash and not force:
+                return record
+
+        regions_ref = self.store.put_blob(result.regions, stored_at=now or _now())
+        snapshot = {
+            **dict(result.snapshot),
+            "revision_set_hash": result.revision_set_hash,
+            "triggered_by": triggered_by,
+        }
+        record = Disagreement(
+            id=f"{task_id}:{sample_id}:dis{len(previous) + 1}",
+            sample_id=sample_id,
+            metric_snapshot=snapshot,
+            regions_ref=regions_ref,
+            controversy_score=result.controversy_score,
+            computed_at=now or _now(),
+        )
+        self.store.put(record)
+        self.chain.append(
+            "disagreement_computed",
+            {
+                "task_id": task_id,
+                "sample_id": sample_id,
+                "disagreement_id": record.id,
+                "coders": sorted(payloads),
+                "alpha": snapshot["alpha"]["alpha"],
+                "controversy_score": result.controversy_score,
+                "disputed_share": snapshot["regions"]["disputed_share"],
+                "revision_set_hash": result.revision_set_hash,
+                "triggered_by": triggered_by,
+                "computed_at": record.computed_at,
+            },
+            timestamp=now,
+        )
+        return record
+
+    # ── supplement revision (P-06) ───────────────────────────────────
+
+    def supplement(
+        self,
+        task_id: str,
+        sample_id: str,
+        *,
+        actor_id: str,
+        payload: bytes,
+        now: Optional[str] = None,
+    ) -> Revision:
+        """Add the one supplement a coder may file after the reveal (PRD 4.5).
+
+        The supplement is a *new* revision whose ``derived_from`` names the blind
+        read. Nothing overwrites the blind read: P-06 requires its content hash to
+        survive the supplement, and the only way to guarantee that structurally is
+        to never write to it again.
+        """
+        self._task(task_id)
+        state = self._sample_state(task_id, sample_id)
+        if state is not SampleState.IN_REVIEW and state is not SampleState.AWAITING_ADJUDICATION:
+            raise ServiceError(
+                f"sample {sample_id} is {state.value}; a supplement is filed after the "
+                "reveal (PRD 4.5), because its whole purpose is to be informed by it"
+            )
+        assignment = self._assignment(task_id, sample_id, actor_id)
+        if assignment.state is not AssignmentState.REVEALED:
+            raise ServiceError(
+                f"assignment {assignment.id} is {assignment.state.value}; only a coder "
+                "whose blind read has been revealed may supplement it"
+            )
+        existing = self._revisions_for_assignment(assignment.id)
+        blind = [r for r in existing if r.is_blind_read]
+        if not blind:
+            raise ServiceError(f"assignment {assignment.id} has no blind revision to supplement")
+        if any(not r.is_blind_read for r in existing):
+            raise ServiceError(
+                f"assignment {assignment.id} already has a supplement; PRD 4.5 allows one "
+                "per coder, and a second one would be an unrecorded second round"
+            )
+        stamp = now or _now()
+        ref = self.store.put_blob(payload, stored_at=stamp)
+        revision = Revision(
+            id=f"{assignment.id}:r{len(existing) + 1}",
+            sample_id=sample_id,
+            assignment_id=assignment.id,
+            author_id=actor_id,
+            revision_no=len(existing) + 1,
+            is_blind_read=False,
+            payload_ref=ref,
+            payload_hash=ref[len("blob:") :],
+            created_at=stamp,
+            derived_from=blind[0].id,
+        )
+        self.store.put(revision)
+        self.chain.append(
+            "supplement_submitted",
+            {
+                "task_id": task_id,
+                "sample_id": sample_id,
+                "assignment_id": assignment.id,
+                "revision_id": revision.id,
+                "derived_from": blind[0].id,
+                # Both hashes in one block: P-06 is a claim about the pair, and a
+                # verifier that has to look up two rows to check it will not.
+                "blind_payload_hash": blind[0].payload_hash,
+                "supplement_payload_hash": revision.payload_hash,
+            },
+            timestamp=now,
+        )
+        return revision
+
+    # ── projected read path (P-01) ───────────────────────────────────
+
+    def view_task(
+        self,
+        task_id: str,
+        *,
+        viewer_role: Role,
+        viewer_id: str,
+        cosign_locked: bool = False,
+    ) -> dict[str, Any]:
+        """What one viewer may see, as data rather than as a filtered view.
+
+        The projection is applied here, before the response exists: sections the
+        viewer is not entitled to are absent from the dict, not blanked. This is
+        the fix for the defect class behind all eleven MVP leaks — the view
+        rendering a field it received, having nothing to render because it was
+        never sent, is the only version that survives a new client.
+        """
+        task = self._task(task_id)
+        protocol_payload = self.store.get("annotation_protocol", task.protocol_id)
+        if protocol_payload is None:
+            raise ServiceError(
+                f"task {task_id} has no stored protocol {task.protocol_id!r}, so a viewer "
+                "cannot be told which rules produced the labels. Create the task with "
+                "protocol=make_protocol(...) — PRD 7.4 requires the rules to travel with "
+                "the data."
+            )
+        protocol = AnnotationProtocol.from_dict(protocol_payload)
+        states = {
+            sample_id: SampleState(row["state"])
+            for sample_id, row in self.store.sample_states(task_id).items()
+        }
+        revisions = [
+            r for r in self._all_revisions() if r.sample_id in task.image_scope
+        ]
+        submitted: dict[str, int] = {}
+        for revision in revisions:
+            if revision.is_blind_read:
+                submitted[revision.sample_id] = submitted.get(revision.sample_id, 0) + 1
+
+        return project_task(
+            task=task,
+            protocol=protocol,
+            samples=list(task.image_scope),
+            state_by_sample=states,
+            submitted_by_sample=submitted,
+            revisions=revisions,
+            assignments=self._assignments_for_task(task_id),
+            disagreements=[
+                d for s in task.image_scope for d in self._disagreements_for_sample(task_id, s)
+            ],
+            model_ranks=[],
+            adjudications=[],
+            cosigns=[],
+            stratums=[
+                label
+                for label in (self.stratum(s) for s in task.image_scope)
+                if label is not None
+            ],
+            context=ProjectionContext(
+                viewer_role=viewer_role, viewer_id=viewer_id, cosign_locked=cosign_locked
+            ),
+        )
+
+    # ── metric matrix (PRD 6.1) ──────────────────────────────────────
+
+    def metric_matrix(self, task_id: str) -> dict[str, Any]:
+        """Per-sample metrics, one row each, plus a task-level summary.
+
+        A row is emitted for every sample, including the ones with no
+        disagreement record yet (their metric cells are ``None`` rather than
+        zero): a matrix that silently omits unfinished samples reads as "these
+        passed".
+        """
+        task = self._task(task_id)
+        states = self.store.sample_states(task_id)
+        rows: list[dict[str, Any]] = []
+        for sample_id in task.image_scope:
+            label = self.stratum(sample_id)
+            records = self._disagreements_for_sample(task_id, sample_id)
+            latest = records[-1] if records else None
+            snapshot = {} if latest is None else dict(latest.metric_snapshot)
+            pairs = snapshot.get("pairs", {})
+            rows.append(
+                {
+                    "sample_id": sample_id,
+                    "state": states.get(sample_id, {}).get("state"),
+                    "stratum": None if label is None else label.stratum.value,
+                    "stratum_rule": None if label is None else label.rule_version,
+                    "coders": snapshot.get("coders", []),
+                    "alpha": (snapshot.get("alpha") or {}).get("alpha"),
+                    "alpha_ci": [
+                        (snapshot.get("alpha") or {}).get("ci_low"),
+                        (snapshot.get("alpha") or {}).get("ci_high"),
+                    ],
+                    "raw_agreement": ((snapshot.get("agreement") or {}).get("raw")),
+                    "dice_mean": _mean_of(pairs.values(), "dice_mean"),
+                    "detection_f1": _mean_of(pairs.values(), "detection_f1"),
+                    "hd95_mean": _mean_of(pairs.values(), "hd95_mean"),
+                    "controversy_score": None if latest is None else latest.controversy_score,
+                    "disputed_share": (snapshot.get("regions") or {}).get("disputed_share"),
+                    "metrics_version": snapshot.get("metrics_version"),
+                    "disagreement_id": None if latest is None else latest.id,
+                }
+            )
+        return {
+            "task_id": task_id,
+            "template": task.template,
+            "redundancy_n": task.redundancy_n,
+            "rows": rows,
+            "summary": {
+                "samples": len(rows),
+                "with_disagreement": sum(1 for r in rows if r["disagreement_id"]),
+                "alpha_mean": _mean_of(
+                    [{"v": r["alpha"]} for r in rows if r["alpha"] is not None], "v"
+                ),
+                "dice_mean": _mean_of(
+                    [{"v": r["dice_mean"]} for r in rows if r["dice_mean"] is not None], "v"
+                ),
+                "controversy_mean": _mean_of(
+                    [{"v": r["controversy_score"]} for r in rows if r["controversy_score"] is not None],
+                    "v",
+                ),
+            },
+        }
 
     # ── read back ────────────────────────────────────────────────────
 
@@ -365,6 +801,14 @@ class AnnotationService:
             "sample_states": self.store.sample_states(task_id),
             "assignments": self._assignments_for_task(task_id),
             "revisions": mine,
+            "disagreements": [
+                d for s in task.image_scope for d in self._disagreements_for_sample(task_id, s)
+            ],
+            "strata": [
+                label
+                for label in (self.stratum(s) for s in task.image_scope)
+                if label is not None
+            ],
             "payloads_intact": blob_checks,
             "audit": self.chain.verify(),
             "entities": entities,
@@ -407,8 +851,6 @@ class AnnotationService:
         return Task.from_dict(payload)
 
     def _payloads(self, kind: str) -> list[dict[str, Any]]:
-        import json
-
         return [json.loads(row["payload"]) for row in self.store.iter_rows(kind)]
 
     def _assignment(self, task_id: str, sample_id: str, actor_id: str) -> Assignment:
@@ -439,7 +881,32 @@ class AnnotationService:
         return sorted(found, key=lambda a: a.id)
 
     def _revisions_for_assignment(self, assignment_id: str) -> list[Revision]:
-        return [r for r in map(Revision.from_dict, self._payloads("revision")) if r.assignment_id == assignment_id]
+        return [
+            r
+            for r in self._all_revisions()
+            if r.assignment_id == assignment_id
+        ]
+
+    def _revisions_for_sample(self, task_id: str, sample_id: str) -> list[Revision]:
+        return [
+            r for r in self._all_revisions() if r.sample_id == sample_id
+        ]
+
+    def _all_revisions(self) -> list[Revision]:
+        return sorted(
+            (Revision.from_dict(p) for p in self._payloads("revision")),
+            key=lambda r: (r.sample_id, r.assignment_id, r.revision_no),
+        )
+
+    def _disagreements_for_sample(self, _task_id: str, sample_id: str) -> list[Disagreement]:
+        return sorted(
+            (
+                Disagreement.from_dict(p)
+                for p in self._payloads("disagreement")
+                if p.get("sample_id") == sample_id
+            ),
+            key=lambda d: (d.computed_at, d.id),
+        )
 
     def _replace_assignment(
         self, assignment: Assignment, *, state: AssignmentState, submitted_at: Optional[str] = None
@@ -550,9 +1017,20 @@ class AnnotationService:
         return updated
 
 
-def _now() -> str:
-    import time
+def _mean_of(records: Iterable[Mapping[str, Any]], key: str) -> Optional[float]:
+    """Mean of a metric column, skipping samples that have no value yet.
 
+    Skipping rather than counting ``None`` as zero: an average that includes
+    uncomputed samples reads as a bad score, and the fix somebody applies to a
+    bad score is to look for a modelling problem that does not exist.
+    """
+    values = [float(record[key]) for record in records if record.get(key) is not None]
+    if not values:
+        return None
+    return sum(values) / len(values)
+
+
+def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 

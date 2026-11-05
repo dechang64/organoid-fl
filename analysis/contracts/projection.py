@@ -60,10 +60,11 @@ defects were about.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Sequence
 
 from analysis.contracts.entities import (
     Adjudication,
+    AnnotationProtocol,
     Assignment,
     Cosign,
     Disagreement,
@@ -79,6 +80,7 @@ __all__ = [
     "ProjectionContext",
     "Visibility",
     "project_envelope",
+    "project_task",
     "visibility_for",
 ]
 
@@ -181,6 +183,13 @@ def visibility_for(
     be asserted directly. A test that checks "the response has no ranking" passes
     if the ranking section is merely empty because the sample has no ranking;
     a test against this function checks the rule.
+
+    PRD 3.2 says a domain expert may not view peers' blind content (「否」,
+    unconditional) while 4.5 says the reveal shows all three revisions to all
+    three coders. The stricter row wins until that is resolved: peer content is
+    withheld from the expert, and the reveal gives them the pre-annotation and
+    the aggregate metrics instead. Loosening a permission because a later
+    paragraph sounded more generous is how a leak gets written into a spec.
     """
     base = _RULES.get(role, _NO_ENTITLEMENT)
     if stage is ProjectionStage.BLIND:
@@ -235,7 +244,7 @@ def visibility_for(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _task_view(task: Task, envelope: ExchangeEnvelope) -> dict[str, Any]:
+def _task_view(task: Task, protocol: AnnotationProtocol, sample_count: int) -> dict[str, Any]:
     """Task header. No ``protocol_id`` pointers, no per-person data."""
     return {
         "id": task.id,
@@ -243,15 +252,15 @@ def _task_view(task: Task, envelope: ExchangeEnvelope) -> dict[str, Any]:
         "template": task.template,
         "redundancy_n": task.redundancy_n,
         "deadline": task.deadline,
-        "sample_count": len(envelope.samples),
+        "sample_count": sample_count,
         "protocol": {
-            "id": envelope.protocol.id,
-            "version": envelope.protocol.version,
-            "hash": envelope.protocol.hash,
-            "taxonomy_name": envelope.protocol.taxonomy_name,
-            "touching_object_rule": envelope.protocol.touching_object_rule,
-            "overlap_split_rule": envelope.protocol.overlap_split_rule,
-            "min_visible_boundary_um": envelope.protocol.min_visible_boundary_um,
+            "id": protocol.id,
+            "version": protocol.version,
+            "hash": protocol.hash,
+            "taxonomy_name": protocol.taxonomy_name,
+            "touching_object_rule": protocol.touching_object_rule,
+            "overlap_split_rule": protocol.overlap_split_rule,
+            "min_visible_boundary_um": protocol.min_visible_boundary_um,
         },
     }
 
@@ -348,7 +357,22 @@ def _stratum_view(label: StratumLabel) -> dict[str, Any]:
     }
 
 
-def project_envelope(envelope: ExchangeEnvelope, context: ProjectionContext) -> dict[str, Any]:
+def project_task(
+    *,
+    task: Task,
+    protocol: AnnotationProtocol,
+    samples: Sequence[str],
+    state_by_sample: Mapping[str, SampleState],
+    submitted_by_sample: Mapping[str, int],
+    revisions: Sequence[Revision],
+    assignments: Sequence[Assignment],
+    disagreements: Sequence[Disagreement],
+    model_ranks: Sequence[ModelRank],
+    adjudications: Sequence[Adjudication],
+    cosigns: Sequence[Cosign],
+    stratums: Sequence[StratumLabel],
+    context: ProjectionContext,
+) -> dict[str, Any]:
     """Build the only response shape a client is allowed to receive.
 
     The return value is a plain dict of JSON-safe primitives, ready to serialise.
@@ -357,39 +381,45 @@ def project_envelope(envelope: ExchangeEnvelope, context: ProjectionContext) -> 
     fails loudly during development, while a client receiving ``None`` everywhere
     learns to treat ``None`` as "not allowed" and to render a placeholder — and
     one forgotten branch later the placeholder becomes the answer.
+
+    The same function serves the live API and the export envelope. That is not
+    tidiness: when the canvas read from one code path and the exporter from
+    another, the two disagreed about what a viewer "may see" and the difference
+    was only found in a penetration test. Per-sample states are a parameter
+    rather than something derived from ``Task.state`` for the same reason — a
+    task whose samples are at different stages is the normal case, and deriving
+    the stage from the aggregate would show a revealed payload to a sample still
+    in blind read.
     """
     by_sample_revisions: dict[str, list[Revision]] = {}
-    for revision in envelope.revisions:
+    for revision in revisions:
         by_sample_revisions.setdefault(revision.sample_id, []).append(revision)
 
     by_sample: dict[str, dict[str, Any]] = {}
-    for sample_id in envelope.samples:
+    for sample_id in samples:
         by_sample[sample_id] = {
             "sample_id": sample_id,
             "revisions": [],
         }
 
-    for assignment in envelope.assignments:
+    for assignment in assignments:
         slot = by_sample.get(assignment.sample_id)
         if slot is not None and assignment.assignee_id == context.viewer_id:
             slot["assignment"] = _assignment_view(assignment)
 
-    disagreement_by_sample = {d.sample_id: d for d in envelope.disagreements}
-    rank_by_sample = {r.sample_id: r for r in envelope.model_ranks}
-    adjudication_by_sample = {a.sample_id: a for a in envelope.adjudications}
-    stratum_by_sample = {s.sample_id: s for s in envelope.stratums}
+    disagreement_by_sample = {d.sample_id: d for d in disagreements}
+    rank_by_sample = {r.sample_id: r for r in model_ranks}
+    adjudication_by_sample = {a.sample_id: a for a in adjudications}
+    stratum_by_sample = {s.sample_id: s for s in stratums}
     cosign_by_sample: dict[str, Cosign] = {}
-    for cosign in envelope.cosigns:
+    for cosign in cosigns:
         if cosign.cosigner_id == context.viewer_id:
             cosign_by_sample[cosign.sample_id] = cosign
 
-    sample_states = _sample_states(envelope)
-    submitted_by_sample = _submitted_counts(envelope)
-
-    samples: list[dict[str, Any]] = []
-    for sample_id in envelope.samples:
+    rendered: list[dict[str, Any]] = []
+    for sample_id in samples:
         view = by_sample[sample_id]
-        state = sample_states[sample_id]
+        state = state_by_sample[sample_id]
         stage = ProjectionStage.of(state)
         disagreement = disagreement_by_sample.get(sample_id)
         visibility = visibility_for(
@@ -412,7 +442,7 @@ def project_envelope(envelope: ExchangeEnvelope, context: ProjectionContext) -> 
         if visibility.progress:
             view["progress"] = {
                 "submitted": submitted_by_sample.get(sample_id, 0),
-                "required": envelope.task.redundancy_n,
+                "required": task.redundancy_n,
             }
         if visibility.preannotation:
             view["preannotation"] = {"available": bool(rank_by_sample.get(sample_id))}
@@ -431,14 +461,33 @@ def project_envelope(envelope: ExchangeEnvelope, context: ProjectionContext) -> 
             if cosign_view is not None:
                 view["cosign"] = cosign_view
 
-        samples.append(view)
+        rendered.append(view)
 
     return {
-        "stage": ProjectionStage.of(envelope.task.state).value,
+        "stage": ProjectionStage.of(task.state).value,
         "viewer": {"role": context.viewer_role.value, "id": context.viewer_id},
-        "task": _task_view(envelope.task, envelope),
-        "samples": samples,
+        "task": _task_view(task, protocol, len(samples)),
+        "samples": rendered,
     }
+
+
+def project_envelope(envelope: ExchangeEnvelope, context: ProjectionContext) -> dict[str, Any]:
+    """Project an envelope through the same rules the live API uses."""
+    return project_task(
+        task=envelope.task,
+        protocol=envelope.protocol,
+        samples=envelope.samples,
+        state_by_sample=_sample_states(envelope),
+        submitted_by_sample=_submitted_counts(envelope),
+        revisions=envelope.revisions,
+        assignments=envelope.assignments,
+        disagreements=envelope.disagreements,
+        model_ranks=envelope.model_ranks,
+        adjudications=envelope.adjudications,
+        cosigns=envelope.cosigns,
+        stratums=envelope.stratums,
+        context=context,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -447,13 +496,14 @@ def project_envelope(envelope: ExchangeEnvelope, context: ProjectionContext) -> 
 
 
 def _sample_states(envelope: ExchangeEnvelope) -> Mapping[str, SampleState]:
-    """Per-sample state.
+    """Per-sample state, as far as an envelope can express it.
 
     The envelope carries no per-sample state field — ``Task.state`` is the
-    aggregate (see ``entities.Task``). For M0 every sample in an envelope shares
-    the task's aggregate state, because an envelope is written at a point where
-    the task is coherent. M1 persists per-sample states; when it does, this
-    function is the single place that has to change.
+    aggregate (see ``entities.Task``). An envelope is written at a point where
+    the task is coherent, so this fallback is honest *for an export*. The live
+    API does not use it: ``project_task`` takes the persisted per-sample states,
+    because a working task routinely has samples at different stages and the
+    aggregate would show a revealed payload to a sample still in blind read.
     """
     return {sample_id: envelope.task.state for sample_id in envelope.samples}
 

@@ -36,6 +36,12 @@ READERS = [
 ]
 
 
+#: Synthetic ingestion signals. The research template requires a stratum before
+#: publish (D-08), and the only shipped rule is provisional pending Q-07, so the
+#: tests acknowledge it explicitly — the same act a real project has to take.
+SIGNALS = {"contrast": 0.62, "object_count": 6, "clustered_fraction": 0.05, "size_cv": 0.2}
+
+
 def make_service(path: str = ":memory:") -> AnnotationService:
     svc = AnnotationService(SQLiteStore(path))
     svc.create_task(
@@ -46,10 +52,41 @@ def make_service(path: str = ":memory:") -> AnnotationService:
         image_scope=("S-001",),
         protocol_id="proto-1",
     )
+    svc.label_stratum("T1", "S-001", signals=SIGNALS, allow_provisional=True)
     return svc
 
 
-def publish_and_submit(svc: AnnotationService, *, payloads=(b"geom-A", b"geom-B", b"geom-C")) -> None:
+def geometry(shift: int = 0, *, class_key: str = "organoid") -> bytes:
+    """A minimal measurable payload: one square, optionally displaced.
+
+    M1's tests used opaque bytes (``b"geom-A"``). M2 parses the payload at the
+    write boundary, because a product the metric layer cannot measure blocks
+    adjudication later — and by then the coder who could fix it has gone.
+    """
+    return json.dumps(
+        {
+            "format": "organoid-geometry-v1",
+            "width": 200,
+            "height": 200,
+            "instances": [
+                {
+                    "id": "i1",
+                    "class_key": class_key,
+                    "rect": [10 + shift, 10, 50 + shift, 50],
+                }
+            ],
+        }
+    ).encode("utf-8")
+
+
+#: Three payloads that share one object with small displacements, so the metric
+#: layer has something to measure. Module-level, not default arguments, because
+#: a call in a default is evaluated once at import — the lint rule that flags it
+#: is pointing at a real class of bug, not at style.
+DEFAULT_PAYLOADS: tuple[bytes, bytes, bytes] = (geometry(0), geometry(2), geometry(4))
+
+
+def publish_and_submit(svc: AnnotationService, *, payloads=DEFAULT_PAYLOADS) -> None:
     svc.publish("T1", actor_id="owner_1", readers=READERS)
     for (person, _role), payload in zip(READERS, payloads, strict=True):
         svc.submit_blind("T1", "S-001", actor_id=person, payload=payload)
@@ -65,7 +102,14 @@ def test_full_write_path_reaches_in_review() -> None:
     assert task.state is SampleState.IN_REVIEW
 
     report = svc.read_back("T1")
-    assert report["audit"]["valid"] and report["audit"]["length"] == 9
+    # genesis + stratum_labeled + task_created + transition_publish + task_published
+    # + transition_begin_blind_read + 3 × blind_submitted + disagreement_computed
+    # + reveal_granted = 11. The two M2 additions are asserted by name below, so a
+    # future change that drops one fails on the operation, not on the arithmetic.
+    assert report["audit"]["valid"] and report["audit"]["length"] == 11
+    operations = svc.chain.operations()
+    assert "stratum_labeled" in operations
+    assert operations.count("disagreement_computed") == 1
     assert all(report["payloads_intact"].values())
     assert report["entities"] == {"checked": report["entities"]["checked"], "corrupt": []}
     assert len(report["revisions"]) == 3
@@ -117,7 +161,7 @@ def test_unassigned_actor_cannot_submit() -> None:
     svc = make_service()
     svc.publish("T1", actor_id="owner_1", readers=READERS)
     with pytest.raises(ServiceError, match="no assignment"):
-        svc.submit_blind("T1", "S-001", actor_id="mallory", payload=b"x")
+        svc.submit_blind("T1", "S-001", actor_id="mallory", payload=geometry(0))
 
 
 def test_reader_shortfall_refused_at_publish() -> None:
@@ -139,7 +183,7 @@ def test_wrong_role_cannot_publish() -> None:
 def test_reveal_before_all_blind_reads_has_no_edge() -> None:
     svc = make_service()
     svc.publish("T1", actor_id="owner_1", readers=READERS)
-    svc.submit_blind("T1", "S-001", actor_id="expert_a", payload=b"geom-A")
+    svc.submit_blind("T1", "S-001", actor_id="expert_a", payload=geometry(0))
     with pytest.raises((ServiceError, IllegalTransition)):
         svc.reveal("T1", "S-001")
 
@@ -154,9 +198,9 @@ def test_cannot_publish_twice() -> None:
 def test_same_reader_cannot_submit_twice_under_one_assignment() -> None:
     svc = make_service()
     svc.publish("T1", actor_id="owner_1", readers=READERS)
-    svc.submit_blind("T1", "S-001", actor_id="expert_a", payload=b"one")
+    svc.submit_blind("T1", "S-001", actor_id="expert_a", payload=geometry(0))
     with pytest.raises(ServiceError, match=r"BLIND_DRAFTED|may already be submitted"):
-        svc.submit_blind("T1", "S-001", actor_id="expert_a", payload=b"two")
+        svc.submit_blind("T1", "S-001", actor_id="expert_a", payload=geometry(1))
 
 
 def test_entities_are_immutable_without_overwrite() -> None:
@@ -179,7 +223,7 @@ def test_double_submit_from_other_reader_does_not_regress_state() -> None:
     svc = make_service()
     svc.publish("T1", actor_id="owner_1", readers=READERS)
     for person, _role in READERS:
-        svc.submit_blind("T1", "S-001", actor_id=person, payload=b"geom")
+        svc.submit_blind("T1", "S-001", actor_id=person, payload=geometry(0))
     # the platform has already moved the sample on
     assert svc._sample_state("T1", "S-001") is SampleState.AWAITING_REVEAL
 
@@ -238,11 +282,11 @@ def test_workflow_continues_after_restart(tmp_path) -> None:
     db = str(tmp_path / "m1.db")
     svc = make_service(db)
     svc.publish("T1", actor_id="owner_1", readers=READERS)
-    svc.submit_blind("T1", "S-001", actor_id="expert_a", payload=b"geom-A")
+    svc.submit_blind("T1", "S-001", actor_id="expert_a", payload=geometry(0))
     svc.store.close()
 
     reopened = AnnotationService(SQLiteStore(db))
-    reopened.submit_blind("T1", "S-001", actor_id="expert_b", payload=b"geom-B")
+    reopened.submit_blind("T1", "S-001", actor_id="expert_b", payload=geometry(2))
     states = reopened.store.sample_states("T1")
     assert states["S-001"]["state"] == SampleState.IN_BLIND_READ.value
     assert reopened.chain.verify()["valid"]

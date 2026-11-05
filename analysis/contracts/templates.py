@@ -135,6 +135,11 @@ class TemplateSpec:
     training_export_allowed: bool
     cast: Mapping[str, frozenset[Role]]
     states: tuple[SampleState, ...]
+    #: Whether a sample must carry a difficulty stratum before it may be
+    #: published (PRD 4.7, D-08). True for research: the stratum keys the
+    #: held-out split and cannot be reconstructed after the fact. False for
+    #: teaching, whose products never reach a split.
+    requires_stratum: bool = False
     notes: str = ""
 
     #: Marker so a future subclass cannot quietly bypass __post_init__ checks.
@@ -261,6 +266,7 @@ RESEARCH_TEMPLATE = TemplateSpec(
         }
     ),
     states=_STAGES_RESEARCH,
+    requires_stratum=True,
     notes="四级重流程：盲读×N → 揭示 → 分歧 → 仲裁 → 条件复核。产出可辩护金标准。",
 )
 
