@@ -108,4 +108,29 @@ console.log(
     ? `\nall ${fixture.vectors.length} vectors reproduced under Node (spec ${fixture.spec_version})`
     : `\n${failures} of ${fixture.vectors.length} vectors MISMATCHED`,
 );
-process.exit(failures === 0 ? 0 : 1);
+
+// Chain vectors (names starting "chain_block_") must also *link*: each one's
+// prev_hash is the previous chain block's digest. This is what makes the
+// fixture evidence about a chain rather than about N independent digests —
+// the M1 pipeline's "读回" depends on the linkage, not just the hashing.
+let chainFailures = 0;
+const chain = fixture.vectors.filter((v) => v.name.startsWith("chain_block_"));
+for (let i = 0; i < chain.length; i++) {
+  const expectedPrev = i === 0 ? "0" : chain[i - 1].sha256;
+  if (chain[i].prev_hash !== expectedPrev) {
+    chainFailures++;
+    console.log(
+      `CHAIN BREAK at ${chain[i].name}: prev_hash ${chain[i].prev_hash.slice(0, 12)}…, ` +
+        `expected ${expectedPrev.slice(0, 12)}…`,
+    );
+  }
+}
+if (chain.length > 0) {
+  console.log(
+    chainFailures === 0
+      ? `chain linkage verified across ${chain.length} chain blocks`
+      : `${chainFailures} chain linkage breaks`,
+  );
+}
+
+process.exit(failures === 0 && chainFailures === 0 ? 0 : 1);

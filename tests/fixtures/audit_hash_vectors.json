@@ -123,6 +123,74 @@
       "nonce": 0,
       "preimage": "{\"details\":{\"field_width_um\":99999999999.5,\"pixel_size_um\":0.0001},\"index\":11,\"nonce\":0,\"operation\":\"calibration\",\"prev_hash\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"timestamp\":\"2026-01-01T00:00:11Z\"}",
       "sha256": "96f256d0da10a560eb9fef990c9889842fc096e5b5525860e5baa3f3a1a0611b"
+    },
+    {
+      "nonce": 0,
+      "name": "chain_block_0_genesis",
+      "index": 0,
+      "timestamp": "2026-01-02T00:00:00Z",
+      "operation": "genesis",
+      "details": {
+        "message": "annotation pipeline audit chain initialised"
+      },
+      "prev_hash": "0",
+      "preimage": "{\"details\":{\"message\":\"annotation pipeline audit chain initialised\"},\"index\":0,\"nonce\":0,\"operation\":\"genesis\",\"prev_hash\":\"0\",\"timestamp\":\"2026-01-02T00:00:00Z\"}",
+      "sha256": "e1fb0673b1b90c3f2dc2dc92a9cad4e85f96872b1281d041be016228f9d6ff7c"
+    },
+    {
+      "nonce": 0,
+      "name": "chain_block_1_task_created",
+      "index": 1,
+      "timestamp": "2026-01-02T00:00:01Z",
+      "operation": "task_created",
+      "details": {
+        "protocol_id": "proto-1",
+        "redundancy_n": 3,
+        "samples": 1,
+        "task_id": "T-M1",
+        "template": "research"
+      },
+      "prev_hash": "e1fb0673b1b90c3f2dc2dc92a9cad4e85f96872b1281d041be016228f9d6ff7c",
+      "preimage": "{\"details\":{\"protocol_id\":\"proto-1\",\"redundancy_n\":3,\"samples\":1,\"task_id\":\"T-M1\",\"template\":\"research\"},\"index\":1,\"nonce\":0,\"operation\":\"task_created\",\"prev_hash\":\"e1fb0673b1b90c3f2dc2dc92a9cad4e85f96872b1281d041be016228f9d6ff7c\",\"timestamp\":\"2026-01-02T00:00:01Z\"}",
+      "sha256": "934a1ea2aaae43bf2900e72b983eb659c45d7d42f847d58ae4975a155c385089"
+    },
+    {
+      "nonce": 0,
+      "name": "chain_block_2_blind_submitted_a",
+      "index": 2,
+      "timestamp": "2026-01-02T00:00:02Z",
+      "operation": "blind_submitted",
+      "details": {
+        "assignment_id": "T-M1:S-001:expert_a",
+        "blind_reads_submitted": 1,
+        "payload_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "redundancy_n": 3,
+        "revision_id": "T-M1:S-001:expert_a:r1",
+        "sample_id": "S-001",
+        "task_id": "T-M1"
+      },
+      "prev_hash": "934a1ea2aaae43bf2900e72b983eb659c45d7d42f847d58ae4975a155c385089",
+      "preimage": "{\"details\":{\"assignment_id\":\"T-M1:S-001:expert_a\",\"blind_reads_submitted\":1,\"payload_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"redundancy_n\":3,\"revision_id\":\"T-M1:S-001:expert_a:r1\",\"sample_id\":\"S-001\",\"task_id\":\"T-M1\"},\"index\":2,\"nonce\":0,\"operation\":\"blind_submitted\",\"prev_hash\":\"934a1ea2aaae43bf2900e72b983eb659c45d7d42f847d58ae4975a155c385089\",\"timestamp\":\"2026-01-02T00:00:02Z\"}",
+      "sha256": "00006cecb309c525d32999f2d9119d70624a401f97e1e9e09167287a8f454bcc"
+    },
+    {
+      "nonce": 0,
+      "name": "chain_block_3_blind_submitted_b",
+      "index": 3,
+      "timestamp": "2026-01-02T00:00:03Z",
+      "operation": "blind_submitted",
+      "details": {
+        "assignment_id": "T-M1:S-001:expert_b",
+        "blind_reads_submitted": 2,
+        "payload_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "redundancy_n": 3,
+        "revision_id": "T-M1:S-001:expert_b:r1",
+        "sample_id": "S-001",
+        "task_id": "T-M1"
+      },
+      "prev_hash": "00006cecb309c525d32999f2d9119d70624a401f97e1e9e09167287a8f454bcc",
+      "preimage": "{\"details\":{\"assignment_id\":\"T-M1:S-001:expert_b\",\"blind_reads_submitted\":2,\"payload_hash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"redundancy_n\":3,\"revision_id\":\"T-M1:S-001:expert_b:r1\",\"sample_id\":\"S-001\",\"task_id\":\"T-M1\"},\"index\":3,\"nonce\":0,\"operation\":\"blind_submitted\",\"prev_hash\":\"00006cecb309c525d32999f2d9119d70624a401f97e1e9e09167287a8f454bcc\",\"timestamp\":\"2026-01-02T00:00:03Z\"}",
+      "sha256": "49f55c517722aae20c1b199ac63c490fa31afdd0dc17277dbed3fd707ff9f9bc"
     }
   ]
 }

@@ -100,6 +100,45 @@ VECTORS = [
     },
 ]
 
+#: A linked chain, not just isolated digests: each vector's prev_hash is the
+#: previous vector's sha256. M1's cross-language exit criterion is about the
+#: *chain* ("写审计 → 读回" must reproduce under Node/Rust), so the fixture
+#: pins linkage as well as digests. The operations mirror an M1 write path:
+#: genesis → task_created → blind_submitted → blind_submitted.
+CHAIN_VECTORS = [
+    {
+        "name": "chain_block_0_genesis",
+        "index": 0,
+        "timestamp": "2026-01-02T00:00:00Z",
+        "operation": "genesis",
+        "details": {"message": "annotation pipeline audit chain initialised"},
+        "prev_hash": "0",
+        "nonce": 0,
+    },
+    {
+        "name": "chain_block_1_task_created",
+        "index": 1,
+        "timestamp": "2026-01-02T00:00:01Z",
+        "operation": "task_created",
+        "details": {"protocol_id": "proto-1", "redundancy_n": 3, "samples": 1, "task_id": "T-M1", "template": "research"},
+        # prev_hash filled in below from the computed digest of block 0
+    },
+    {
+        "name": "chain_block_2_blind_submitted_a",
+        "index": 2,
+        "timestamp": "2026-01-02T00:00:02Z",
+        "operation": "blind_submitted",
+        "details": {"assignment_id": "T-M1:S-001:expert_a", "blind_reads_submitted": 1, "payload_hash": "a" * 64, "redundancy_n": 3, "revision_id": "T-M1:S-001:expert_a:r1", "sample_id": "S-001", "task_id": "T-M1"},
+    },
+    {
+        "name": "chain_block_3_blind_submitted_b",
+        "index": 3,
+        "timestamp": "2026-01-02T00:00:03Z",
+        "operation": "blind_submitted",
+        "details": {"assignment_id": "T-M1:S-001:expert_b", "blind_reads_submitted": 2, "payload_hash": "b" * 64, "redundancy_n": 3, "revision_id": "T-M1:S-001:expert_b:r1", "sample_id": "S-001", "task_id": "T-M1"},
+    },
+]
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -118,6 +157,21 @@ def main() -> int:
             **spec,
             "preimage": canonical_preimage(*args_).decode("utf-8"),
             "sha256": canonical_hash(*args_),
+        })
+
+    # Link the chain: each block's prev_hash is the digest of the one before.
+    chain_hashes: list[str] = []
+    for spec in CHAIN_VECTORS:
+        prev = chain_hashes[-1] if chain_hashes else "0"
+        spec = {"nonce": 0, **spec, "prev_hash": prev}
+        args_ = (spec["index"], spec["timestamp"], spec["operation"],
+                 spec["details"], spec["prev_hash"], spec["nonce"])
+        digest = canonical_hash(*args_)
+        chain_hashes.append(digest)
+        out.append({
+            **spec,
+            "preimage": canonical_preimage(*args_).decode("utf-8"),
+            "sha256": digest,
         })
 
     payload = {
