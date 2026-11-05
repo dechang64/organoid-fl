@@ -6,7 +6,6 @@ Train detection + classification + segmentation simultaneously.
 """
 
 import streamlit as st
-import numpy as np
 import time
 import sys
 import os
@@ -16,17 +15,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.constants import (
     DEFAULT_ROUNDS, DEFAULT_CLIENTS, DEFAULT_LR,
     DEFAULT_BATCH_SIZE, DEFAULT_LOCAL_EPOCHS,
-    ORGANOID_CLASSES, CLASS_INFO, REFERENCES, COLORS,
+    COLORS,
 )
 from utils.helpers import generate_synthetic_features
+from analysis.multi_task_fl import MultiTaskFLEngine
 from visualization.charts import fl_convergence
-
-# Lazy import torch-dependent module (may fail on Streamlit Cloud without GPU)
-try:
-    from analysis.multi_task_fl import MultiTaskFLEngine
-    _HAS_ENGINE = True
-except ImportError:
-    _HAS_ENGINE = False
 
 
 def render():
@@ -64,8 +57,12 @@ def render():
             lr = st.slider("Learning Rate", 0.0001, 0.01, DEFAULT_LR, format="%.4f")
         with col3:
             local_epochs = st.slider("Local Epochs", 1, 10, DEFAULT_LOCAL_EPOCHS)
-            enable_detector = st.checkbox("YOLO Detection", value=True)
-            enable_segmentor = st.checkbox("SAM2 Segmentation", value=False)
+            # NOTE: these two toggles are collected but not yet wired into the
+            # training path, so changing them currently has no effect. Tracked
+            # as a known gap rather than deleted, because the intended
+            # behaviour is clear and the widgets are already in the UI.
+            _enable_detector = st.checkbox("YOLO Detection", value=True)
+            _enable_segmentor = st.checkbox("SAM2 Segmentation", value=False)
 
     # ── Run Training ──
     if st.button("🚀 Start Multi-Task FL Training", type="primary"):
@@ -78,9 +75,6 @@ def render():
 
             # Initialize engine
             st.write("🔧 Initializing multi-task FL engine...")
-            if not _HAS_ENGINE:
-                st.error("⚠ Multi-task FL engine requires torch. Install with: pip install torch")
-                st.stop()
             engine = MultiTaskFLEngine(
                 input_dim=feature_dim,
                 num_classes=len(class_names),
@@ -137,7 +131,7 @@ def render():
 
         # Convergence chart
         fig = fl_convergence(history)
-        st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+        st.plotly_chart(fig, use_container_width=True)
 
         # Per-client breakdown
         if history and "client_metrics" in history[-1]:
@@ -160,7 +154,7 @@ def render():
                 yaxis_title="Accuracy (%)",
                 height=400,
             )
-            st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+            st.plotly_chart(fig, use_container_width=True)
 
     # ── Methodology ──
     with st.expander("📖 Multi-Task FL Methodology"):

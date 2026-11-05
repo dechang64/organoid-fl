@@ -6,13 +6,12 @@ Post-training model performance analysis: confusion matrix, per-class metrics, R
 """
 
 import streamlit as st
-import numpy as np
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.constants import ORGANOID_CLASSES, CLASS_INFO, COLORS
+from utils.constants import COLORS
 
 
 def render():
@@ -29,7 +28,6 @@ def render():
         return
 
     history = st.session_state["fl_history"]
-    class_names = st.session_state.get("fl_class_names", ORGANOID_CLASSES)
     total_time = st.session_state.get("fl_total_time", 0)
 
     # ── Summary Metrics ──
@@ -112,7 +110,7 @@ def render():
                 yaxis_title="Accuracy (%)",
                 height=400,
             )
-            st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+            st.plotly_chart(fig, use_container_width=True)
 
             gap = max(accs) - min(accs)
             if gap > 5:

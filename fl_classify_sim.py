@@ -23,7 +23,11 @@ Usage (on local GPU machine, e.g. RTX 3060):
     python fl_classify_sim.py --data ./organoid_patches --strategies FedAvg EWA-v2 --device 0
 """
 
-import sys, os, json, time, shutil, argparse, copy, gc
+import json
+import time
+import argparse
+import copy
+import gc
 import numpy as np
 import torch
 import torch.nn as nn
@@ -279,7 +283,7 @@ def train_client(model, train_loader, epochs, device, lr=1e-3):
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     criterion = nn.CrossEntropyLoss()
 
-    for epoch in range(epochs):
+    for _epoch in range(epochs):
         total_loss, correct, total = 0, 0, 0
         for imgs, labels in train_loader:
             imgs, labels = imgs.to(device), labels.to(device)
@@ -292,7 +296,6 @@ def train_client(model, train_loader, epochs, device, lr=1e-3):
             _, pred = outputs.max(1)
             correct += pred.eq(labels).sum().item()
             total += imgs.size(0)
-        acc = correct / total if total > 0 else 0
 
     return model
 
@@ -312,10 +315,10 @@ def evaluate_model(model, val_loader, device):
             _, pred = outputs.max(1)
             correct += pred.eq(labels).sum().item()
             total += labels.size(0)
-            for p, l in zip(pred, labels):
-                class_total[l.item()] += 1
-                if p.item() == l.item():
-                    class_correct[l.item()] += 1
+            for p, label in zip(pred, labels, strict=True):
+                class_total[label.item()] += 1
+                if p.item() == label.item():
+                    class_correct[label.item()] += 1
 
     acc = correct / total if total > 0 else 0
     per_class = {CLASS_NAMES[c]: class_correct[c] / class_total[c]
@@ -335,7 +338,10 @@ def fedavg_aggregate(state_dicts, weights=None):
         if state_dicts[0][key].dtype in (torch.int32, torch.int64):
             avg[key] = state_dicts[0][key].clone()
             continue
-        avg[key] = sum(w * sd[key].float() for sd, w in zip(state_dicts, weights))
+        avg[key] = sum(
+            w * sd[key].float()
+            for sd, w in zip(state_dicts, weights, strict=True)
+        )
     return avg
 
 

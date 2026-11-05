@@ -13,7 +13,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.constants import CLASS_INFO, COLORS
+from utils.constants import COLORS
 
 
 def render():
@@ -223,4 +223,4 @@ def _plot_morphology_charts(results: list):
         height=500,
         showlegend=False,
     )
-    st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+    st.plotly_chart(fig, use_container_width=True)

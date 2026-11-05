@@ -6,16 +6,12 @@ Cross-hospital similar case retrieval and diagnostic report generation.
 """
 
 import streamlit as st
-import pandas as pd
-import numpy as np
-import json
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.constants import CLASS_INFO, COLORS
-from analysis.vision_rag import VisionRAG, encode_morphology, MORPHOLOGY_FEATURES
+from analysis.vision_rag import VisionRAG
 
 
 def render():
@@ -134,7 +130,7 @@ def render():
                             "Circularity": f"{case.morphology.get('circularity', 0):.2f}",
                             "Eccentricity": f"{case.morphology.get('eccentricity', 0):.2f}",
                         })
-                    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+                    st.dataframe(table_data, use_container_width=True, hide_index=True)
 
                 # Similarity distribution chart
                 _plot_similarity_distribution(similar)
@@ -257,7 +253,6 @@ def _plot_similarity_distribution(similar_cases):
     case_ids = [cid for cid, _, _ in similar_cases]
     similarities = [sim for _, sim, _ in similar_cases]
     diagnoses = [c.diagnosis.replace("_", " ") for _, _, c in similar_cases]
-    hospitals = [c.hospital_id for _, _, c in similar_cases]
 
     color_map = {
         "healthy": "#22c55e",
@@ -282,7 +277,7 @@ def _plot_similarity_distribution(similar_cases):
         height=400,
         showlegend=False,
     )
-    st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def _plot_database_charts(rag: VisionRAG):
@@ -320,4 +315,4 @@ def _plot_database_charts(rag: VisionRAG):
     ), row=1, col=2)
 
     fig.update_layout(template="plotly_white", height=400, showlegend=False)
-    st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+    st.plotly_chart(fig, use_container_width=True)

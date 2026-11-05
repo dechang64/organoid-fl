@@ -28,7 +28,11 @@ Usage (on local GPU machine, e.g. RTX 3060):
     python fl_detect_sim.py --data ... --weights yolo26n.pt --warmup 2
 """
 
-import sys, os, json, time, shutil, argparse, copy, gc
+import json
+import time
+import shutil
+import argparse
+import gc
 import numpy as np
 import torch
 from pathlib import Path
@@ -74,7 +78,7 @@ def split_non_iid(data_yaml_path, output_dir, n_clients=3, dominant_ratio=0.8, s
         cfg = yaml.safe_load(f)
 
     # base_path: use cfg['path'] if present, otherwise infer from data_yaml location
-    if 'path' in cfg and cfg['path']:
+    if cfg.get('path'):
         base_path = Path(cfg['path'])
     else:
         base_path = Path(data_yaml_path).resolve().parent
@@ -228,7 +232,7 @@ def split_iid(data_yaml_path, output_dir, n_clients=3, seed=42):
     with open(data_yaml_path) as f:
         cfg = yaml.safe_load(f)
 
-    if 'path' in cfg and cfg['path']:
+    if cfg.get('path'):
         base_path = Path(cfg['path'])
     else:
         base_path = Path(data_yaml_path).resolve().parent
@@ -331,7 +335,10 @@ def fedavg_aggregate(state_dicts, weights=None):
         if state_dicts[0][key].dtype in (torch.int32, torch.int64):
             avg[key] = state_dicts[0][key].clone()
             continue
-        avg[key] = sum(w * sd[key].float() for sd, w in zip(state_dicts, weights))
+        avg[key] = sum(
+            w * sd[key].float()
+            for sd, w in zip(state_dicts, weights, strict=True)
+        )
     return avg
 
 
@@ -636,7 +643,7 @@ def run_fl_simulation(args):
                     del ckpt, model_obj, base_sd, agg_sd
 
                 # Evaluate
-                print(f"    Evaluating global model...", end=" ", flush=True)
+                print("    Evaluating global model...", end=" ", flush=True)
                 eval_result = evaluate_global(str(agg_path), args.data, args.device,
                                               imgsz=args.imgsz, batch=args.batch)
                 print(f"mAP50={eval_result['mAP50']:.4f}, mAP50-95={eval_result['mAP']:.4f}", flush=True)

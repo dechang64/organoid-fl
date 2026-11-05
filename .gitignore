@@ -80,3 +80,68 @@ downsample_balance.py
 scripts/mouse_liver/batch2/images/
 scripts/mouse_liver/batch3/images/
 scripts/mouse_liver/yolo_format/images/
+
+# ── Shell and pipeline artefacts ──
+# These are files created by accident when a redirect or an inline script was
+# written for cmd.exe but executed by bash, so the "null device" or a
+# format-string fragment became a real filename. Listed individually rather than
+# with a wildcard because a wildcard broad enough to catch them would also catch
+# legitimate files.
+#
+#   $null                    -> a `> $null` redirect under bash
+#   {dst}')size_mb           -> a broken inline python -c quoting
+#   Intestinal / Mouse       -> progress output redirected to a bad filename
+$null
+{dst}')size_mb
+Intestinal
+Mouse
+
+# ── Stray JavaScript tooling ──
+# The project is Python + Rust; there is no JavaScript build. These came from an
+# unrelated experiment and are not part of the build.
+node_modules/
+package.json
+package-lock.json
+bun.lock
+bun.lockb
+yarn.lock
+
+# ── Generated model caches and bulky outputs ──
+# Model weights are already covered by `*.pt` above; these are the weight files
+# and archives that specifically showed up in the working tree.
+yolo12m.pt
+*.zip
+*.tar.gz
+sam2_checkpoints/
+.cache/
+runs_v2/
+
+# Research outputs. Large (multiple GB locally) and regenerable, so they are
+# not committed. Individual small summaries — a metrics JSON, a final report —
+# can still be added deliberately with `git add -f`.
+results/
+output/
+
+# Local data staging directories produced by the preparation scripts.
+data/multiorg_sam2/
+data/multiorg_sam2_pseudo/
+data/ctm_crops/
+data/hcmi_organoids/crops/
+data/intestinal_crops/
+data/merged_crops/
+data/mouse_crops/
+
+# hcmi bootstrap: images (multi-GB, downloadable) and eval outputs are local
+# only; the bootstrap script, the zero-shot evaluator and the image manifest
+# CSV are the source of truth and are committed.
+data/hcmi_organoids/images/
+data/hcmi_organoids/analysis/
+data/hcmi_organoids/__pycache__/
+
+# one-off multiorg reports (regenerable via the tiling script)
+scripts/multiorg/val_output.txt
+scripts/multiorg/*_report.json
+scripts/multiorg/*_report.txt
+
+# stray eval output at repo root
+/sahi_results.json

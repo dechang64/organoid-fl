@@ -20,7 +20,6 @@ Usage:
 import os
 import json
 import argparse
-from pathlib import Path
 from PIL import Image
 import numpy as np
 
@@ -34,11 +33,11 @@ def load_annotations(json_path):
     Format: {'0': [[y1,x1],[y2,x2],[y3,x3],[y4,x4]], ...}
     NOTE: MultiOrg uses [row, col] = [y, x] order, NOT [x, y]!
     """
-    with open(json_path, 'r', encoding='utf-8') as f:
+    with open(json_path, 'r') as f:
         data = json.load(f)
 
     annotations = []
-    for key, polygon in data.items():
+    for _key, polygon in data.items():
         if not isinstance(polygon, list) or len(polygon) < 3:
             continue
         # MultiOrg format: [y, x] — swap to [x, y]
@@ -205,7 +204,7 @@ def process_image(img_dir, output_img_dir, output_lbl_dir, class_id,
 
             patch_name = f"{split}_{class_name}_{plate_name}_{img_name}_tx{tx}_ty{ty}"
             tile_img.save(os.path.join(output_img_dir, f"{patch_name}.png"))
-            with open(os.path.join(output_lbl_dir, f"{patch_name}.txt"), 'w', encoding='utf-8') as f:
+            with open(os.path.join(output_lbl_dir, f"{patch_name}.txt"), 'w') as f:
                 f.write('\n'.join(yolo_lines))
 
             patch_count += 1
@@ -283,7 +282,7 @@ nc: {len(CLASS_NAMES)}
 names: {CLASS_NAMES}
 """
     yaml_path = os.path.join(dst_dir, 'data.yaml')
-    with open(yaml_path, 'w', encoding='utf-8') as f:
+    with open(yaml_path, 'w') as f:
         f.write(yaml_content)
     print(f"\nCreated {yaml_path}")
     return yaml_path
@@ -353,12 +352,12 @@ def main():
     print("\n" + "=" * 60)
     print("OUTPUT STRUCTURE:")
     print(f"  {args.dst}/")
-    print(f"  ├── train/images/train/*.png  (RGB 640x640)")
-    print(f"  ├── train/labels/train/*.txt  (YOLO format)")
-    print(f"  ├── test/images/test/*.png")
-    print(f"  ├── test/labels/test/*.txt")
-    print(f"  └── data.yaml")
-    print(f"\nTrain command:")
+    print("  ├── train/images/train/*.png  (RGB 640x640)")
+    print("  ├── train/labels/train/*.txt  (YOLO format)")
+    print("  ├── test/images/test/*.png")
+    print("  ├── test/labels/test/*.txt")
+    print("  └── data.yaml")
+    print("\nTrain command:")
     print(f'  yolo detect train model=yolo12s.pt '
           f'data="{yaml_path}" epochs=100 imgsz=640 batch=8')
 

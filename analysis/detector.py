@@ -6,10 +6,22 @@ Object detection for organoid images using Ultralytics YOLOv11.
 
 Capabilities:
 - Detect individual organoids in microscopy images
-- Classify: healthy / early_stage / late_stage
+- Classify using the platform taxonomy (see ``utils.taxonomy``)
 - Count organoids per image
 - Measure size (bounding box area)
-- Compute circularity from detected regions
+
+Class schema
+------------
+This module previously hard-coded ``["healthy", "early_stage", "late_stage"]``
+— a three-class placeholder that matched **no dataset in the repository**. Every
+real ``data.yaml`` (``data/organoid_patches``, ``data/intestinal_organoid``, all
+twelve ``fl_detect_results/*/*``) declares four classes:
+``organoid0 / organoid1 / organoid3 / spheroid``.
+
+Because ``detect()`` indexed that three-element list with the model's ``cls_id``,
+a genuine fourth class fell through to the string ``"class_3"`` and every
+detection from a 4-class model was mislabelled. Class names now come from the
+taxonomy registry, and an out-of-range index is reported rather than invented.
 
 Models:
 - yolo11n.pt  → 3.2M params, fastest
@@ -17,17 +29,20 @@ Models:
 - yolo11m.pt  → 20.1M params, accurate
 """
 
+import warnings
+from typing import Any, ClassVar, Optional
+
 import numpy as np
-from pathlib import Path
-from typing import Optional
 from dataclasses import dataclass, asdict
+
+from utils.taxonomy import DEFAULT_TAXONOMY, Taxonomy, TaxonomyError, resolve_taxonomy
 
 
 @dataclass
 class Detection:
     """Single organoid detection result."""
     bbox: list[float]          # [x1, y1, x2, y2]
-    class_name: str            # "healthy", "early_stage", "late_stage"
+    class_name: str            # taxonomy class key, e.g. "organoid0", "spheroid"
     class_id: int
     confidence: float
     cx: float                  # center x
@@ -35,6 +50,8 @@ class Detection:
     width: float
     height: float
     area: float                # bbox area in pixels²
+    label: Optional[str] = None        # human-facing label from the taxonomy
+    taxonomy_name: Optional[str] = None  # which taxonomy produced class_name
 
     def to_dict(self) -> dict:
         """Serialize detection result to dictionary."""
@@ -42,20 +59,57 @@ class Detection:
 
 
 class OrganoidDetector:
-    """YOLOv11-based organoid detector."""
+    """YOLOv11-based organoid detector.
 
-    CLASS_NAMES = ["healthy", "early_stage", "late_stage"]
+    Args:
+        model_size: ``"n"``, ``"s"`` or ``"m"`` — the Ultralytics YOLOv11 variant.
+        device: ``"cuda"``, ``"cpu"`` or ``None`` to auto-detect.
+        taxonomy: class schema. Accepts a registered name, a
+            :class:`~utils.taxonomy.Taxonomy`, a parsed ``data.yaml`` mapping, or
+            a path to one. Defaults to the registry default
+            (``organoid_4class``).
+        on_unknown_class: what to do when a model emits a class index outside
+            the taxonomy. ``"warn"`` (default) keeps the pipeline running while
+            making the mismatch visible; ``"raise"`` fails fast, which is the
+            right choice for a validated run; ``"passthrough"`` records the raw
+            index with no complaint, for legacy behaviour.
+    """
 
-    def __init__(self, model_size: str = "n", device: Optional[str] = None):
-        """
-        Args:
-            model_size: "n" (nano), "s" (small), "m" (medium)
-            device: "cuda", "cpu", or None (auto-detect)
-        """
+    #: Class keys of the registry's default taxonomy.
+    #:
+    #: **Deprecated as a source of truth** — kept because callers reference it.
+    #: It is now generated from the registry, so it can no longer drift from the
+    #: datasets. Prefer :attr:`OrganoidDetector.class_names` on an instance,
+    #: which honours the ``taxonomy`` you actually configured.
+    CLASS_NAMES: ClassVar[list[str]] = list(resolve_taxonomy(DEFAULT_TAXONOMY).keys)
+
+    def __init__(
+        self,
+        model_size: str = "n",
+        device: Optional[str] = None,
+        taxonomy: Any = None,
+        on_unknown_class: str = "warn",
+    ):
+        if on_unknown_class not in ("warn", "raise", "passthrough"):
+            raise ValueError(
+                "on_unknown_class must be 'warn', 'raise' or 'passthrough', "
+                f"got {on_unknown_class!r}"
+            )
         self.model_size = model_size
         self.model_name = f"yolo11{model_size}.pt"
         self.device = device
         self.model = None
+        self.taxonomy: Taxonomy = resolve_taxonomy(taxonomy)
+        self.on_unknown_class = on_unknown_class
+
+    @property
+    def class_names(self) -> list[str]:
+        """Class keys of this detector's configured taxonomy."""
+        return list(self.taxonomy.keys)
+
+    @property
+    def n_classes(self) -> int:
+        return self.taxonomy.n_classes
 
     def _ensure_model(self):
         """Lazy-load model to avoid startup cost."""
@@ -65,13 +119,15 @@ class OrganoidDetector:
                 self.model = YOLO(self.model_name)
                 if self.device:
                     self.model.to(self.device)
-            except ImportError:
+            except ImportError as exc:
                 raise RuntimeError(
                     "ultralytics package is required for YOLO detection. "
                     "Install with: pip install ultralytics"
-                )
+                ) from exc
             except Exception as e:
-                raise RuntimeError(f"Failed to load YOLO model '{self.model_name}': {e}")
+                raise RuntimeError(
+                    f"Failed to load YOLO model '{self.model_name}': {e}"
+                ) from e
 
     def detect(self, image, conf_threshold: float = 0.25) -> list[Detection]:
         """Detect organoids in an image.
@@ -97,9 +153,11 @@ class OrganoidDetector:
                 x1, y1, x2, y2 = xyxy
                 w, h = x2 - x1, y2 - y1
 
+                class_key, label = self._resolve_class(cls_id)
+
                 detections.append(Detection(
                     bbox=xyxy,
-                    class_name=self.CLASS_NAMES[cls_id] if cls_id < len(self.CLASS_NAMES) else f"class_{cls_id}",
+                    class_name=class_key,
                     class_id=cls_id,
                     confidence=conf,
                     cx=(x1 + x2) / 2,
@@ -107,9 +165,34 @@ class OrganoidDetector:
                     width=w,
                     height=h,
                     area=w * h,
+                    label=label,
+                    taxonomy_name=self.taxonomy.name,
                 ))
 
         return detections
+
+    def _resolve_class(self, cls_id: int) -> tuple[str, Optional[str]]:
+        """Map a model class index onto the taxonomy.
+
+        Returns ``(class_key, label)``. Unknown indices are surfaced according to
+        :attr:`on_unknown_class` instead of being silently renamed.
+        """
+        try:
+            key = self.taxonomy.resolve_key(self.taxonomy.validate_index(cls_id))
+            return key, self.taxonomy.key_to_class[key.lower()].label
+        except TaxonomyError as exc:
+            if self.on_unknown_class == "raise":
+                raise
+            if self.on_unknown_class == "warn":
+                warnings.warn(
+                    f"Detector taxonomy {self.taxonomy.name!r} has "
+                    f"{self.taxonomy.n_classes} classes ({self.taxonomy.keys}) but the "
+                    f"model emitted class index {cls_id}. Check that the model was "
+                    f"trained against this schema. Original error: {exc}",
+                    RuntimeWarning,
+                    stacklevel=3,
+                )
+            return f"class_{cls_id}", None
 
     def train_local(
         self,

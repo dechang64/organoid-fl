@@ -19,12 +19,23 @@ Deployment:
   Cloud:      Push to GitHub → deploy on Streamlit Community Cloud
 """
 
-import streamlit as st
 import sys
 import os
 
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(__file__))
+
+# ── Import-order guard (load-bearing) ──
+# This app loads pandas (via streamlit) and torch (via the FL modules) into one
+# process. On Windows, importing pyarrow after torch kills the interpreter with
+# an access violation and no traceback. It happens to work today only because
+# streamlit is imported first; state it explicitly so a reordered import cannot
+# break it silently. See utils/import_order.py.
+from utils.import_order import prefer_pandas_before_torch
+
+prefer_pandas_before_torch()
+
+import streamlit as st  # noqa: E402
 
 # ── Page Config ──
 st.set_page_config(
@@ -124,7 +135,6 @@ page = st.sidebar.radio(
         "📁 Data Explorer",
         "🔄 FL Training",
         "🎯 Detection (YOLOv11)",
-        "🔢 Counting (Enterprise)",
         "✂️ Segmentation (SAM2)",
         "🌌 Feature Space (DINOv2)",
         "🧩 Multi-Task FL",
@@ -134,7 +144,6 @@ page = st.sidebar.radio(
         "⛓️ Audit Chain",
         "📈 Model Analysis",
         "🔬 Research",
-        "🎓 SURF 2026",
     ],
     label_visibility="collapsed",
 )
@@ -152,9 +161,6 @@ elif page == "🔄 FL Training":
 elif page == "🎯 Detection (YOLOv11)":
     from modules import detection
     detection.render()
-elif page == "🔢 Counting (Enterprise)":
-    from modules import counting
-    counting.render()
 elif page == "✂️ Segmentation (SAM2)":
     from modules import segmentation
     segmentation.render()
@@ -182,6 +188,3 @@ elif page == "📈 Model Analysis":
 elif page == "🔬 Research":
     from modules import research
     research.render()
-elif page == "🎓 SURF 2026":
-    from modules import surf_2026
-    surf_2026.render()

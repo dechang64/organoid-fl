@@ -11,7 +11,7 @@ import numpy as np
 from pathlib import Path
 from PIL import Image
 
-from utils.constants import ORGANOID_CLASSES, CLASS_INFO, COLORS
+from utils.constants import ORGANOID_CLASSES, CLASS_INFO
 from data.synthetic import generate_organoid_image
 
 
@@ -73,7 +73,6 @@ def render():
         st.subheader("Data Distribution")
 
         # Generate demo distribution
-        import plotly.graph_objects as go
         import plotly.express as px
 
         n_samples = st.slider("Total samples", 100, 1500, 600, step=100)
@@ -106,7 +105,7 @@ def render():
             title=f"Data Distribution (Non-IID={non_iid:.1f})",
         )
         fig.update_layout(template="plotly_white", height=400)
-        st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+        st.plotly_chart(fig, use_container_width=True)
 
         if non_iid > 0:
             st.warning(f"⚠️ Non-IID={non_iid:.1f}: Data is unevenly distributed across clients. "

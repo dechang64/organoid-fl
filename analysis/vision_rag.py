@@ -25,11 +25,9 @@ This is NOT text RAG — it's Vision-to-Text RAG:
 
 import numpy as np
 import hashlib
-import json
 import time
 from dataclasses import dataclass, asdict, field
 from typing import Optional
-from collections import OrderedDict
 
 from analysis.vector_engine import VectorEngine
 
@@ -275,11 +273,10 @@ class VisionRAG:
         # Majority vote
         from collections import Counter
         diagnosis_counts = Counter(diagnoses)
-        most_common = diagnosis_counts.most_common(1)[0]
 
         # Weighted by similarity
         weighted_diagnoses = {}
-        for case_id, sim, case in similar_cases:
+        for _case_id, sim, case in similar_cases:
             d = case.diagnosis
             weighted_diagnoses[d] = weighted_diagnoses.get(d, 0) + sim
 

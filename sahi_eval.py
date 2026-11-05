@@ -202,7 +202,7 @@ for i, img_file in enumerate(img_files):
     if (i + 1) % 20 == 0:
         print(f"  [{i+1}/{len(img_files)}] {img_file.name}")
 
-print(f"\n推理完成，开始计算 mAP...\n")
+print("\n推理完成，开始计算 mAP...\n")
 
 # ============ 计算 mAP ============
 results = {}
@@ -232,7 +232,7 @@ for cls_id in sorted(class_names.keys()):
 all_map50 = float(np.mean([r['mAP50'] for r in results.values()]))
 all_map5095 = float(np.mean([r['mAP50-95'] for r in results.values()]))
 print(f"\n  {'all':>12s}: mAP50={all_map50:.4f}  mAP50-95={all_map5095:.4f}")
-print(f"\n  Baseline (v1 best.pt 直接推理): mAP50=0.8810  mAP50-95=0.6210")
+print("\n  Baseline (v1 best.pt 直接推理): mAP50=0.8810  mAP50-95=0.6210")
 print(f"  提升: mAP50 {all_map50-0.8810:+.4f}  mAP50-95 {all_map5095-0.6210:+.4f}")
 
 # ============ 保存 ============

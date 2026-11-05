@@ -3,15 +3,29 @@
 Visualization Module
 ====================
 Plotly-based interactive charts for Organoid-FL platform.
+
+Import policy: pandas is annotation-only here, so it is imported under
+``TYPE_CHECKING``. Importing pandas at runtime in a process that has already
+loaded torch crashes on Windows — see the module docstring of
+``utils/helpers.py`` for the full explanation.
+
+``from __future__ import annotations`` is therefore load-bearing, not style:
+without it the ``pd.DataFrame`` annotations on ``data_distribution`` and
+``audit_timeline`` are evaluated at import time and raise ``NameError``.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
+
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from typing import Optional
 
 from utils.constants import COLORS, CLASS_INFO
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def fl_convergence(history: list[dict], title: str = "Federated Learning Convergence") -> go.Figure:
@@ -124,7 +138,6 @@ def confusion_matrix_plot(
     from sklearn.metrics import confusion_matrix as sk_cm
 
     cm = sk_cm(y_true, y_pred)
-    n = len(class_names)
 
     fig = go.Figure(data=go.Heatmap(
         z=cm,
@@ -231,17 +244,8 @@ def knn_results(
     return fig
 
 
-def audit_timeline(chain_df, title: str = "Audit Chain Timeline") -> go.Figure:
+def audit_timeline(chain_df: pd.DataFrame, title: str = "Audit Chain Timeline") -> go.Figure:
     """Timeline visualization of audit chain blocks."""
-    # Defensive: convert list to DataFrame
-    if not isinstance(chain_df, pd.DataFrame):
-        if isinstance(chain_df, list):
-            chain_df = pd.DataFrame(chain_df)
-        else:
-            return go.Figure().update_layout(
-                title=dict(text="No audit data", font=dict(size=14)),
-                template="plotly_white", height=300,
-            )
     if chain_df.empty:
         return go.Figure().update_layout(
             title=dict(text="No audit data", font=dict(size=14)),
@@ -326,7 +330,7 @@ def model_comparison(
 
 def accuracy_heatmap(
     history: list[dict],
-    class_names: list[str] = None,
+    class_names: Optional[list[str]] = None,
     title: str = "Per-Round Accuracy Heatmap",
 ) -> go.Figure:
     """Heatmap of per-client training accuracy across FL rounds.
@@ -343,7 +347,6 @@ def accuracy_heatmap(
         )
 
     # Build matrix: rows=rounds, cols=clients
-    n_clients = len(history[0]["client_metrics"])
     rounds = []
     clients = [f"Client {m['client']}" for m in history[0]["client_metrics"]]
     matrix = []

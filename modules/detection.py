@@ -13,7 +13,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.constants import CLASS_INFO, COLORS
+from utils.constants import CLASS_INFO
 from analysis.detector import OrganoidDetector
 
 

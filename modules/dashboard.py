@@ -6,9 +6,7 @@ Platform overview: key metrics, system status, quick actions.
 """
 
 import streamlit as st
-import numpy as np
-import time
-from utils.constants import CLASS_INFO, REFERENCES, COLORS
+from utils.constants import REFERENCES
 
 
 def render():
@@ -84,12 +82,11 @@ def render():
     with col_right:
         st.subheader("📊 Key Results")
 
-        import pandas as pd
-        results_data = pd.DataFrame({
+        results_data = {
             "Metric": ["Classification Accuracy", "Model", "Aggregation", "Vector Search", "Audit"],
             "Value": ["99.17%", "ResNet-18 (pretrained)", "FedAvg", "HNSW (kNN)", "SHA-256 Blockchain"],
-        })
-        st.table(results_data)
+        }
+        st.dataframe(results_data, use_container_width=True, hide_index=True)
 
         st.subheader("🔬 Research Context")
         st.markdown("""

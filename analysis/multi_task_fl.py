@@ -196,7 +196,6 @@ class MultiTaskFLEngine:
         val_y_t = torch.tensor(val_y, dtype=torch.long)
 
         history = []
-        t_total_start = time.time()
 
         for rnd in range(rounds):
             t0 = time.time()

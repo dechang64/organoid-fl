@@ -17,10 +17,55 @@ use std::path::PathBuf;
 /// Types of operations that can be logged
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OperationType {
+    /// Chain initialisation. Present as its own variant rather than reusing
+    /// `System` because the canonical hash uses the operation *name*, and
+    /// `Block::verify` recomputes that name from the stored operation — so the
+    /// name has to be recoverable from the variant. An earlier version hashed
+    /// genesis under the literal "genesis" while storing `System`, which made
+    /// the genesis block fail its own integrity check.
+    Genesis,
     Insert { count: usize },
     Search { k: usize, result_count: usize },
     Delete { count: usize },
     System { message: String },
+}
+
+impl OperationType {
+    /// Canonical operation name used in the audit preimage.
+    ///
+    /// This must stay in step with `analysis/audit_spec.py`. The previous
+    /// implementation hashed the `Debug` rendering of this enum instead
+    /// (`Insert { count: 10 }`), which no other language can reproduce.
+    pub fn name(&self) -> &'static str {
+        match self {
+            OperationType::Genesis => "genesis",
+            OperationType::Insert { .. } => "insert",
+            OperationType::Search { .. } => "search",
+            OperationType::Delete { .. } => "delete",
+            OperationType::System { .. } => "system",
+        }
+    }
+
+    /// Canonical payload, hashed as the `details` field.
+    ///
+    /// Returned as a `serde_json::Value` so the encoder — not this method —
+    /// decides key order. `serde_json` without the `preserve_order` feature
+    /// backs objects with a `BTreeMap`, which sorts keys, matching the
+    /// `sort_keys=True` used by the Python implementation. Enabling
+    /// `preserve_order` would silently break cross-language verification.
+    pub fn details(&self) -> serde_json::Value {
+        match self {
+            OperationType::Genesis => serde_json::json!({}),
+            OperationType::Insert { count } => serde_json::json!({ "count": *count }),
+            OperationType::Search { k, result_count } => {
+                serde_json::json!({ "k": *k, "result_count": *result_count })
+            }
+            OperationType::Delete { count } => serde_json::json!({ "count": *count }),
+            OperationType::System { message } => {
+                serde_json::json!({ "message": message })
+            }
+        }
+    }
 }
 
 /// A single block in the audit chain
@@ -41,9 +86,59 @@ pub struct Block {
 }
 
 impl Block {
+    /// Canonical audit preimage: compact JSON, object keys sorted.
+    ///
+    /// Field order in the source is irrelevant — the encoder sorts — but the
+    /// field *set* is part of the specification and must match
+    /// `HASH_FIELDS` in `analysis/audit_spec.py` exactly:
+    /// `details`, `index`, `nonce`, `operation`, `prev_hash`, `timestamp`.
+    ///
+    /// `serde_json::to_string` emits compact JSON with no insignificant
+    /// whitespace and writes non-ASCII as raw UTF-8, matching the Python side's
+    /// `separators=(",", ":")` and `ensure_ascii=False`.
+    fn canonical_preimage(
+        index: u64,
+        timestamp: &str,
+        operation_name: &str,
+        details: &serde_json::Value,
+        prev_hash: &str,
+        nonce: u64,
+    ) -> String {
+        let payload = serde_json::json!({
+            "details": details,
+            "index": index,
+            "nonce": nonce,
+            "operation": operation_name,
+            "prev_hash": prev_hash,
+            "timestamp": timestamp,
+        });
+        serde_json::to_string(&payload).expect("audit payload is always serialisable")
+    }
+
     /// Compute the hash of this block's content.
     fn compute_hash(index: u64, timestamp: &str, operation: &OperationType, prev_hash: &str, nonce: u64) -> String {
-        let data = format!("{}:{}:{:?}:{}:{}", index, timestamp, operation, prev_hash, nonce);
+        Self::compute_hash_parts(
+            index,
+            timestamp,
+            operation.name(),
+            &operation.details(),
+            prev_hash,
+            nonce,
+        )
+    }
+
+    /// Hash an already-decomposed operation.
+    fn compute_hash_parts(
+        index: u64,
+        timestamp: &str,
+        operation_name: &str,
+        details: &serde_json::Value,
+        prev_hash: &str,
+        nonce: u64,
+    ) -> String {
+        let data = Self::canonical_preimage(
+            index, timestamp, operation_name, details, prev_hash, nonce,
+        );
         let mut hasher = Sha256::new();
         hasher.update(data.as_bytes());
         let result = hasher.finalize();
@@ -53,9 +148,7 @@ impl Block {
     /// Create the genesis block
     pub fn genesis() -> Self {
         let timestamp = chrono::Utc::now().to_rfc3339();
-        let operation = OperationType::System {
-            message: "Organoid VectorDB audit chain initialized".to_string(),
-        };
+        let operation = OperationType::Genesis;
         let hash = Self::compute_hash(0, &timestamp, &operation, "0", 0);
         Self {
             index: 0,
@@ -279,5 +372,91 @@ mod tests {
 
         // Should have at most 5 blocks
         assert!(chain.len() <= 5);
+    }
+
+    #[test]
+    fn test_genesis_hashes_under_its_own_name() {
+        // Regression guard: genesis used to store `System` while hashing the
+        // literal "genesis", so verify() recomputed a different name and the
+        // genesis block failed its own integrity check.
+        let block = Block::genesis();
+        assert_eq!(block.operation.name(), "genesis");
+        assert!(block.verify());
+    }
+
+    /// Cross-language parity: reproduce every vector in the shared fixture.
+    ///
+    /// This is the test that would have caught the original bug. The Python
+    /// implementation (`analysis/audit_spec.py`), this Rust implementation and
+    /// `tools/verify_audit_vectors.mjs` all read the same
+    /// `tests/fixtures/audit_hash_vectors.json`; if any side changes its
+    /// preimage, its run fails rather than silently disagreeing.
+    #[test]
+    fn test_shared_audit_vectors_are_reproduced() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("fixtures")
+            .join("audit_hash_vectors.json");
+        let raw = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
+        let fixture: serde_json::Value =
+            serde_json::from_str(&raw).expect("fixture is not valid JSON");
+
+        let vectors = fixture["vectors"]
+            .as_array()
+            .expect("fixture has no `vectors` array");
+        assert!(!vectors.is_empty(), "fixture contains no vectors");
+
+        for v in vectors {
+            let name = v["name"].as_str().expect("vector has no name");
+            let index = v["index"].as_u64().expect("index must fit u64");
+            let nonce = v["nonce"].as_u64().unwrap_or(0);
+            let timestamp = v["timestamp"].as_str().expect("timestamp must be a string");
+            let operation = v["operation"].as_str().expect("operation must be a string");
+            let prev_hash = v["prev_hash"].as_str().expect("prev_hash must be a string");
+
+            // Round-trip through the canonical preimage and compare the text
+            // first: when a digest mismatches, knowing whether the bytes or the
+            // hash differed is what makes the failure diagnosable.
+            let preimage = Block::canonical_preimage(
+                index, timestamp, operation, &v["details"], prev_hash, nonce,
+            );
+            assert_eq!(
+                preimage,
+                v["preimage"].as_str().unwrap(),
+                "preimage mismatch for vector `{name}`"
+            );
+
+            let digest = Block::compute_hash_parts(
+                index, timestamp, operation, &v["details"], prev_hash, nonce,
+            );
+            assert_eq!(
+                digest,
+                v["sha256"].as_str().unwrap(),
+                "hash mismatch for vector `{name}`"
+            );
+        }
+    }
+
+    /// The preimage must be compact, sorted-key JSON with raw UTF-8 — the
+    /// three properties that make it portable. Each is asserted separately so a
+    /// regression points at the encoder rather than at the whole spec.
+    #[test]
+    fn test_preimage_is_canonical_json() {
+        let details = serde_json::json!({ "label": "类器官", "b": 1, "a": 2 });
+        let preimage = Block::canonical_preimage(1, "t", "op", &details, "0", 0);
+
+        assert!(!preimage.contains(", "), "preimage contains whitespace");
+        assert!(!preimage.contains(": "), "preimage contains whitespace");
+        assert!(!preimage.contains('\n'), "preimage contains a newline");
+        assert!(
+            preimage.contains("类器官"),
+            "non-ASCII was escaped; serde_json writes raw UTF-8 and the Python \
+             side uses ensure_ascii=False, so escaping here breaks parity"
+        );
+        assert!(
+            preimage.starts_with("{\"details\":"),
+            "keys are not sorted; got {preimage}"
+        );
     }
 }

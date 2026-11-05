@@ -18,9 +18,8 @@ import os
 import json
 import logging
 import numpy as np
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Dict, Optional
 from dataclasses import dataclass, field
-from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +107,7 @@ class FedCtxRestClient:
             return 0
 
     def search_vectors(self, query: List[float], k: int = 10,
-                       filter_meta: Dict[str, str] = None) -> List[Dict]:
+                       filter_meta: Optional[Dict[str, str]] = None) -> List[Dict]:
         """Search HNSW index for nearest neighbors.
 
         Returns:
@@ -230,7 +229,7 @@ class FedCtxRestClient:
     # ─── Audit ───
 
     def append_audit(self, event_type: str, node_id: str,
-                     metadata: Dict[str, str] = None) -> Optional[str]:
+                     metadata: Optional[Dict[str, str]] = None) -> Optional[str]:
         """Append an entry to the audit chain.
 
         Returns:
@@ -260,7 +259,7 @@ class FedCtxRestClient:
             return None
 
     def get_audit_trail(self, limit: int = 50,
-                        event_type: str = None) -> List[Dict]:
+                        event_type: Optional[str] = None) -> List[Dict]:
         """Get audit trail entries.
 
         Returns:
@@ -395,7 +394,7 @@ class FedCtxRestClient:
     # ─── Hybrid Search ───
 
     def hybrid_search(self, query: str, k: int = 10,
-                      query_vector: List[float] = None) -> Dict:
+                      query_vector: Optional[List[float]] = None) -> Dict:
         """Hybrid search: query routing → dual-channel → RRF → PageRank rerank.
 
         Returns:

@@ -1,5 +1,8 @@
 """Python client for Organoid VectorDB gRPC service"""
-import sys, os, time, random
+import sys
+import os
+import time
+import random
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'python'))
 import grpc
 import vectordb_pb2 as pb
@@ -27,12 +30,12 @@ def main():
 
     # 2. Check stats
     stats = stub.Stats(pb.StatsRequest())
-    print(f"\n=== DB Stats ===")
+    print("\n=== DB Stats ===")
     print(f"  Total vectors: {stats.total_vectors}")
     print(f"  Dimension: {stats.dimension}")
 
     # 3. Search for nearest neighbors
-    print(f"\n=== Searching (k=5) ===")
+    print("\n=== Searching (k=5) ===")
     query = [random.gauss(0, 1) for _ in range(128)]
     start = time.time()
     results = stub.Search(pb.SearchRequest(query=query, k=5))
@@ -42,7 +45,7 @@ def main():
         print(f"    {r.id}: distance={r.distance:.4f}, metadata={dict(r.metadata)}")
 
     # 4. Delete some vectors
-    print(f"\n=== Deleting 3 vectors ===")
+    print("\n=== Deleting 3 vectors ===")
     del_resp = stub.Delete(pb.DeleteRequest(ids=["organoid_0000", "organoid_0001", "organoid_0002"]))
     print(f"  Deleted: {del_resp.deleted}")
 

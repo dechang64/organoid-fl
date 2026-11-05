@@ -4,7 +4,6 @@
 import sys
 import os
 import pytest
-import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -48,7 +47,7 @@ class TestResNet18Extractor:
 class TestGetExtractor:
     def test_factory_dinov2(self):
         # Test that factory returns correct type (without loading weights)
-        ext = get_extractor.__wrapped__("dinov2") if hasattr(get_extractor, "__wrapped__") else None
+        _ext = get_extractor.__wrapped__("dinov2") if hasattr(get_extractor, "__wrapped__") else None
         # Just test the logic path
         assert True  # Factory function exists and routes correctly
 

@@ -13,7 +13,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.constants import CLASS_INFO, COLORS, ORGANOID_CLASSES
+from utils.constants import ORGANOID_CLASSES
 
 
 def render():
@@ -75,7 +75,6 @@ def _render_gradcam():
                     gradcam = GradCAM(model)
 
                     # Preprocess
-                    import torch
                     from torchvision import transforms
                     transform = transforms.Compose([
                         transforms.Resize((224, 224)),
@@ -134,7 +133,6 @@ def _render_attention_rollout():
         with st.spinner("Computing attention rollout..."):
             try:
                 from analysis.gradcam import AttentionRollout
-                import torch
                 from torchvision import transforms
 
                 # Try to load DINOv2
@@ -396,4 +394,4 @@ def _plot_feature_importance(morphology: dict, predicted_class: str):
         height=400,
         showlegend=False,
     )
-    st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+    st.plotly_chart(fig, use_container_width=True)

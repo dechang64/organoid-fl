@@ -78,7 +78,7 @@ class TestVisionRAG:
         # Query with same morphology should find the case
         results = rag.query(SAMPLE_MORPHOLOGY, k=1, min_similarity=0.0)
         assert len(results) >= 1
-        case_id, similarity, case = results[0]
+        _case_id, similarity, case = results[0]
         assert similarity > 0.9  # Same input → very high similarity
         assert case.diagnosis == "healthy"
 

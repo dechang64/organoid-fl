@@ -7,11 +7,9 @@ Phase 2: YOLOv12n on 840 intestinal organoid images (23K bboxes)
 """
 
 import streamlit as st
-import pandas as pd
 import numpy as np
 import json
 import csv
-import time
 import sys
 import os
 from pathlib import Path
@@ -19,9 +17,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from utils.constants import (
-    DEFAULT_ROUNDS, DEFAULT_CLIENTS, DEFAULT_LR,
-    DEFAULT_BATCH_SIZE, DEFAULT_LOCAL_EPOCHS,
-    ORGANOID_CLASSES, CLASS_INFO, REFERENCES,
+    ORGANOID_CLASSES, REFERENCES,
 )
 
 # ── Data directories ──
@@ -37,7 +33,7 @@ def load_phase1_results():
     for f in RESULTS_DIR.glob("classify_*_rounds.json"):
         name = f.stem.replace("classify_", "").replace("_rounds", "")
         try:
-            results[name] = json.load(open(f, encoding="utf-8"))
+            results[name] = json.load(open(f))
         except Exception:
             pass
     return results
@@ -49,28 +45,28 @@ def load_phase2_results():
     # Convergence
     conv_file = PHASE2_DIR / "convergence_results.csv"
     if conv_file.exists():
-        with open(conv_file, encoding="utf-8") as f:
+        with open(conv_file) as f:
             p2["convergence"] = list(csv.DictReader(f))
     # μ sensitivity
     mu_file = PHASE2_DIR / "mu_sensitivity.csv"
     if mu_file.exists():
-        with open(mu_file, encoding="utf-8") as f:
+        with open(mu_file) as f:
             p2["mu_sensitivity"] = list(csv.DictReader(f))
     # Round-level data
     for name in ["ewa_rounds", "fedavg_rounds"]:
         rf = PHASE2_DIR / f"{name}.json"
         if rf.exists():
-            with open(rf, encoding="utf-8") as f:
+            with open(rf) as f:
                 p2[name] = json.load(f)
     # Summary
     sf = PHASE2_DIR / "fl_summary.json"
     if sf.exists():
-        with open(sf, encoding="utf-8") as f:
+        with open(sf) as f:
             p2["summary"] = json.load(f)
     # Experiment matrix
     mf = PHASE2_DIR / "experiment_matrix.csv"
     if mf.exists():
-        with open(mf, encoding="utf-8") as f:
+        with open(mf) as f:
             p2["experiment_matrix"] = list(csv.DictReader(f))
     return p2
 
@@ -92,7 +88,7 @@ def render():
     )
 
     # ── Data availability check ──
-    has_patches, has_detect, has_p1_res, has_p2_res = check_data_availability()
+    has_patches, has_detect, has_p1_res, _has_p2_res = check_data_availability()
 
     # ── Architecture diagram ──
     st.markdown("""
@@ -157,7 +153,7 @@ def render():
                         "Final Accuracy": f"{final:.1%}",
                     })
             if table_data:
-                st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+                st.dataframe(table_data, use_container_width=True, hide_index=True)
 
             # Convergence curves
             st.markdown("### Convergence Curves")
@@ -230,7 +226,6 @@ unzip OrganoidDataset.zip -d intestinal_organoid
             # ── Strategy Comparison ──
             st.markdown("### 📊 Strategy Comparison (Final mAP50-95)")
             strat_names = ["FedAvg", "FedProx", "EWA-v2", "EWA-FedProx"]
-            scenario_labels = ["IID Balanced", "Moderate Non-IID", "Extreme Non-IID"]
             scenario_keys = ["iid_balanced", "moderate_balanced", "extreme_extreme"]
 
             strat_data = {}
@@ -301,7 +296,7 @@ unzip OrganoidDataset.zip -d intestinal_organoid
                     "Gap": f"{float(r['best_mAP']) - float(r['final_mAP']):.4f}",
                     "Conv Round": r["convergence_round"],
                 })
-            st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
+            st.dataframe(table_rows, use_container_width=True, hide_index=True)
 
             # ── Export ──
             col_a, col_b = st.columns(2)

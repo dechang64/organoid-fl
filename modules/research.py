@@ -6,14 +6,12 @@ Methodology, paper references, and theoretical foundation.
 """
 
 import streamlit as st
-from utils.constants import REFERENCES
 
 
 def render():
     st.markdown(
         '<div class="main-header"><h1>🔬 Research</h1>'
-        '<p>Theoretical foundation, methodology, and paper references</p>'
-        '<p style="font-size:0.7rem;color:#94a3b8;">Code version: 2026-07-16 v3bc3e3d</p></div>',
+        '<p>Theoretical foundation, methodology, and paper references</p></div>',
         unsafe_allow_html=True,
     )
 
@@ -137,17 +135,23 @@ def render():
 
     with col1:
         st.markdown("#### Slot vs Confidence AUC")
-        import pandas as pd
+        import plotly.graph_objects as go
         datasets = ["Mouse B1", "Mouse B2", "Mouse B3", "Intestinal"]
         slot_auc = [0.29, 0.51, 0.54, 0.67]
         conf_auc = [0.91, 0.98, 0.92, 0.92]
 
-        chart_df = pd.DataFrame({
-            "Slot AUC": slot_auc,
-            "Conf AUC": conf_auc,
-        }, index=datasets)
-        st.bar_chart(chart_df, use_container_width=True)
-        st.caption("Slot model fails to generalize across domains (all <0.70)")
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name="Slot AUC", x=datasets, y=slot_auc,
+                             marker_color="#e74c3c", text=[f"{v:.2f}" for v in slot_auc],
+                             textposition="auto"))
+        fig.add_trace(go.Bar(name="Conf AUC", x=datasets, y=conf_auc,
+                             marker_color="#2ecc71", text=[f"{v:.2f}" for v in conf_auc],
+                             textposition="auto"))
+        fig.update_layout(barmode="group", height=350,
+                          title="Slot model fails to generalize across domains",
+                          yaxis_title="AUC", yaxis_range=[0, 1.1],
+                          template="plotly_dark")
+        st.plotly_chart(fig, use_container_width=True)
 
     with col2:
         st.markdown("#### Dataset Summary")
@@ -164,9 +168,9 @@ def render():
         **Key Findings:**
         - 🔴 Slot model **completely fails** cross-domain (all AUC < 0.70)
         - ✅ Detector confidence is **robust** across domains (0.91-0.98)
-        - ❌ All fusion strategies (hard_filter, soft_penalize, geometric_mean) 
+        - ❌ All fusion strategies (hard_filter, soft_penalize, geometric_mean)
           degrade to baseline (α=0, w=1.0)
-        - **Root cause**: SupCon learns domain-specific TP/FP patterns, 
+        - **Root cause**: SupCon learns domain-specific TP/FP patterns,
           not universal organoid primitives
         """)
 
@@ -183,19 +187,27 @@ def render():
 
     with col3:
         st.markdown("#### Single-domain vs Joint Training")
-        import pandas as pd
+        import plotly.graph_objects as go
         datasets = ["Mouse B1", "Mouse B2", "Mouse B3", "Intestinal"]
         single_auc = [0.29, 0.51, 0.54, 0.67]
         merged_auc = [0.74, 0.70, 0.85, 0.74]
         conf_auc = [0.91, 0.98, 0.92, 0.92]
 
-        chart_df2 = pd.DataFrame({
-            "Single-domain Slot": single_auc,
-            "Joint Training Slot": merged_auc,
-            "Conf (baseline)": conf_auc,
-        }, index=datasets)
-        st.bar_chart(chart_df2, use_container_width=True)
-        st.caption("Joint training dramatically improves cross-domain AUC")
+        fig2 = go.Figure()
+        fig2.add_trace(go.Bar(name="Single-domain Slot", x=datasets, y=single_auc,
+                              marker_color="#e74c3c", text=[f"{v:.2f}" for v in single_auc],
+                              textposition="auto"))
+        fig2.add_trace(go.Bar(name="Joint Training Slot", x=datasets, y=merged_auc,
+                              marker_color="#3498db", text=[f"{v:.2f}" for v in merged_auc],
+                              textposition="auto"))
+        fig2.add_trace(go.Bar(name="Conf (baseline)", x=datasets, y=conf_auc,
+                              marker_color="#2ecc71", text=[f"{v:.2f}" for v in conf_auc],
+                              textposition="auto"))
+        fig2.update_layout(barmode="group", height=350,
+                           title="Joint training dramatically improves cross-domain AUC",
+                           yaxis_title="AUC", yaxis_range=[0, 1.1],
+                           template="plotly_dark")
+        st.plotly_chart(fig2, use_container_width=True)
 
     with col4:
         st.markdown("#### Improvement Summary")
@@ -252,63 +264,39 @@ def render():
     st.markdown("---")
     st.markdown("### 🆚 DINOv2 vs CLIP: Cross-Domain Comparison")
 
+    import plotly.graph_objects as go
+
     datasets = ["MultiOrg", "Mouse B1", "Mouse B2", "Mouse B3"]
     dinov2_single = [0.79, 0.29, 0.51, 0.54]
     dinov2_loo = [None, 0.49, 0.56, 0.82]
     clip_zeroshot = [0.73, 0.86, 0.66, 0.69]
     conf_auc = [0.87, 0.91, 0.98, 0.92]
 
-    import pandas as pd
+    fig3 = go.Figure()
+    fig3.add_trace(go.Bar(name="DINOv2 Single", x=datasets, y=dinov2_single,
+                          marker_color="#e74c3c", text=[f"{v:.2f}" for v in dinov2_single],
+                          textposition="auto"))
+    # LOO has None for MultiOrg, use 0 for display
     dinov2_loo_display = [v if v is not None else 0 for v in dinov2_loo]
-    chart_df3 = pd.DataFrame({
-        "DINOv2 Single": dinov2_single,
-        "DINOv2 LOO": dinov2_loo_display,
-        "CLIP Zero-Shot": clip_zeroshot,
-        "Conf (baseline)": conf_auc,
-    }, index=datasets)
-    st.bar_chart(chart_df3, use_container_width=True)
-    st.caption("CLIP zero-shot outperforms DINOv2 cross-domain (no training needed!)")
+    fig3.add_trace(go.Bar(name="DINOv2 LOO", x=datasets, y=dinov2_loo_display,
+                          marker_color="#f39c12", text=[f"{v:.2f}" if v else "—" for v in dinov2_loo],
+                          textposition="auto"))
+    fig3.add_trace(go.Bar(name="CLIP Zero-Shot", x=datasets, y=clip_zeroshot,
+                          marker_color="#3498db", text=[f"{v:.2f}" for v in clip_zeroshot],
+                          textposition="auto"))
+    fig3.add_trace(go.Bar(name="Conf (baseline)", x=datasets, y=conf_auc,
+                          marker_color="#2ecc71", text=[f"{v:.2f}" for v in conf_auc],
+                          textposition="auto"))
+    fig3.update_layout(barmode="group", height=400,
+                       title="CLIP zero-shot outperforms DINOv2 cross-domain (no training needed!)",
+                       yaxis_title="AUC", yaxis_range=[0, 1.1],
+                       template="plotly_dark")
+    st.plotly_chart(fig3, use_container_width=True)
 
     st.markdown("""
     **Breakthrough finding**: CLIP's text-visual alignment space is cross-domain stable.
     - Mouse B1: DINOv2 0.29 (anti-prediction) → CLIP 0.86 (+0.57, no training!)
+    - CLIP zero-shot uses text prompts like "a 3D multicellular organoid structure" vs "a non-organoid region"
     - This validates the NLP analogy: semantic alignment (CLIP) > pure visual features (DINOv2)
+    - Next: CLIP + SupCon joint training to see if supervised learning on CLIP features can exceed conf
     """)
-
-    st.markdown("---")
-    st.markdown("### ⚠️ Training Destroys Zero-Shot Generalization")
-
-    st.markdown("""
-    A1 (CLIP+SupCon LOO) and A3 (CoOp Prompt Tuning LOO) both **underperform** CLIP zero-shot.
-    """)
-
-    col5, col6 = st.columns(2)
-
-    with col5:
-        import pandas as pd
-        methods = ["DINOv2 LOO", "CLIP Zero-Shot", "CLIP+SupCon LOO", "CoOp LOO", "Conf Baseline"]
-        avg_auc = [0.58, 0.73, 0.58, 0.64, 0.94]
-
-        chart_df4 = pd.DataFrame({"Avg AUC": avg_auc}, index=methods)
-        st.bar_chart(chart_df4, use_container_width=True)
-        st.caption("Average Cross-Domain AUC (4 datasets)")
-
-    with col6:
-        st.markdown("#### Full Comparison")
-        st.markdown("""
-        | Dataset | DINOv2 LOO | CLIP ZS | CLIP+SC | CoOp | Conf |
-        |---------|-----------|---------|---------|------|------|
-        | MultiOrg | — | 0.73 | 0.95 | 0.62 | 0.87 |
-        | Mouse B1 | 0.49 | **0.86** | 0.50 | 0.67 | 0.91 |
-        | Mouse B2 | 0.56 | **0.66** | 0.57 | 0.58 | 0.98 |
-        | Mouse B3 | 0.82 | **0.69** | 0.45 | 0.65 | 0.92 |
-        | Intest. | 0.58 | **0.69** | 0.50 | 0.69 | 0.92 |
-        | **Avg** | 0.58 | **0.73** | 0.58 | 0.64 | **0.94** |
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        - 🟢 CLIP zero-shot (no training) = best cross-domain slot
-        - 🔴 All training hurts cross-domain (overfits to source)
-        - 🟢 Conf (0.94) still champion
-        - → Prompt engineering, VLM reasoning, 3D temporal
-        """)

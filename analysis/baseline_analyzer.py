@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
-"""
+r"""
 MultiOrg Baseline Analysis Script
 - Parse YOLOv12s training results from runs/detect/baseline_test/v12s_1280/
 - Generate comprehensive analysis: convergence, per-class, confusion, FL readiness
 - Output: baseline_analysis.json + baseline_report.md
 
 Usage:
-    python baseline_analyzer.py --results C:/Users/decha/organoid-fl/runs/detect/baseline_test/v12s_1280
+    python baseline_analyzer.py --results C:\Users\decha\organoid-fl\runs\detect\baseline_test\v12s_1280
+
+Note: this docstring is a raw string on purpose. Without the ``r`` prefix the
+Windows path below is not a path at all: Python reads the backslash before "U"
+as the start of an eight-hex-digit Unicode escape, which cannot be parsed, so the
+whole module raises SyntaxError on import. This file was unimportable for that
+reason — any code path or test that touched it died at the import statement.
 """
 
-import os
 import json
 import argparse
 import csv
 from pathlib import Path
-from collections import defaultdict
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Analyze MultiOrg baseline YOLO results')
-    parser.add_argument('--results', type=str, 
+    parser.add_argument('--results', type=str,
                         default='runs/detect/baseline_test/v12s_1280',
                         help='Path to YOLO results directory')
     parser.add_argument('--output', type=str, default='baseline_analysis',
@@ -30,7 +34,7 @@ def parse_args():
 def load_results_csv(csv_path):
     """Load Ultralytics results.csv → list of dicts."""
     results = []
-    with open(csv_path, 'r', encoding='utf-8') as f:
+    with open(csv_path, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
             # Strip whitespace from keys
@@ -53,7 +57,7 @@ def parse_metrics(results):
     mAP50 = []
     mAP50_95 = []
     lr = []
-    
+
     for row in results:
         epochs.append(int(row.get('epoch', 0)))
         train_box_loss.append(float(row.get('train/box_loss', 0)))
@@ -67,7 +71,7 @@ def parse_metrics(results):
         mAP50.append(float(row.get('metrics/mAP50(B)', 0)))
         mAP50_95.append(float(row.get('metrics/mAP50-95(B)', 0)))
         lr.append(float(row.get('lr/pg0', 0)))
-    
+
     return {
         'epochs': epochs,
         'train_box_loss': train_box_loss,
@@ -90,11 +94,11 @@ def analyze_convergence(metrics):
     mAP50_95 = metrics['mAP50_95']
     val_box = metrics['val_box_loss']
     epochs = metrics['epochs']
-    
+
     # Best epoch
     best_map50_epoch = mAP50.index(max(mAP50)) + 1
     best_map5095_epoch = mAP50_95.index(max(mAP50_95)) + 1
-    
+
     # Convergence speed (epoch reaching 95% of final mAP50)
     final_map50 = mAP50[-1]
     target_95 = final_map50 * 0.95
@@ -103,14 +107,14 @@ def analyze_convergence(metrics):
         if m >= target_95:
             conv_epoch = i + 1
             break
-    
+
     # Overfitting detection (val loss starts increasing)
     min_val_loss_epoch = val_box.index(min(val_box)) + 1
     val_loss_trend = 'increasing' if val_box[-1] > min(val_box) * 1.1 else 'stable'
-    
+
     # Late-stage improvement (last 20 epochs)
     late_improvement = mAP50[-1] - mAP50[-20] if len(mAP50) >= 20 else 0
-    
+
     return {
         'best_mAP50_epoch': best_map50_epoch,
         'best_mAP50': max(mAP50),
@@ -130,7 +134,7 @@ def analyze_per_class(val_output_text):
     """Parse per-class validation output."""
     lines = val_output_text.strip().split('\n')
     classes = {}
-    
+
     for line in lines:
         parts = line.split()
         if len(parts) >= 7:
@@ -153,48 +157,48 @@ def analyze_per_class(val_output_text):
 def analyze_fl_readiness(per_class, convergence):
     """Evaluate readiness for FL experiments."""
     all_metrics = per_class.get('all', {})
-    
+
     # Class imbalance assessment
     instances = {k: v['instances'] for k, v in per_class.items() if k != 'all'}
     max_inst = max(instances.values()) if instances else 1
     min_inst = min(instances.values()) if instances else 1
     imbalance_ratio = max_inst / min_inst if min_inst > 0 else float('inf')
-    
+
     # mAP spread (for EWA signal quality)
     map50_values = [v['mAP50'] for k, v in per_class.items() if k != 'all']
     map50_spread = max(map50_values) - min(map50_values) if map50_values else 0
-    
+
     map5095_values = [v['mAP5095'] for k, v in per_class.items() if k != 'all']
     map5095_spread = max(map5095_values) - min(map5095_values) if map5095_values else 0
-    
+
     # FL readiness score
     score = 0
     reasons = []
-    
+
     if all_metrics.get('mAP50', 0) > 0.85:
         score += 25
         reasons.append("mAP50 > 0.85: strong baseline")
     else:
         reasons.append(f"mAP50 = {all_metrics.get('mAP50', 0):.3f}: need improvement")
-    
+
     if imbalance_ratio < 5:
         score += 25
         reasons.append(f"Class imbalance ratio {imbalance_ratio:.1f}x: manageable")
     else:
         reasons.append(f"Class imbalance ratio {imbalance_ratio:.1f}x: high, FL will amplify")
-    
+
     if map5095_spread > 0.05:
         score += 25
         reasons.append(f"mAP50-95 spread {map5095_spread:.3f}: good EWA signal")
     else:
         reasons.append(f"mAP50-95 spread {map5095_spread:.3f}: EWA signal may be weak")
-    
+
     if convergence.get('val_loss_trend') == 'stable':
         score += 25
         reasons.append("Val loss stable: no severe overfitting")
     else:
         reasons.append("Val loss increasing: possible overfitting")
-    
+
     return {
         'score': score,
         'imbalance_ratio': imbalance_ratio,
@@ -232,7 +236,7 @@ def generate_report(convergence, per_class, fl_readiness, val_text):
         if cls_name in per_class:
             c = per_class[cls_name]
             report += f"| {cls_name} | {c['images']} | {c['instances']} | {c['precision']:.3f} | {c['recall']:.3f} | {c['mAP50']:.3f} | {c['mAP5095']:.3f} |\n"
-    
+
     report += f"""
 ## FL Readiness Assessment
 
@@ -241,13 +245,13 @@ def generate_report(convergence, per_class, fl_readiness, val_text):
 """
     for reason in fl_readiness['reasons']:
         report += f"- {reason}\n"
-    
-    report += f"""
+
+    report += """
 ### Class Distribution
 """
     for cls, n in fl_readiness['class_instances'].items():
         report += f"- {cls}: {n} instances\n"
-    
+
     report += f"""
 ### EWA Signal Quality
 - mAP50 spread: {fl_readiness['mAP50_spread']:.4f} ({'good' if fl_readiness['mAP50_spread'] > 0.05 else 'weak'})
@@ -288,28 +292,28 @@ def main():
     results_dir = Path(args.results)
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     print(f"Analyzing: {results_dir}")
-    
+
     # Load results.csv
     csv_path = results_dir / 'results.csv'
     if not csv_path.exists():
         print(f"ERROR: {csv_path} not found")
         return
-    
+
     results = load_results_csv(csv_path)
     metrics = parse_metrics(results)
     convergence = analyze_convergence(metrics)
-    
+
     print(f"  Epochs: {convergence['total_epochs']}")
     print(f"  Best mAP50: {convergence['best_mAP50']:.4f} (epoch {convergence['best_mAP50_epoch']})")
     print(f"  Best mAP50-95: {convergence['best_mAP5095']:.4f}")
-    
+
     # Validation output (from user-provided text or args.txt)
     val_text = ""
     val_path = results_dir / 'val_output.txt'
     if val_path.exists():
-        with open(val_path, 'r', encoding='utf-8') as f:
+        with open(val_path, 'r') as f:
             val_text = f.read()
     else:
         # Use default from known results
@@ -318,12 +322,12 @@ def main():
              organoid1         70        548      0.739      0.781      0.841      0.609
              organoid3         54        401       0.82      0.866      0.923      0.689
               spheroid         48        225      0.874      0.751      0.862       0.62"""
-    
+
     per_class = analyze_per_class(val_text)
     fl_readiness = analyze_fl_readiness(per_class, convergence)
-    
+
     print(f"  FL Readiness: {fl_readiness['score']}/100 — {fl_readiness['fl_recommendation']}")
-    
+
     # Save JSON
     analysis = {
         'convergence': convergence,
@@ -332,17 +336,17 @@ def main():
         'val_output': val_text,
     }
     json_path = output_dir / 'baseline_analysis.json'
-    with open(json_path, 'w', encoding='utf-8') as f:
+    with open(json_path, 'w') as f:
         json.dump(analysis, f, indent=2)
     print(f"\nSaved: {json_path}")
-    
+
     # Save report
     report = generate_report(convergence, per_class, fl_readiness, val_text)
     md_path = output_dir / 'baseline_report.md'
-    with open(md_path, 'w', encoding='utf-8') as f:
+    with open(md_path, 'w') as f:
         f.write(report)
     print(f"Saved: {md_path}")
-    
+
     # Print summary
     print("\n" + "=" * 60)
     print("  ANALYSIS SUMMARY")

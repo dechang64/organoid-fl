@@ -12,7 +12,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.constants import ORGANOID_CLASSES, CLASS_INFO, COLORS
+from utils.constants import CLASS_INFO
 from utils.helpers import generate_synthetic_features
 
 
@@ -60,12 +60,12 @@ def render():
 
         with tab_2d:
             fig = _plot_2d(reduced[:, :2], labels, class_names, method)
-            st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+            st.plotly_chart(fig, use_container_width=True)
 
         with tab_3d:
             if reduced.shape[1] >= 3:
                 fig = _plot_3d(reduced[:, :3], labels, class_names, method)
-                st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("3D view requires t-SNE or UMAP with n_components=3.")
 

@@ -1,0 +1,139 @@
+# ── .github/workflows/ci.yml ──
+# Continuous integration: lint, cross-language audit-vector parity, tests.
+#
+# Two things here are unusual and deliberate:
+#
+# 1. `ruff check .` is green. That is not because the rules are weak — it is
+#    because the archive directories (`scripts/`, `fl/`, `presentation/`,
+#    `research/`, `python/`, `proto/`) are excluded in pyproject.toml and the
+#    maintained code was actually cleaned. If you re-include a directory, expect
+#    to fix its findings in the same change.
+#
+# 2. The audit-chain vectors are checked with BOTH Python and Node. A spec that
+#    only one language can reproduce is worthless, and the original bug in this
+#    repository was exactly that: Python and Rust hashed different byte strings,
+#    so neither could verify the other's chain.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: python -m pip install --upgrade pip ruff
+
+      - name: ruff check
+        run: ruff check . --output-format=github
+
+      - name: ruff format (report only)
+        # Not a gate: quote-style is set to "preserve" so the formatter does not
+        # rewrite files nobody is touching. Reported so drift stays visible.
+        run: ruff format --check --diff . || true
+
+  audit-vectors:
+    name: Audit chain parity (Python vs Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Reproduce the shared vectors under Python
+        # analysis.audit_spec has no third-party imports, so this needs no
+        # install step; that is intentional, and it is what lets the parity
+        # check run before the heavy dependency install.
+        run: python tools/gen_audit_vectors.py --check
+
+      - name: Reproduce the shared vectors under Node
+        run: node tools/verify_audit_vectors.mjs
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install CPU-only dependencies
+        # The CPU index keeps the download to a few hundred MB instead of the
+        # multi-GB CUDA wheels. Nothing in the test suite needs a GPU.
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run the test suite
+        # Several tests load the cross-language fixtures and one spawns a Node
+        # process, so keep the working directory at the repository root.
+        run: python -m pytest tests -q
+
+      - name: Verify the float-domain claim
+        # Checks that Python never falls back to exponent notation inside the
+        # audit spec's float domain, and that Node agrees on the non-integral
+        # values. Uses Node if available, otherwise reports and passes.
+        run: python tools/check_float_domain.py
+
+  rust:
+    name: Rust (compile + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install protoc
+        # build.rs calls tonic_build::compile_protos, which shells out to a
+        # `protoc` binary. tonic-build does not vendor one, and `protoc` is not
+        # part of the ubuntu-latest image, so without this step the build script
+        # panics before a single line of Rust is compiled.
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'Cargo.toml') }}
+
+      - name: cargo test
+        # `test_shared_audit_vectors_are_reproduced` in src/blockchain.rs reads
+        # tests/fixtures/audit_hash_vectors.json and must reproduce every digest
+        # that Python and Node produce. This is the only place a Rust
+        # implementation of the audit spec is exercised at all, so a failure
+        # here means the two languages have drifted apart again.
+        run: cargo test --all-targets

@@ -10,8 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from analysis.fl_engine import (
     OrganoidClassifier, FLEngine,
-    fedavg_aggregate, get_params, set_params,
-    train_client, evaluate_model,
+    fedavg_aggregate, get_params, train_client, evaluate_model,
 )
 
 
@@ -51,7 +50,6 @@ class TestFedAvg:
             assert torch.allclose(avg[key].data, expected)
 
     def test_aggregate_three_models(self):
-        import torch
         models = [OrganoidClassifier(input_dim=32, num_classes=2, hidden_dim=8) for _ in range(3)]
         params = [get_params(m) for m in models]
         avg = fedavg_aggregate(params)
@@ -66,7 +64,7 @@ class TestTrainClient:
         y = torch.randint(0, 3, (50,))
 
         loss_before, _ = evaluate_model(model, X, y, batch_size=16)
-        params, loss_after, acc = train_client(model, X, y, lr=0.01, epochs=5, batch_size=16)
+        _params, loss_after, acc = train_client(model, X, y, lr=0.01, epochs=5, batch_size=16)
 
         assert loss_after <= loss_before + 0.5  # Allow some variance
         assert 0 <= acc <= 1

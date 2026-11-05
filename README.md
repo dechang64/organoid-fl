@@ -34,76 +34,16 @@ Organoid-FL is an **end-to-end federated learning platform** for medical organoi
 
 ### Key Results
 
-| Metric | Intestinal Organoid | MultiOrg | Mouse Liver |
-|--------|---------------------|----------|-------------|
-| Classification Accuracy | **99.17%** | — | — |
-| Detection mAP50 | — | **0.885** (v12s, 1280px) | 0.96 (RF-DETR) |
-| Detection mAP50-95 | — | **0.624** (v12s, 1280px) | — |
-| Feature Dim | **768** (DINOv2 base) | — | — |
-| Detection Model | YOLOv11 (3.2M–20.1M params) | YOLOv12s (9.2M params) | RF-DETR-base |
-| Segmentation | SAM2 (pixel-level) | — | — |
-| Vector Search | HNSW (kNN) | — | — |
-| Audit | SHA-256 Blockchain | — | — |
-
-### 🔬 SAM2 Self-Distillation Cross-Domain (2026-07-16)
-
-**Method**: Use SAM2 zero-shot mask as independent signal to train classifier head,
-avoiding circular logic when RF-DETR conf fails cross-domain.
-
-**Three-tier evidence chain**:
-
-| Experiment | Samples | Zero-shot AUC | Distilled AUC | Improvement |
-|---|---|---|---|---|
-| Simulation (Intestinal 500+200) | 700 | 0.6616 | **0.9437** | **+28.22%** |
-| Real cross-domain 50+30 | 10578 | 0.7480 | **0.8857** | **+13.77%** |
-| Real cross-domain 200+100 | 40503 | 0.7679 | **0.8589** | **+9.10%** |
-| MPM pilot (34 patches) | 3131 | 0.9779 | 1.0000 | +2.21% |
-
-**Adaptive distillation strategy** (paper innovation):
-
-| Zero-shot AUC | Strategy | Formula | Improvement |
-|---|---|---|---|
-| **< 0.70** | Classifier alone | `distilled = classifier_prob` | **+31.76%** |
-| 0.70 - 0.85 | Distilled | `conf × classifier_prob` | **+9.10%** |
-| > 0.85 | Zero-shot | `distilled = conf` | maintain |
-
-**Key insight**: Traditional `conf × classifier_prob` is suboptimal when RF-DETR conf
-fails cross-domain. Classifier alone wins in 2/3 experiments.
-
-### 🔢 Organoid Counting Application (2026-09-15)
-
-**Enterprise requirement**: F1 ≥ 0.90, Precision ≥ 0.90, Recall ≥ 0.90, CV ≤ 1%, speed ≤ 1 min/image.
-
-**Dataset**: Intestinal Organoid (Zenodo 6768583) — 840 images, 23,065 annotations, 4 classes.
-
-**Counting pipeline**: RF-DETR detection → SAM2 mask → morphology features → TP/FP classifier → counting.
-
-| Method | F1 | Precision | Recall | MAE | R² | Over-count | Meets F1≥0.90? |
-|--------|-----|-----------|--------|-----|-----|-----------|----------------|
-| Baseline (no filter) | 0.000 | 0.286 | 0.934 | 43.87 | -4.58 | +149.3% | ✗ |
-| Confidence filter | 0.945 | 0.929 | 0.961 | 1.54 | 0.991 | +3.4% | ✓ |
-| Morphology (GB) | 0.944 | 0.932 | 0.957 | 1.58 | 0.991 | +2.8% | ✓ |
-| **+ SAM2 self-distillation** | **1.000** | **1.000** | **0.999** | **0.04** | **0.9999** | **-0.0%** | **✓** |
-
-**Key finding**: SAM2 mask quality provides a near-perfect TP/FP signal (AUC=1.000),
-enabling F1=1.000 and counting R²=0.9999 — fully meeting enterprise requirements.
-
-**Enterprise compliance** (9 requirements):
-
-| # | Requirement | Status | Details |
-|---|-------------|--------|---------|
-| 1 | Multi-format (jpg/tiff/bmp) | ✅ | PIL/cv2 support |
-| 2 | Multi-class (4 types) | ✅ | 4-class YOLO detection |
-| 3 | Normal/apoptosis distinction | ⚠️ | Future work |
-| 4 | Overlap separation | ✅ | SAM2 instance mask |
-| 5 | Morphology metrics | ✅ | Area/perimeter/circularity/solidity/AR |
-| 6 | API/LIMS integration | ✅ | FastAPI + Streamlit |
-| 7 | F1 ≥ 0.90 | ✅ | F1=1.000 |
-| 8 | CV ≤ 1% | ✅ | Deterministic inference |
-| 9 | Speed ≤ 1 min | ✅ | ~31s/image |
-
-📄 Full report: `docs/organoid_counting_research_report.md`
-📊 Results: `results/counting_intestinal/`
+| Metric | Intestinal Organoid | MultiOrg |
+|--------|---------------------|----------|
+| Classification Accuracy | **99.17%** | — |
+| Detection mAP50 | — | **0.885** (v12s, 1280px) |
+| Detection mAP50-95 | — | **0.624** (v12s, 1280px) |
+| Feature Dim | **768** (DINOv2 base) | — |
+| Detection Model | YOLOv11 (3.2M–20.1M params) | YOLOv12s (9.2M params) |
+| Segmentation | SAM2 (pixel-level) | — |
+| Vector Search | HNSW (kNN) | — |
+| Audit | SHA-256 Blockchain | — |
 
 ---
 
@@ -259,9 +199,27 @@ This project is part of research on **privacy-preserving medical AI** at XJTLU. 
 # Python tests
 pytest tests/ -v
 
-# Rust tests (if Rust toolchain available)
-cd src && cargo test
+# Rust tests — run from the repository ROOT, not from src/.
+# The manifest is ./Cargo.toml; there is no src/Cargo.toml, so the previously
+# documented `cd src && cargo test` fails with "could not find `Cargo.toml`".
+cargo test --all-targets
 ```
+
+Building the Rust side needs two things beyond a toolchain:
+
+1. **`protoc`**, because `build.rs` calls `tonic_build::compile_protos`, which
+   shells out to it. `tonic-build` does not bundle one. Install with
+   `winget install Google.Protobuf`, or set `PROTOC` to an existing binary.
+2. **A working registry mirror if crates.io is slow.** Measured from this
+   machine, `index.crates.io` served the sparse index at ~0.035 MB/s versus
+   ~0.74 MB/s from `mirrors.ustc.edu.cn`, which made a cold dependency fetch
+   take tens of minutes instead of under one. See `~/.cargo/config.toml`.
+
+`cargo test` covers 16 tests, including
+`blockchain::tests::test_shared_audit_vectors_are_reproduced`, which reads
+`tests/fixtures/audit_hash_vectors.json` and must reproduce every digest that
+the Python and Node implementations produce. That test is the only executable
+check that the audit spec has not drifted between languages.
 
 ---
 

@@ -21,15 +21,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
-from pathlib import Path
-from typing import Optional
+from typing import ClassVar, Optional
 from torchvision import transforms
 
 
 class DINOv2Extractor(nn.Module):
     """DINOv2-based feature extractor using CLS token."""
 
-    MODEL_DIMS = {
+    MODEL_DIMS: ClassVar[dict[str, int]] = {
         "vits14": 384,
         "base": 768,
         "large": 1024,

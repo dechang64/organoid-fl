@@ -1,0 +1,25 @@
+# ── requirements-dev.txt ──
+# Development-only dependencies. Install with:
+#   ./.venv/Scripts/python.exe -m pip install -r requirements-dev.txt
+#
+# Runtime dependencies live in requirements.txt (portable) and
+# requirements_local.txt (the workstation set, which adds torchvision,
+# ultralytics and streamlit).
+#
+# Note: pandas is deliberately *not* listed here even though the code uses it.
+# It is already a runtime dependency, and it has an import-ordering constraint
+# against torch/pyarrow on Windows — see utils/import_order.py.
+
+# Test runner. The repository previously had eight pytest-style test modules
+# that could not run at all because pytest was absent from the environment, and
+# `python -m unittest discover` silently skipped them. That is how a
+# process-killing import bug in analysis/audit_engine.py survived: the test that
+# would have caught it never executed.
+pytest>=8.0
+
+# Linting and formatting.
+ruff>=0.6
+
+# Type checking. The codebase is annotation-heavy and the annotations are load
+# bearing (see visualization/charts.py), so checking them is worthwhile.
+mypy>=1.11

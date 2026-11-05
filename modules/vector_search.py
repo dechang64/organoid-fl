@@ -12,7 +12,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.constants import ORGANOID_CLASSES, CLASS_INFO, COLORS
+from utils.constants import ORGANOID_CLASSES, CLASS_INFO
 from utils.helpers import generate_synthetic_features
 from analysis.vector_engine import VectorEngine
 from visualization.charts import knn_distance_chart
@@ -41,7 +41,9 @@ def render():
             with st.spinner("Generating features and building index..."):
                 features, labels, class_names = generate_synthetic_features(n_samples=n_vectors, dim=512)
                 ids = [f"organoid_{i:04d}" for i in range(len(features))]
-                metadata = [{"class": class_names[l], "label": int(l)} for l in labels]
+                metadata = [
+                    {"class": class_names[i], "label": int(i)} for i in labels
+                ]
                 engine.bulk_insert(ids, features, metadata)
                 st.session_state["vector_count"] = len(engine)
                 st.session_state["vector_features"] = features
@@ -115,9 +117,8 @@ def render():
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
             # Distance chart
-            distances = [score for _, score in results]
-            fig = knn_distance_chart(distances)
-            st.caption("📊 Chart disabled on Streamlit Cloud (CDN issue)")
+            fig = knn_distance_chart(results, query_label)
+            st.plotly_chart(fig, use_container_width=True)
 
             matches = sum(1 for vid, _ in results if engine.metadata.get(vid, {}).get("class") == query_label)
             st.metric("Class Match Rate", f"{matches}/{len(results)} ({matches / len(results) * 100:.0f}%)")
