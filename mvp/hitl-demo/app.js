@@ -40,6 +40,8 @@
     startedAt: 0,
     firstTouchAt: 0,
     timerH: 0,
+    work: {},      // 按样本隔离的草稿/计时状态（修复跨样本草稿注入）
+    qfArm: false,  // 演示辅助按钮的两段确认
     baseCache: {}
   };
 
@@ -100,6 +102,16 @@
 
   /* ================= 通用渲染工具 ================= */
   function h(html) { return html; }
+  /* 草稿/计时按样本隔离：切换样本时保存当前、载入目标（修复跨样本草稿注入与计时污染） */
+  function swapWork(from, to) {
+    S.work[from] = {
+      draft: S.draft, selected: S.selected, pending: S.pending,
+      startedAt: S.startedAt, firstTouchAt: S.firstTouchAt
+    };
+    const w = S.work[to] || { draft: [], selected: null, pending: null, startedAt: 0, firstTouchAt: 0 };
+    S.draft = w.draft; S.selected = w.selected; S.pending = w.pending;
+    S.startedAt = w.startedAt; S.firstTouchAt = w.firstTouchAt;
+  }
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
@@ -294,7 +306,7 @@
       '<button class="tool" id="btnDel">删除选中</button>' +
       '<button class="tool" id="btnClear">清空</button>' +
       '<div class="spacer"></div>' +
-      '<button class="tool" id="btnScript">快速填入示例（演示用）</button>' +
+      '<button class="tool" id="btnScript">快速填入示例（演示用 · ≈真值）</button>' +
       '</div>' +
       '<div class="stagewrap hidden-model"><canvas class="stage" id="cv" width="720" height="720"></canvas></div>' +
       '<p class="note" style="margin-top:8px">左键落点，<b>双击闭合</b>，右键撤销上一点，Esc 放弃当前轮廓。目标：每个可见类器官各画一个闭合轮廓，并按类别着色。</p>' +
@@ -472,6 +484,12 @@
 
   /* ================= 视图 3：仲裁台 ================= */
   function viewAdjudicate(i) {
+    if (cosignerBlindNow()) {
+      return '<h2 class="viewtitle">S4 首席仲裁 · ' + S.samples[i].id + '</h2>' +
+        '<div class="panel"><div class="panel-bd"><div class="banner warn"><div class="ic">!</div><div>' +
+        '<b>复核专家在锁定并揭示独立意见之前不能进入仲裁台</b><br>模型排序属于首席的仲裁输入，对未完成独立判断的复核人不可见（与 P-09 同源：先看输入再表态，复核退化为盖章）。</div></div>' +
+        '<button class="btn primary" id="btnBackCosign" style="margin-top:12px">返回条件复核</button></div></div>';
+    }
     const ag = O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]);
     const rank = modelRank(i);
     const lastCoder = rank[rank.length - 1].coder;
@@ -564,7 +582,7 @@
     }
 
     const opts = ['A', 'B', 'C'].map(c =>
-      '<div class="revcard ' + (cs.blindChoice === c ? 'on' : '') + ' ' + (cs.locked ? 'last' : '') + '" data-cosign="' + c + '">' +
+      '<div class="revcard ' + (cs.blindChoice === c ? 'on' : '') + '" data-cosign="' + c + '">' +
       '<span class="radio"></span>' +
       '<canvas data-thumb="' + c + '" width="192" height="192"></canvas>' +
       '<div><div style="font-size:12.5px;color:var(--ink)">专家 ' + c + ' 的修订</div>' +
@@ -573,8 +591,10 @@
 
     let body = '<div class="grid2"><div>' +
       '<div class="panel"><div class="panel-hd"><h3>触发原因</h3><span class="chip warn">' + esc(trig) + '</span></div>' +
-      '<div class="panel-bd"><p class="note">首席选择了 <b>专家 ' + adj.selected + '</b>，理由码「' + esc(adj.reasonCode) + '」。' +
-      (adj.reasonText ? '说明：' + esc(adj.reasonText) : '') + '</p></div></div>' +
+      '<div class="panel-bd">' + (cs.revealed
+        ? '<p class="note">首席选择了 <b>专家 ' + esc(adj.selected) + '</b>，理由码「' + esc(adj.reasonCode) + '」。' +
+          (adj.reasonText ? '说明：' + esc(adj.reasonText) : '') + '</p>'
+        : '<p class="note">触发条件已给出，但<b>首席的选择与理由在你锁定独立意见并执行揭示之前不可见</b>——接口不返回这些字段，本页也不渲染。</p>') + '</div></div>' +
       '<div class="panel" style="margin-top:14px"><div class="panel-hd"><h3>第一步 · 你的独立判断</h3>' +
       '<span class="sub">只看三份修订，不看首席结论</span></div>' +
       '<div class="panel-bd"><div class="revlist">' + opts + '</div>' +
@@ -664,9 +684,15 @@
     const qa = (sel) => Array.prototype.slice.call(app.querySelectorAll(sel));
 
     qa('[data-go]').forEach(b => b.onclick = () => {
-      S.idx = +b.getAttribute('data-i');
+      const prev = S.idx, next = +b.getAttribute('data-i');
+      if (next !== prev) swapWork(prev, next);
+      S.idx = next;
       S.view = b.getAttribute('data-go');
       S.tmpSel = null; S.tmpReason = ''; S.tmpText = '';
+      if (S.view === 'adjudicate' && cosignerBlindNow()) {
+        toast('复核专家在锁定并揭示独立意见前，不能查看仲裁台（模型排序不可见）', 'bad');
+        S.view = 'cosign';
+      }
       render();
     });
 
@@ -707,6 +733,8 @@
     if (rt) rt.oninput = () => { S.tmpText = rt.value; };
     const ba = q('#btnAdjudicate');
     if (ba) ba.onclick = doAdjudicate;
+    const bbk = q('#btnBackCosign');
+    if (bbk) bbk.onclick = () => { S.view = 'cosign'; render(); };
 
     /* ---- 复核 ---- */
     const bc = q('#btnBeCosigner');
@@ -746,6 +774,7 @@
       S.cosign[S.idx].verdict = 'reject';
       O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_REJECTED', { sample: S.samples[S.idx].id, dissent: txt });
       delete S.adj[S.idx];
+      delete S.cosign[S.idx];  // 否决开启新一轮仲裁，上一轮复核状态不得继承
       S.view = 'adjudicate';
       S.tmpSel = null; S.tmpReason = ''; S.tmpText = '';
       toast('已否决，退回首席重议', 'ok');
@@ -826,9 +855,24 @@
       if (S.selected == null) { toast('先在选择模式下点选一个轮廓'); return; }
       S.draft.splice(S.selected, 1); S.selected = null; render();
     };
-    q('#btnScript').onclick = () => {
+    const bs = q('#btnScript');
+    if (bs) bs.onclick = () => {
+      if (!S.qfArm) {
+        S.qfArm = true;
+        bs.textContent = '确认填入（内容≈参考真值，视为已看答案）';
+        bs.style.color = '#ff5d73'; bs.style.borderColor = '#ff5d73';
+        toast('演示辅助会把接近参考真值的轮廓注入盲读草稿——正式盲读流程中不存在此按钮', 'bad');
+        setTimeout(() => {
+          S.qfArm = false;
+          const b = app.querySelector('#btnScript');
+          if (b) { b.textContent = '快速填入示例（演示用 · ≈真值）'; b.style.color = ''; b.style.borderColor = ''; }
+        }, 5000);
+        return;
+      }
+      S.qfArm = false;
       S.draft = O.scriptedExpert(S.samples[S.idx], 'A').instances.map(x => ({ cls: x.cls, pts: x.pts }));
-      toast('已填入示例修订（演示用）', 'ok');
+      O.pushAudit(S.chain, 'expert:A', 'DEMO_ASSIST_FILLED', { sample: S.samples[S.idx].id, warning: 'ground_truth_like_content_injected_for_demo' });
+      toast('已填入示例修订（已记入审计）', 'ok');
       render();
     };
     q('#btnSubmit').onclick = doSubmitBlind;
@@ -877,6 +921,9 @@
       payload_hash: O.hash64(O.canon(S.rev[i].A.instances))
     });
     S.pending = null; S.selected = null;
+    /* 提交后清空该样本的草稿与计时——草稿已物化为修订，不得残留到其他样本 */
+    S.draft = []; S.startedAt = 0; S.firstTouchAt = 0;
+    S.work[i] = { draft: [], selected: null, pending: null, startedAt: 0, firstTouchAt: 0 };
     S.view = 'reveal';
     stopTimer();
     render();
@@ -931,6 +978,12 @@
   }
 
   /* ================= 契约 JSON 抽屉 ================= */
+  /* 投影规则：抽屉本身也是接口。未揭示时不给 model_rank（P-01）；复核人未揭示首席结论时
+     不给 selected_coder / 理由字段（P-09）。在这里实现，而不是靠界面不放出来。 */
+  function revealedNow() { return !!S.revealed[S.idx]; }
+  function cosignerBlindNow() {
+    return S.role === 'cosigner' && !(S.cosign[S.idx] && S.cosign[S.idx].revealed);
+  }
   function buildBundle() {
     const i = S.idx, sm = S.samples[i];
     const ag = S.rev[i].A ? O.computeAgreement([S.rev[i].A, S.rev[i].B, S.rev[i].C]) : null;
@@ -952,7 +1005,7 @@
         blind_ms: S.rev[i][c].meta ? S.rev[i][c].meta.blindMs : null,
         payload_hash: O.hash64(O.canon(S.rev[i][c].instances))
       })),
-      model_rank: S.model[i].instances.length ? modelRank(i).map((r, k) => ({
+      model_rank: (revealedNow() && !cosignerBlindNow()) ? modelRank(i).map((r, k) => ({
         ranking: k + 1, coder: r.coder, agreement_with_model: O.q4(r.dice)
       })) : [],
       disagreement: ag ? {
@@ -962,12 +1015,15 @@
         },
         controversy_score: O.q4(ag.controversy), metric_version: 'metric-v1', random_seed: 20261022
       } : null,
-      adjudication: adj ? {
+      adjudication: adj ? (cosignerBlindNow() ? {
+        sample_id: sm.id, cosign_required: adj.cosignRequired,
+        projection_note: 'chief_context_withheld_until_cosign_reveal'
+      } : {
         sample_id: sm.id, selected_coder: adj.selected, selector_role: '首席专家',
         reason_code: adj.reasonCode, reason_text: adj.reasonText,
         model_rank_agreement: adj.selected === modelRank(i)[0].coder,
         signature_meaning: '已仲裁', decided_at: adj.at, cosign_required: adj.cosignRequired
-      } : null,
+      }) : null,
       cosign: cs ? {
         sample_id: sm.id, trigger_rule: adj ? adj.cosignTrigger : null,
         blind_choice: cs.blindChoice || null, blind_choice_locked_at: cs.lockedAt || null,
@@ -991,7 +1047,7 @@
       .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="n">$1</span>')
       .replace(/:\s*(true|false|null)/g, ': <span class="b">$1</span>');
     document.getElementById('jsonBody').innerHTML =
-      '<p class="jsoncap">当前样本的契约对象。字段名与 PRD 第七章一致；坐标在入哈希前按 1e-4 量化。</p>' +
+      '<p class="jsoncap">当前样本的契约对象（按当前角色与阶段投影：未揭示时不含 model_rank；复核人未揭示首席结论时不含 selected_coder）。字段名与 PRD 第七章一致；坐标在入哈希前按 1e-4 量化。</p>' +
       '<pre class="json">' + html + '</pre>';
     document.getElementById('jsonBytes').textContent = (txt.length / 1024).toFixed(1) + ' KB';
     document.getElementById('drawer').classList.add('open');
@@ -1037,13 +1093,14 @@
       if (adj.cosignRequired) {
         const rank2 = modelRank(i);
         const choice = rank2[0].coder; // 复核人独立判断后选了排序首位
+        const revealed = stage !== 'cosign'; // cosign 阶段保留交互：让观众亲手执行两段式揭示
         S.cosign[i] = {
-          blindChoice: choice, locked: true, lockedAt: '10:22:41', revealed: true,
-          verdict: (stage === 'cosign') ? null : 'approve', dissent: ''
+          blindChoice: choice, locked: true, lockedAt: '10:22:41', revealed: revealed,
+          verdict: (stage === 'final' || stage === 'blocked') ? 'approve' : null, dissent: ''
         };
         O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_CHOICE_LOCKED', { sample: S.samples[i].id, choice: choice });
-        O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_CONTEXT_REVEALED', { sample: S.samples[i].id });
-        if (stage !== 'cosign') O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_APPROVED', { sample: S.samples[i].id });
+        if (revealed) O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_CONTEXT_REVEALED', { sample: S.samples[i].id });
+        if (stage === 'final' || stage === 'blocked') O.pushAudit(S.chain, 'expert:cosigner', 'COSIGN_APPROVED', { sample: S.samples[i].id });
       }
     }
     if (stage === 'blocked') S.template = 'teaching';
