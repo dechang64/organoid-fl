@@ -56,7 +56,11 @@ def set_params(model, params):
 
 def fedavg_aggregate(client_params_list, client_weights):
     """FedAvg: weighted average of client parameters."""
+    if not client_params_list:
+        raise ValueError("client_params_list is empty, cannot aggregate")
     total = sum(client_weights)
+    if total == 0:
+        raise ValueError("Total client_weights is zero, cannot aggregate")
     aggregated = []
     for layer_idx in range(len(client_params_list[0])):
         weighted = sum(

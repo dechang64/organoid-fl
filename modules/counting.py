@@ -28,15 +28,33 @@ def render():
     # ── Overview Metrics ──
     st.markdown("### 📊 Enterprise Compliance Summary")
 
+    # Load real evaluation results from JSON
+    _results_json = RESULTS_DIR / "counting_experiment_results.json"
+    _eval_metrics = {"f1": "N/A", "precision": "N/A", "recall": "N/A", "r2": "N/A"}
+    if _results_json.exists():
+        try:
+            import json as _json
+            with open(_results_json) as _f:
+                _data = _json.load(_f)
+            _sam2 = _data.get("methods", {}).get("sam2", {})
+            _eval_metrics = {
+                "f1": f"{_sam2.get('f1', 0):.3f}",
+                "precision": f"{_sam2.get('precision', 0):.3f}",
+                "recall": f"{_sam2.get('recall', 0):.3f}",
+                "r2": f"{_sam2.get('r2', 0):.4f}",
+            }
+        except Exception:
+            pass  # Fall back to N/A if JSON read fails
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("F1 Score", "1.000", "≥ 0.90 ✅")
+        st.metric("F1 Score", _eval_metrics["f1"], "≥ 0.90 ✅")
     with col2:
-        st.metric("Precision", "1.000", "≥ 0.90 ✅")
+        st.metric("Precision", _eval_metrics["precision"], "≥ 0.90 ✅")
     with col3:
-        st.metric("Recall", "0.999", "≥ 0.90 ✅")
+        st.metric("Recall", _eval_metrics["recall"], "≥ 0.90 ✅")
     with col4:
-        st.metric("Counting R²", "0.9999", "Target: high ✅")
+        st.metric("Counting R²", _eval_metrics["r2"], "Target: high ✅")
 
     st.markdown("---")
 
