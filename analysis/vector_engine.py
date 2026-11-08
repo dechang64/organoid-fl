@@ -1,3 +1,4 @@
+from __future__ import annotations
 # ── analysis/vector_engine.py ──
 """
 Vector Search Engine

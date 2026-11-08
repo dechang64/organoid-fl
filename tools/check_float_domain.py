@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Verify the cross-language float domain claim.
 
 The audit spec accepts floats only where the target languages agree on

@@ -1,3 +1,4 @@
+from __future__ import annotations
 # ── analysis/detector.py ──
 """
 YOLOv11 Organoid Detector

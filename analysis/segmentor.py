@@ -1,3 +1,4 @@
+from __future__ import annotations
 # ── analysis/segmentor.py ──
 """
 SAM2 Organoid Segmentor

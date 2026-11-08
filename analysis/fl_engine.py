@@ -1,3 +1,4 @@
+from __future__ import annotations
 # ── analysis/fl_engine.py ──
 """
 Federated Learning Engine

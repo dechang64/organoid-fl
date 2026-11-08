@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Generate the shared cross-language hash vectors.
 
 Run:  ./.venv/Scripts/python.exe tools/gen_audit_vectors.py

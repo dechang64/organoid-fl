@@ -1,3 +1,4 @@
+from __future__ import annotations
 # ── modules/feature_space.py ──
 """
 Feature Space Page

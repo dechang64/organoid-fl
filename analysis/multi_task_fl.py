@@ -1,3 +1,4 @@
+from __future__ import annotations
 # ── analysis/multi_task_fl.py ──
 """
 Multi-Task Federated Learning Engine
